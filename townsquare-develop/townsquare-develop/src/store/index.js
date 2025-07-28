@@ -116,7 +116,8 @@ export default new Vuex.Store({
       nightOrder: false,
       fabled: false,
       voteHistory: false,
-      gameState: false
+      gameState: false,
+      reminder: false
     },
     edition: editionJSON[0],
     roles: getRolesByEdition(),

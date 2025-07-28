@@ -83,7 +83,8 @@ export default {
         }
       });
 
-              reminders.push({ role: "good", name: this.$t('reminder.good') });
+      // add basic reminders
+      reminders.push({ role: "good", name: this.$t('reminder.good') });
       reminders.push({ role: "evil", name: this.$t('reminder.evil') });
       reminders.push({ role: "custom", name: this.$t('reminder.custom') });
       return reminders;

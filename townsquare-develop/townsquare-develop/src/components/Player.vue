@@ -899,7 +899,7 @@ li.move:not(.from) .player .overlay svg.move {
 
   &.add {
     opacity: 0;
-    top: 30px;
+    top: 0;
     &:after {
       display: none;
     }
