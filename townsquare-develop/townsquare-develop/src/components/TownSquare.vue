@@ -149,7 +149,7 @@ export default {
       }
     },
     openReminderModal(playerIndex) {
-      this.selectedPlayer = playerIndex;
+      this.$store.commit("setSelectedPlayer", playerIndex);
       this.$store.commit("toggleModal", "reminder");
     },
     openRoleModal(playerIndex) {

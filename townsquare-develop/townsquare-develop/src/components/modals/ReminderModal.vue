@@ -57,8 +57,10 @@ const mapReminder =
 
 export default {
   components: { Modal },
-  props: ["playerIndex"],
   computed: {
+    playerIndex() {
+      return this.$store.state.selectedPlayer;
+    },
     availableReminders() {
       let reminders = [];
       const { players, bluffs } = this.$store.state.players;

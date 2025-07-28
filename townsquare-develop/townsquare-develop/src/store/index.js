@@ -167,6 +167,7 @@ export default new Vuex.Store({
       voteHistory: [],
       distributeRoles: false,
     },
+    selectedPlayer: -1, // 添加选中的玩家索引
     history: {
       events: [],
       currentRound: 1,
@@ -547,6 +548,9 @@ export default new Vuex.Store({
       // 重置游戏状态
       state.history.currentRound = 1;
       state.history.currentPhase = "night";
+    },
+    setSelectedPlayer(state, index) {
+      state.selectedPlayer = index;
     },
   },
   plugins: [persistence, socket],

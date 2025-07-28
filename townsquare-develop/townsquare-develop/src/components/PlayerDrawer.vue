@@ -60,10 +60,26 @@
             <div class="reminders-list">
               <div
                 v-for="reminder in player.reminders"
-                :key="reminder"
+                :key="reminder.role + ' ' + reminder.name"
                 class="reminder-item"
               >
-                <span>{{ reminder }}</span>
+                <span class="reminder-icon">
+                  <span
+                    class="icon"
+                    :style="{
+                      backgroundImage: `url(${
+                        reminder.image && grimoire.isImageOptIn
+                          ? reminder.image
+                          : require(
+                              '../assets/icons/' +
+                                (reminder.imageAlt || reminder.role) +
+                                '.png',
+                            )
+                      })`,
+                    }"
+                  ></span>
+                </span>
+                <span class="reminder-text">{{ reminder.name }}</span>
                 <button @click="removeReminder(reminder)" class="remove-btn">
                   <font-awesome-icon icon="times" />
                 </button>
@@ -74,17 +90,10 @@
           <!-- 添加标记 -->
           <div class="add-reminder-section">
             <h4>添加标记</h4>
-            <div class="add-reminder-input">
-              <input
-                v-model="newReminder"
-                @keyup.enter="addReminder"
-                placeholder="输入标记内容"
-                class="reminder-input"
-              />
-              <button @click="addReminder" class="add-btn">
-                <font-awesome-icon icon="plus" />
-              </button>
-            </div>
+            <button @click="openReminderModal" class="add-reminder-btn">
+              <font-awesome-icon icon="plus" />
+              选择标记
+            </button>
           </div>
 
           <!-- 切换角色 -->
@@ -104,6 +113,7 @@
 <script>
 import { mapState } from "vuex";
 import Token from "./Token.vue";
+import { recordReminderRemoved } from "../utils/reminderToHistory";
 
 export default {
   name: "PlayerDrawer",
@@ -124,13 +134,8 @@ export default {
       required: true,
     },
   },
-  data() {
-    return {
-      newReminder: "",
-    };
-  },
   computed: {
-    ...mapState(["session"]),
+    ...mapState(["session", "grimoire"]),
   },
   methods: {
     toggleStatus(status) {
@@ -162,24 +167,31 @@ export default {
       });
     },
 
-    addReminder() {
-      if (!this.newReminder.trim()) return;
-
-      const reminders = [
-        ...(this.player.reminders || []),
-        this.newReminder.trim(),
-      ];
-      this.updatePlayer("reminders", reminders);
-      this.newReminder = "";
-    },
-
     removeReminder(reminder) {
+      console.log("removeReminder called with:", reminder);
       const reminders = [...this.player.reminders];
       const index = reminders.indexOf(reminder);
       if (index > -1) {
         reminders.splice(index, 1);
         this.updatePlayer("reminders", reminders);
+
+        // 记录reminder移除
+        if (!this.session.isSpectator) {
+          console.log("Recording reminder removed");
+          try {
+            recordReminderRemoved(reminder, this.player, this.$store);
+          } catch (error) {
+            console.error("Error recording reminder removed:", error);
+          }
+        }
       }
+    },
+
+    openReminderModal() {
+      if (this.session.isSpectator) return;
+      this.$store.commit("toggleModal", "reminder");
+      // 设置选中的玩家索引
+      this.$store.commit("setSelectedPlayer", this.playerIndex);
     },
 
     openRoleModal() {
@@ -406,10 +418,30 @@ export default {
           border-color: #4a90e2;
         }
 
-        span {
+        .reminder-icon {
+          width: 24px;
+          height: 24px;
+          margin-right: 10px;
+          flex-shrink: 0;
+          border-radius: 4px;
+          overflow: hidden;
+          border: 1px solid #333;
+          position: relative;
+
+          .icon {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+          }
+        }
+
+        .reminder-text {
           flex: 1;
           font-size: 14px;
           color: #fff;
+          margin-right: 10px;
         }
 
         .remove-btn {
@@ -441,45 +473,25 @@ export default {
       font-weight: bold;
     }
 
-    .add-reminder-input {
+    .add-reminder-btn {
+      width: 100%;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid #333;
+      color: #fff;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      transition: all 0.3s ease;
       display: flex;
-      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
 
-      .reminder-input {
-        flex: 1;
-        padding: 8px 12px;
-        background: rgba(255, 255, 255, 0.1);
-        border: 1px solid #333;
-        color: #fff;
-        border-radius: 4px;
-        font-size: 14px;
-        transition: all 0.3s ease;
-
-        &::placeholder {
-          color: #999;
-        }
-
-        &:focus {
-          outline: none;
-          border-color: #4a90e2;
-          background: rgba(255, 255, 255, 0.15);
-        }
-      }
-
-      .add-btn {
-        padding: 8px 12px;
-        background: #4a90e2;
-        border: none;
-        color: #fff;
-        border-radius: 4px;
-        cursor: pointer;
-        font-size: 14px;
-        font-weight: bold;
-        transition: all 0.3s ease;
-
-        &:hover {
-          background: #357abd;
-        }
+      &:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: #4a90e2;
       }
     }
   }
