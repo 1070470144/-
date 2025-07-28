@@ -66,13 +66,13 @@
             v-if="player.reminders && player.reminders.length > 0"
           >
             <h4>当前标记</h4>
-            <div class="reminders-list">
+            <div class="reminders-grid">
               <div
                 v-for="reminder in player.reminders"
                 :key="reminder.role + ' ' + reminder.name"
                 class="reminder-item"
               >
-                <span class="reminder-icon">
+                <div class="reminder-icon">
                   <span
                     class="icon"
                     :style="{
@@ -87,8 +87,8 @@
                       })`,
                     }"
                   ></span>
-                </span>
-                <span class="reminder-text">{{ reminder.name }}</span>
+                </div>
+                <div class="reminder-text">{{ reminder.name }}</div>
                 <button @click="removeReminder(reminder)" class="remove-btn">
                   <font-awesome-icon icon="times" />
                 </button>
@@ -382,7 +382,10 @@ export default {
       font-weight: bold;
     }
 
-    .reminders-list {
+    .reminders-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 10px;
       max-height: 200px;
       overflow-y: auto;
 
@@ -405,61 +408,79 @@ export default {
       }
 
       .reminder-item {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid #333;
-        border-radius: 4px;
-        padding: 12px 16px;
-        margin-bottom: 8px;
         display: flex;
-        justify-content: space-between;
+        flex-direction: column;
         align-items: center;
+        padding: 12px 8px;
+        background: rgba(255, 255, 255, 0.08);
+        border: 2px solid #333;
+        border-radius: 8px;
+        position: relative;
         transition: all 0.3s ease;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 
         &:hover {
-          background: rgba(255, 255, 255, 0.1);
+          background: rgba(255, 255, 255, 0.15);
           border-color: #4a90e2;
+          box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+          transform: translateY(-2px);
         }
+      }
 
-        .reminder-icon {
-          width: 24px;
-          height: 24px;
-          margin-right: 10px;
-          flex-shrink: 0;
-          border-radius: 4px;
-          overflow: hidden;
-          border: 1px solid #333;
-          position: relative;
+      .reminder-icon {
+        width: 40px;
+        height: 40px;
+        margin-bottom: 6px;
+        flex-shrink: 0;
+        border-radius: 6px;
+        overflow: hidden;
+        border: 2px solid #4a90e2;
+        position: relative;
+        background: rgba(74, 144, 226, 0.1);
+        box-shadow: 0 2px 8px rgba(74, 144, 226, 0.3);
 
-          .icon {
-            display: block;
-            width: 100%;
-            height: 100%;
-            background-size: cover;
-            background-position: center;
-          }
+        .icon {
+          display: block;
+          width: 100%;
+          height: 100%;
+          background-size: cover;
+          background-position: center;
+          filter: brightness(1.2) contrast(1.1);
         }
+      }
 
-        .reminder-text {
-          flex: 1;
-          font-size: 14px;
+      .reminder-text {
+        flex: 1;
+        font-size: 14px;
+        font-weight: 600;
+        color: #fff;
+        text-align: center;
+        word-break: break-word;
+        line-height: 1.3;
+        margin-bottom: 6px;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+        letter-spacing: 0.5px;
+      }
+
+      .remove-btn {
+        background: rgba(220, 53, 69, 0.2);
+        border: 1px solid #dc3545;
+        color: #ff6b6b;
+        cursor: pointer;
+        padding: 6px 10px;
+        font-size: 14px;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
+
+        &:hover {
           color: #fff;
-          margin-right: 10px;
-        }
-
-        .remove-btn {
-          background: none;
-          border: none;
-          color: #dc3545;
-          cursor: pointer;
-          padding: 4px 8px;
-          font-size: 12px;
-          border-radius: 3px;
-          transition: all 0.3s ease;
-
-          &:hover {
-            color: #e74c3c;
-            background: rgba(220, 53, 69, 0.1);
-          }
+          background: rgba(220, 53, 69, 0.8);
+          box-shadow: 0 4px 8px rgba(220, 53, 69, 0.5);
+          transform: scale(1.1);
         }
       }
     }
