@@ -278,6 +278,7 @@ export default {
       border-radius: 8px;
       overflow: hidden;
       border: 1px solid #333;
+      position: relative;
     }
 
     .role-info {

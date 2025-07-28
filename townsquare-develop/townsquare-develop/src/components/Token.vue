@@ -45,6 +45,10 @@
     <div class="ability" v-if="role.ability">
       {{ role.ability }}
     </div>
+    <!-- 待处决状态骷髅头图标 -->
+    <div v-if="isNominated" class="execution-skull">
+      <font-awesome-icon icon="skull" />
+    </div>
   </div>
 </template>
 
@@ -63,6 +67,10 @@ export default {
       default: false,
     },
     allowParentClick: {
+      type: Boolean,
+      default: false,
+    },
+    isNominated: {
       type: Boolean,
       default: false,
     },
@@ -515,6 +523,30 @@ export default {
 
   &:hover .ability {
     opacity: 1;
+  }
+
+  .execution-skull {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+
+    svg {
+      height: 60%;
+      width: 60%;
+      stroke: white;
+      stroke-width: 15px;
+      filter: drop-shadow(0px 0px 6px black);
+
+      path {
+        fill: white;
+      }
+    }
   }
 }
 </style>

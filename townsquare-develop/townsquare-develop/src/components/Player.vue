@@ -41,6 +41,7 @@
         :role="player.role"
         :disable-click="true"
         :allow-parent-click="true"
+        :is-nominated="player.isNominated"
         @set-role="$emit('trigger', ['openRoleModal'])"
         @click="openActionPanel"
       />
