@@ -8,11 +8,11 @@
       @click="clearVoteHistory"
       icon="trash-alt"
       class="clear"
-              :title="$t('tooltips.clearVoteHistory')"
+      :title="$t('tooltips.clearVoteHistory')"
       v-if="session.isSpectator"
     />
 
-    <h3>{{ $t('voteHistory.title') }}</h3>
+    <h3>{{ $t("voteHistory.title") }}</h3>
 
     <template v-if="!session.isSpectator">
       <div class="options">
@@ -20,45 +20,37 @@
           <font-awesome-icon
             :icon="[
               'fas',
-              session.isVoteHistoryAllowed ? 'check-square' : 'square'
+              session.isVoteHistoryAllowed ? 'check-square' : 'square',
             ]"
           />
-          {{ $t('voteHistory.accessibleToPlayers') }}
+          {{ $t("voteHistory.accessibleToPlayers") }}
         </div>
         <div class="option" @click="clearVoteHistory">
           <font-awesome-icon icon="trash-alt" />
-          {{ $t('voteHistory.clearForEveryone') }}
+          {{ $t("voteHistory.clearForEveryone") }}
         </div>
       </div>
     </template>
     <table>
       <thead>
         <tr>
-          <td>{{ $t('voteHistory.time') }}</td>
-          <td>{{ $t('voteHistory.nominator') }}</td>
-          <td>{{ $t('voteHistory.nominee') }}</td>
-          <td>{{ $t('voteHistory.type') }}</td>
-          <td>{{ $t('voteHistory.votes') }}</td>
-          <td>{{ $t('voteHistory.majority') }}</td>
+          <td>{{ $t("voteHistory.time") }}</td>
+          <td>{{ $t("voteHistory.nominator") }}</td>
+          <td>{{ $t("voteHistory.nominee") }}</td>
+          <td>{{ $t("voteHistory.type") }}</td>
+          <td>{{ $t("voteHistory.votes") }}</td>
+          <td>{{ $t("voteHistory.majority") }}</td>
           <td>
             <font-awesome-icon icon="user-friends" />
-            {{ $t('voteHistory.voters') }}
+            {{ $t("voteHistory.voters") }}
           </td>
         </tr>
       </thead>
       <tbody>
         <tr v-for="(vote, index) in session.voteHistory" :key="index">
           <td>
-            {{
-              vote.timestamp
-                .getHours()
-                .toString()
-                .padStart(2, "0")
-            }}:{{
-              vote.timestamp
-                .getMinutes()
-                .toString()
-                .padStart(2, "0")
+            {{ vote.timestamp.getHours().toString().padStart(2, "0") }}:{{
+              vote.timestamp.getMinutes().toString().padStart(2, "0")
             }}
           </td>
           <td>{{ vote.nominator }}</td>
@@ -73,7 +65,7 @@
             <font-awesome-icon
               :icon="[
                 'fas',
-                vote.votes.length >= vote.majority ? 'check-square' : 'square'
+                vote.votes.length >= vote.majority ? 'check-square' : 'square',
               ]"
             />
           </td>
@@ -89,14 +81,14 @@
 <script>
 import Modal from "./Modal";
 import { mapMutations, mapState } from "vuex";
-import i18n from '../../i18n';
+import i18n from "../../i18n";
 
 export default {
   components: {
-    Modal
+    Modal,
   },
   computed: {
-    ...mapState(["session", "modals"])
+    ...mapState(["session", "modals"]),
   },
   methods: {
     $t(key, params = {}) {
@@ -108,11 +100,11 @@ export default {
     setRecordVoteHistory() {
       this.$store.commit(
         "session/setVoteHistoryAllowed",
-        !this.session.isVoteHistoryAllowed
+        !this.session.isVoteHistoryAllowed,
       );
     },
-    ...mapMutations(["toggleModal"])
-  }
+    ...mapMutations(["toggleModal"]),
+  },
 };
 </script>
 

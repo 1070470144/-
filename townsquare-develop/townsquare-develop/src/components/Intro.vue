@@ -2,16 +2,16 @@
   <div class="intro">
     <img src="static/apple-icon.png" alt="" class="logo" />
     <div>
-      {{ $t('intro.welcome') }}
-      <b>{{ $t('intro.title') }}</b> {{ $t('intro.subtitle') }}!
-      {{ $t('intro.addPlayers') }}
+      {{ $t("intro.welcome") }}
+      <b>{{ $t("intro.title") }}</b> {{ $t("intro.subtitle") }}!
+      {{ $t("intro.addPlayers") }}
       <span class="button" @click="toggleMenu">
-        <font-awesome-icon icon="cog" /> {{ $t('intro.menuButton') }}
+        <font-awesome-icon icon="cog" /> {{ $t("intro.menuButton") }}
       </span>
-      {{ $t('intro.orPress') }} <b>[A]</b> {{ $t('intro.toAddPlayers') }}
-      <b>[J]</b> {{ $t('intro.toJoinSession') }}<br />
+      {{ $t("intro.orPress") }} <b>[A]</b> {{ $t("intro.toAddPlayers") }}
+      <b>[J]</b> {{ $t("intro.toJoinSession") }}<br />
       <div class="footer">
-        {{ $t('intro.footer') }}
+        {{ $t("intro.footer") }}
       </div>
     </div>
     <a
@@ -20,27 +20,27 @@
       href="https://clocktower.gstonegames.com"
     >
       <img src="../assets/gstone.png" class="gstone" alt="" />
-      {{ $t('intro.chineseVersion') }}
+      {{ $t("intro.chineseVersion") }}
     </a>
   </div>
 </template>
 
 <script>
 import { mapMutations } from "vuex";
-import i18n from '../i18n';
+import i18n from "../i18n";
 
 export default {
   data() {
     return {
-      language: window.navigator.userLanguage || window.navigator.language
+      language: window.navigator.userLanguage || window.navigator.language,
     };
   },
   methods: {
     ...mapMutations(["toggleMenu"]),
     $t(key, params = {}) {
       return i18n.t(key, params);
-    }
-  }
+    },
+  },
 };
 </script>
 

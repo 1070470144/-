@@ -14,7 +14,7 @@ export default {
     host: "主持",
     play: "游戏",
     help: "帮助",
-    settings: "设置"
+    settings: "设置",
   },
 
   // 欢迎页面
@@ -27,8 +27,9 @@ export default {
     orPress: "或按",
     toAddPlayers: "来添加更多玩家。您也可以按",
     toJoinSession: "加入游戏会话。",
-    footer: "本项目免费开源，可在GitHub上找到。与The Pandemonium Institute无关联。\"血染钟楼\"是Steven Medway和The Pandemonium Institute的商标。",
-    chineseVersion: "你想使用中文版魔典吗？"
+    footer:
+      '本项目免费开源，可在GitHub上找到。与The Pandemonium Institute无关联。"血染钟楼"是Steven Medway和The Pandemonium Institute的商标。',
+    chineseVersion: "你想使用中文版魔典吗？",
   },
 
   // 城镇信息
@@ -42,14 +43,14 @@ export default {
     minion: "爪牙",
     demon: "恶魔",
     traveler: "旅行者",
-    nightPhase: "夜晚阶段"
+    nightPhase: "夜晚阶段",
   },
 
   // 城镇广场
   townSquare: {
     demonBluffs: "恶魔伪装",
     otherCharacters: "其他角色",
-    fabled: "寓言"
+    fabled: "寓言",
   },
 
   // 菜单
@@ -59,7 +60,7 @@ export default {
     players: "玩家",
     characters: "角色",
     help: "帮助",
-    
+
     // 魔典菜单
     hide: "隐藏",
     show: "显示",
@@ -72,7 +73,7 @@ export default {
     customImagesAvailable: "（已启用）",
     disableAnimations: "禁用动画",
     muteSounds: "静音",
-    
+
     // 会话菜单
     hosting: "主持中",
     playing: "游戏中",
@@ -84,25 +85,26 @@ export default {
     copyPlayerLink: "复制玩家链接",
     sendCharacters: "发送角色",
     voteHistory: "投票历史",
+    gameHistory: "游戏历史",
     leaveSession: "离开会话",
-    
+
     // 玩家菜单
     addPlayer: "添加",
     randomizeSeatings: "随机座位",
     removeAll: "移除所有",
-    
+
     // 角色菜单
     selectEdition: "选择版本",
     chooseAndAssign: "选择并分配",
     addFabled: "添加寓言",
     removeAllRoles: "移除所有角色",
-    
+
     // 帮助菜单
     referenceSheet: "参考表",
     nightOrderSheet: "夜晚顺序表",
     gameStateJSON: "游戏状态JSON",
     joinDiscord: "加入Discord",
-    sourceCode: "源代码"
+    sourceCode: "源代码",
   },
 
   // 投票
@@ -129,17 +131,17 @@ export default {
     handUp: "手举起",
     pleaseClaimSeat: "请认领座位来投票",
     secondsBetweenVotes: "秒间隔投票",
-    go: "开始"
+    go: "开始",
   },
 
   // 角色类型
   roles: {
     townsfolk: "镇民",
-    outsider: "外来者", 
+    outsider: "外来者",
     minion: "爪牙",
     demon: "恶魔",
     traveler: "旅行者",
-    fabled: "传奇角色"
+    fabled: "传奇角色",
   },
 
   // 游戏状态
@@ -149,17 +151,18 @@ export default {
     alive: "存活",
     dead: "死亡",
     poisoned: "中毒",
-    drunk: "醉酒"
+    drunk: "醉酒",
   },
 
   // 角色选择
   roleSelection: {
     selectCharacters: "为 {count} 名玩家选择角色：",
-    warningSetupRoles: "警告：已选择修改游戏设置的角色！随机生成器不会考虑这些角色。",
+    warningSetupRoles:
+      "警告：已选择修改游戏设置的角色！随机生成器不会考虑这些角色。",
     allowDuplicateCharacters: "允许重复角色",
     assignCharactersRandomly: "随机分配 {count} 个角色",
     shuffleCharacters: "洗牌角色",
-    loadingRoles: "正在加载角色..."
+    loadingRoles: "正在加载角色...",
   },
 
   // 确认对话框
@@ -167,7 +170,7 @@ export default {
     leaveActiveGame: "您确定要离开当前活跃的游戏吗？",
     randomizeSeatings: "您确定要随机化座位吗？",
     removeAllPlayers: "您确定要移除所有玩家吗？",
-    removeAllRoles: "您确定要移除所有玩家角色吗？"
+    removeAllRoles: "您确定要移除所有玩家角色吗？",
   },
 
   // 提示文本
@@ -175,10 +178,11 @@ export default {
     enterBackgroundUrl: "请输入自定义背景图片URL",
     enterSessionName: "请输入您的会话频道号/名称",
     distributeCharacters: "您想要向所有就座的玩家分发分配的角色吗？",
-    allowCustomImages: "您确定要允许自定义图片吗？恶意脚本文件作者可能会通过这种方式跟踪您的IP地址。",
+    allowCustomImages:
+      "您确定要允许自定义图片吗？恶意脚本文件作者可能会通过这种方式跟踪您的IP地址。",
     enterJoinSession: "请输入您要加入的会话频道号/名称",
     confirmRemovePlayer: "您确定要移除 {name} 吗？",
-    playerName: "玩家姓名"
+    playerName: "玩家姓名",
   },
 
   // 工具提示
@@ -192,7 +196,7 @@ export default {
     ghostVote: "幽灵投票",
     clearVoteHistory: "清除投票历史",
     showNightOrder: "显示夜晚顺序",
-    showCharacterReference: "显示角色参考"
+    showCharacterReference: "显示角色参考",
   },
 
   // 投票历史
@@ -206,7 +210,7 @@ export default {
     type: "类型",
     votes: "投票",
     majority: "多数票",
-    voters: "投票者"
+    voters: "投票者",
   },
 
   // 夜晚顺序
@@ -216,12 +220,12 @@ export default {
     otherNights: "其他夜晚",
     customScript: "自定义剧本",
     minionInfo: "爪牙信息",
-    demonInfo: "恶魔信息与伪装"
+    demonInfo: "恶魔信息与伪装",
   },
 
   // 角色参考
   reference: {
-    title: "角色参考"
+    title: "角色参考",
   },
 
   // 游戏状态
@@ -229,7 +233,7 @@ export default {
     title: "当前游戏状态",
     copyJson: "复制JSON",
     loadState: "加载状态",
-    unableToParseJson: "无法解析JSON："
+    unableToParseJson: "无法解析JSON：",
   },
 
   // 提醒
@@ -238,27 +242,29 @@ export default {
     evil: "邪恶",
     custom: "自定义备注",
     chooseReminder: "选择提醒标记：",
-    addCustomReminder: "添加自定义提醒备注"
+    addCustomReminder: "添加自定义提醒备注",
   },
 
   // 玩家
   player: {
-    pronouns: "玩家代词"
+    pronouns: "玩家代词",
   },
 
   // 投票历史
   voteHistorySummary: {
     recent: "最近的",
     nomination: "提名",
-    nominations: "提名"
+    nominations: "提名",
   },
 
   // 版本选择
   edition: {
     customScript: "自定义剧本/角色",
     loadCustomScript: "加载自定义剧本/角色",
-    customScriptDescription: "要使用自定义剧本，您需要在官方脚本工具中选择想要的角色，然后上传生成的\"custom-list.json\"文件或提供托管JSON文件的URL。",
-    customCharactersDescription: "要使用自定义角色，请阅读文档了解如何编写自定义角色定义文件。",
+    customScriptDescription:
+      '要使用自定义剧本，您需要在官方脚本工具中选择想要的角色，然后上传生成的"custom-list.json"文件或提供托管JSON文件的URL。',
+    customCharactersDescription:
+      "要使用自定义角色，请阅读文档了解如何编写自定义角色定义文件。",
     onlyLoadTrusted: "只加载您信任的来源的自定义JSON文件！",
     popularScripts: "一些流行的自定义剧本：",
     uploadJson: "上传JSON",
@@ -268,13 +274,38 @@ export default {
     enterUrlPrompt: "输入自定义剧本JSON文件的URL",
     errorReadingScript: "读取自定义剧本时出错：",
     errorLoadingScript: "加载自定义剧本时出错：",
-    enableCustomImages: "已自动启用自定义图片"
+    enableCustomImages: "已自动启用自定义图片",
   },
 
   // 语言切换
   language: {
     switch: "语言 / Language",
     chinese: "中文",
-    english: "English"
-  }
-}; 
+    english: "English",
+  },
+
+  // 历史记录
+  history: {
+    title: "游戏历史记录",
+    allPhases: "所有阶段",
+    night: "夜晚",
+    day: "白天",
+    allActions: "所有操作",
+    wakeUp: "叫醒",
+    vote: "投票",
+    execution: "处决",
+    roleAssignment: "角色分配",
+    details: "详情",
+    note: "备注",
+    addNote: "添加备注",
+    editNote: "编辑备注",
+    public: "公开",
+    noEvents: "暂无历史记录",
+    addCustomEvent: "添加自定义事件",
+    summary: "摘要",
+    isPublic: "公开事件",
+    save: "保存",
+    cancel: "取消",
+    confirmUndo: "确认撤销最后一个操作？",
+  },
+};

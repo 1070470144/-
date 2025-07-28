@@ -1,39 +1,39 @@
-import enUS from './en-US';
-import zhCN from './zh-CN';
+import enUS from "./en-US";
+import zhCN from "./zh-CN";
 
 const messages = {
-  'en-US': enUS,
-  'zh-CN': zhCN
+  "en-US": enUS,
+  "zh-CN": zhCN,
 };
 
 // 获取用户语言
 function getUserLanguage() {
   const language = window.navigator.userLanguage || window.navigator.language;
-  return language.startsWith('zh') ? 'zh-CN' : 'en-US';
+  return language.startsWith("zh") ? "zh-CN" : "en-US";
 }
 
 // 获取当前语言
 function getCurrentLanguage() {
-  return localStorage.getItem('language') || getUserLanguage();
+  return localStorage.getItem("language") || getUserLanguage();
 }
 
 // 设置语言
 function setLanguage(lang) {
-  localStorage.setItem('language', lang);
+  localStorage.setItem("language", lang);
   window.location.reload();
 }
 
 // 获取翻译文本
 function t(key, params = {}, lang = getCurrentLanguage()) {
-  const keys = key.split('.');
-  let value = messages[lang] || messages['en-US'];
-  
+  const keys = key.split(".");
+  let value = messages[lang] || messages["en-US"];
+
   for (const k of keys) {
     if (value && value[k]) {
       value = value[k];
     } else {
       // 如果找不到翻译，返回英文
-      value = messages['en-US'];
+      value = messages["en-US"];
       for (const k2 of keys) {
         if (value && value[k2]) {
           value = value[k2];
@@ -43,14 +43,14 @@ function t(key, params = {}, lang = getCurrentLanguage()) {
       }
     }
   }
-  
+
   // 如果value是字符串且有参数，进行参数替换
-  if (typeof value === 'string' && Object.keys(params).length > 0) {
+  if (typeof value === "string" && Object.keys(params).length > 0) {
     return value.replace(/\{(\w+)\}/g, (match, param) => {
       return params[param] || match;
     });
   }
-  
+
   return value;
 }
 
@@ -59,5 +59,5 @@ export default {
   setLanguage,
   getCurrentLanguage,
   getUserLanguage,
-  messages
-}; 
+  messages,
+};

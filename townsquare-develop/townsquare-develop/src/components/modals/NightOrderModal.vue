@@ -8,16 +8,16 @@
       @click="toggleModal('reference')"
       icon="address-card"
       class="toggle"
-              :title="$t('tooltips.showCharacterReference')"
+      :title="$t('tooltips.showCharacterReference')"
     />
     <h3>
-      {{ $t('nightOrder.title') }}
+      {{ $t("nightOrder.title") }}
       <font-awesome-icon icon="cloud-moon" />
-      {{ edition.name || $t('nightOrder.customScript') }}
+      {{ edition.name || $t("nightOrder.customScript") }}
     </h3>
     <div class="night">
       <ul class="first">
-        <li class="headline">{{ $t('nightOrder.firstNight') }}</li>
+        <li class="headline">{{ $t("nightOrder.firstNight") }}</li>
         <li
           v-for="role in rolesFirstNight"
           :key="role.name"
@@ -44,10 +44,12 @@
               backgroundImage: `url(${
                 role.image && grimoire.isImageOptIn
                   ? role.image
-                  : require('../../assets/icons/' +
-                      (role.imageAlt || role.id) +
-                      '.png')
-              })`
+                  : require(
+                      '../../assets/icons/' +
+                        (role.imageAlt || role.id) +
+                        '.png',
+                    )
+              })`,
             }"
           ></span>
           <span class="reminder" v-if="role.firstNightReminder">
@@ -56,7 +58,7 @@
         </li>
       </ul>
       <ul class="other">
-        <li class="headline">{{ $t('nightOrder.otherNights') }}</li>
+        <li class="headline">{{ $t("nightOrder.otherNights") }}</li>
         <li
           v-for="role in rolesOtherNight"
           :key="role.name"
@@ -69,10 +71,12 @@
               backgroundImage: `url(${
                 role.image && grimoire.isImageOptIn
                   ? role.image
-                  : require('../../assets/icons/' +
-                      (role.imageAlt || role.id) +
-                      '.png')
-              })`
+                  : require(
+                      '../../assets/icons/' +
+                        (role.imageAlt || role.id) +
+                        '.png',
+                    )
+              })`,
             }"
           ></span>
           <span class="name">
@@ -101,80 +105,107 @@
 <script>
 import Modal from "./Modal";
 import { mapMutations, mapState } from "vuex";
-import i18n from '../../i18n';
+import i18n from "../../i18n";
+import nightOperationRecorder from "../../utils/nightOperations";
 
 export default {
   components: {
-    Modal
+    Modal,
   },
   computed: {
-    rolesFirstNight: function() {
+    rolesFirstNight: function () {
       const rolesFirstNight = [];
       // add minion / demon infos to night order sheet
       if (this.players.length > 6) {
         rolesFirstNight.push(
           {
             id: "evil",
-            name: this.$t('nightOrder.minionInfo'),
+            name: this.$t("nightOrder.minionInfo"),
             firstNight: 5,
             team: "minion",
-            players: this.players.filter(p => p.role.team === "minion"),
+            players: this.players.filter((p) => p.role.team === "minion"),
             firstNightReminder:
               "• If more than one Minion, they all make eye contact with each other. " +
-              "• Show the “This is the Demon” card. Point to the Demon."
+              "• Show the “This is the Demon” card. Point to the Demon.",
           },
           {
             id: "evil",
-            name: this.$t('nightOrder.demonInfo'),
+            name: this.$t("nightOrder.demonInfo"),
             firstNight: 8,
             team: "demon",
-            players: this.players.filter(p => p.role.team === "demon"),
+            players: this.players.filter((p) => p.role.team === "demon"),
             firstNightReminder:
               "• Show the “These are your minions” card. Point to each Minion. " +
               "• Show the “These characters are not in play” card. Show 3 character tokens of good " +
-              "characters not in play."
-          }
+              "characters not in play.",
+          },
         );
       }
-      this.roles.forEach(role => {
-        const players = this.players.filter(p => p.role.id === role.id);
+      this.roles.forEach((role) => {
+        const players = this.players.filter((p) => p.role.id === role.id);
         if (role.firstNight && (role.team !== "traveler" || players.length)) {
           rolesFirstNight.push(Object.assign({ players }, role));
         }
       });
       this.fabled
         .filter(({ firstNight }) => firstNight)
-        .forEach(fabled => {
+        .forEach((fabled) => {
           rolesFirstNight.push(Object.assign({ players: [] }, fabled));
         });
       rolesFirstNight.sort((a, b) => a.firstNight - b.firstNight);
       return rolesFirstNight;
     },
-    rolesOtherNight: function() {
+    rolesOtherNight: function () {
       const rolesOtherNight = [];
-      this.roles.forEach(role => {
-        const players = this.players.filter(p => p.role.id === role.id);
+      this.roles.forEach((role) => {
+        const players = this.players.filter((p) => p.role.id === role.id);
         if (role.otherNight && (role.team !== "traveler" || players.length)) {
           rolesOtherNight.push(Object.assign({ players }, role));
         }
       });
       this.fabled
         .filter(({ otherNight }) => otherNight)
-        .forEach(fabled => {
+        .forEach((fabled) => {
           rolesOtherNight.push(Object.assign({ players: [] }, fabled));
         });
       rolesOtherNight.sort((a, b) => a.otherNight - b.otherNight);
       return rolesOtherNight;
     },
     ...mapState(["roles", "modals", "edition", "grimoire"]),
-    ...mapState("players", ["players", "fabled"])
+    ...mapState("players", ["players", "fabled"]),
   },
   methods: {
     $t(key, params = {}) {
       return i18n.t(key, params);
     },
-    ...mapMutations(["toggleModal"])
-  }
+    // 记录角色叫醒
+    recordRoleWakeUp(roleName, playerName) {
+      if (this.session.isSpectator) return; // 只有说书人可以记录
+      nightOperationRecorder.wakeUpRole(roleName, playerName, this.$store);
+    },
+    // 记录角色能力使用
+    recordRoleAbility(roleName, abilityType, targetPlayer, information) {
+      if (this.session.isSpectator) return; // 只有说书人可以记录
+      nightOperationRecorder.useAbility(
+        roleName,
+        abilityType,
+        targetPlayer,
+        information,
+        this.$store,
+      );
+    },
+    // 记录信息传递
+    recordInformationGiven(roleName, playerName, information) {
+      if (this.session.isSpectator) return; // 只有说书人可以记录
+      nightOperationRecorder.giveInformation(
+        roleName,
+        playerName,
+        information,
+        this.$store,
+      );
+    },
+    ...mapMutations(["toggleModal"]),
+  },
 };
 </script>
 

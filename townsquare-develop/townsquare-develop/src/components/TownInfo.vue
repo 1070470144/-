@@ -8,11 +8,11 @@
           edition.logo && grimoire.isImageOptIn
             ? edition.logo
             : require('../assets/editions/' + edition.id + '.png')
-        })`
+        })`,
       }"
     ></li>
     <li v-if="players.length - teams.traveler < 5">
-      {{ $t('townInfo.addMorePlayers') }}
+      {{ $t("townInfo.addMorePlayers") }}
     </li>
     <li>
       <span class="meta" v-if="!edition.isOfficial">
@@ -64,7 +64,7 @@
         />
       </span>
       <span v-if="grimoire.isNight">
-        {{ $t('townInfo.nightPhase') }}
+        {{ $t("townInfo.nightPhase") }}
         <font-awesome-icon :icon="['fas', 'cloud-moon']" />
       </span>
     </li>
@@ -74,14 +74,14 @@
 <script>
 import gameJSON from "./../game";
 import { mapState } from "vuex";
-import i18n from '../i18n';
+import i18n from "../i18n";
 
 export default {
   computed: {
-    teams: function() {
+    teams: function () {
       const { players } = this.$store.state.players;
       const nonTravelers = this.$store.getters["players/nonTravelers"];
-      const alive = players.filter(player => player.isDead !== true).length;
+      const alive = players.filter((player) => player.isDead !== true).length;
       return {
         ...gameJSON[nonTravelers - 5],
         traveler: players.length - nonTravelers,
@@ -89,18 +89,18 @@ export default {
         votes:
           alive +
           players.filter(
-            player => player.isDead === true && player.isVoteless !== true
-          ).length
+            (player) => player.isDead === true && player.isVoteless !== true,
+          ).length,
       };
     },
     ...mapState(["edition", "grimoire"]),
-    ...mapState("players", ["players"])
+    ...mapState("players", ["players"]),
   },
   methods: {
     $t(key, params = {}) {
       return i18n.t(key, params);
-    }
-  }
+    },
+  },
 };
 </script>
 
@@ -127,7 +127,10 @@ export default {
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
-    text-shadow: 0 2px 1px black, 0 -2px 1px black, 2px 0 1px black,
+    text-shadow:
+      0 2px 1px black,
+      0 -2px 1px black,
+      2px 0 1px black,
       -2px 0 1px black;
 
     span {

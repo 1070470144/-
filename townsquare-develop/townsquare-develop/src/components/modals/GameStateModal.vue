@@ -4,7 +4,7 @@
     v-if="modals.gameState"
     @close="toggleModal('gameState')"
   >
-    <h3>{{ $t('gameStateModal.title') }}</h3>
+    <h3>{{ $t("gameStateModal.title") }}</h3>
     <textarea
       :value="gamestate"
       @input.stop="input = $event.target.value"
@@ -13,10 +13,10 @@
     ></textarea>
     <div class="button-group">
       <div class="button townsfolk" @click="copy">
-        <font-awesome-icon icon="copy" /> {{ $t('gameStateModal.copyJson') }}
+        <font-awesome-icon icon="copy" /> {{ $t("gameStateModal.copyJson") }}
       </div>
       <div class="button demon" @click="load" v-if="!session.isSpectator">
-        <font-awesome-icon icon="cog" /> {{ $t('gameStateModal.loadState') }}
+        <font-awesome-icon icon="cog" /> {{ $t("gameStateModal.loadState") }}
       </div>
     </div>
   </Modal>
@@ -25,14 +25,14 @@
 <script>
 import Modal from "./Modal";
 import { mapMutations, mapState } from "vuex";
-import i18n from '../../i18n';
+import i18n from "../../i18n";
 
 export default {
   components: {
-    Modal
+    Modal,
   },
   computed: {
-    gamestate: function() {
+    gamestate: function () {
       return JSON.stringify({
         bluffs: this.players.bluffs.map(({ id }) => id),
         edition: this.edition.isOfficial
@@ -41,30 +41,30 @@ export default {
         roles: this.edition.isOfficial
           ? ""
           : this.$store.getters.customRolesStripped,
-        fabled: this.players.fabled.map(fabled =>
-          fabled.isCustom ? fabled : { id: fabled.id }
+        fabled: this.players.fabled.map((fabled) =>
+          fabled.isCustom ? fabled : { id: fabled.id },
         ),
-        players: this.players.players.map(player => ({
+        players: this.players.players.map((player) => ({
           ...player,
-          role: player.role.id || {}
-        }))
+          role: player.role.id || {},
+        })),
       });
     },
-    ...mapState(["modals", "players", "edition", "roles", "session"])
+    ...mapState(["modals", "players", "edition", "roles", "session"]),
   },
   data() {
     return {
-      input: ""
+      input: "",
     };
   },
   methods: {
     $t(key, params = {}) {
       return i18n.t(key, params);
     },
-    copy: function() {
+    copy: function () {
       navigator.clipboard.writeText(this.input || this.gamestate);
     },
-    load: function() {
+    load: function () {
       if (this.session.isSpectator) return;
       try {
         const data = JSON.parse(this.input || this.gamestate);
@@ -79,39 +79,39 @@ export default {
           bluffs.forEach((role, index) => {
             this.$store.commit("players/setBluff", {
               index,
-              role: this.$store.state.roles.get(role) || {}
+              role: this.$store.state.roles.get(role) || {},
             });
           });
         }
         if (fabled) {
           this.$store.commit("players/setFabled", {
             fabled: fabled.map(
-              f =>
+              (f) =>
                 this.$store.state.fabled.get(f) ||
                 this.$store.state.fabled.get(f.id) ||
-                f
-            )
+                f,
+            ),
           });
         }
         if (players) {
           this.$store.commit(
             "players/set",
-            players.map(player => ({
+            players.map((player) => ({
               ...player,
               role:
                 this.$store.state.roles.get(player.role) ||
                 this.$store.getters.rolesJSONbyId.get(player.role) ||
-                {}
-            }))
+                {},
+            })),
           );
         }
         this.toggleModal("gameState");
       } catch (e) {
-        alert(this.$t('gameStateModal.unableToParseJson') + e);
+        alert(this.$t("gameStateModal.unableToParseJson") + e);
       }
     },
-    ...mapMutations(["toggleModal"])
-  }
+    ...mapMutations(["toggleModal"]),
+  },
 };
 </script>
 

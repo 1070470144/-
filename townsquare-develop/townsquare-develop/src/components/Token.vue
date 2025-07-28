@@ -51,11 +51,11 @@ export default {
   props: {
     role: {
       type: Object,
-      default: () => ({})
-    }
+      default: () => ({}),
+    },
   },
   computed: {
-    reminderLeaves: function() {
+    reminderLeaves: function () {
       return (
         (this.role.reminders || []).length +
         (this.role.remindersGlobal || []).length
@@ -66,20 +66,23 @@ export default {
       console.log(`Role image:`, this.role.image);
       console.log(`isImageOptIn:`, this.grimoire.isImageOptIn);
       console.log(`useFallbackIcon:`, this.useFallbackIcon);
-      
+
       // 如果图片加载失败，使用默认图标
       if (this.useFallbackIcon) {
         console.log(`Using fallback icon for role: ${this.role.id}`);
         return this.getFallbackIconUrl();
       }
-      
+
       // 如果有自定义图片且启用了自定义图片
       if (this.role.image && this.grimoire.isImageOptIn) {
-        console.log(`Loading custom image for role ${this.role.id}:`, this.role.image);
+        console.log(
+          `Loading custom image for role ${this.role.id}:`,
+          this.role.image,
+        );
         // 对于远程图片，添加时间戳防止缓存问题
         const url = this.role.image;
-        if (url.startsWith('http')) {
-          const separator = url.includes('?') ? '&' : '?';
+        if (url.startsWith("http")) {
+          const separator = url.includes("?") ? "&" : "?";
           // 使用当前时间戳确保每次都是新的URL
           const timestamp = Date.now();
           const finalUrl = `${url}${separator}_t=${timestamp}`;
@@ -89,22 +92,24 @@ export default {
         console.log(`Local image URL:`, url);
         return url;
       }
-      
+
       // 使用默认图标
-      console.log(`Using fallback icon for role: ${this.role.id} (no custom image or image opt-in disabled)`);
+      console.log(
+        `Using fallback icon for role: ${this.role.id} (no custom image or image opt-in disabled)`,
+      );
       return this.getFallbackIconUrl();
     },
-    ...mapState(["grimoire"])
+    ...mapState(["grimoire"]),
   },
   data() {
     return {
       imageLoaded: false,
       imageError: false,
-      useFallbackIcon: false
+      useFallbackIcon: false,
     };
   },
   filters: {
-    nameToFontSize: name => (name && name.length > 10 ? "90%" : "110%")
+    nameToFontSize: (name) => (name && name.length > 10 ? "90%" : "110%"),
   },
   methods: {
     setRole() {
@@ -119,7 +124,9 @@ export default {
       this.imageError = true;
       this.imageLoaded = false;
       this.useFallbackIcon = true;
-      console.error(`Failed to load image for role: ${this.role.id}, falling back to default icon`);
+      console.error(
+        `Failed to load image for role: ${this.role.id}, falling back to default icon`,
+      );
       // 强制重新渲染以使用默认图标
       this.$nextTick(() => {
         this.$forceUpdate();
@@ -128,48 +135,138 @@ export default {
     getFallbackIconUrl() {
       // 确定要使用的图标名称
       let iconName = this.role.imageAlt || this.role.id;
-      
+
       // 确保图标名称是有效的本地图标
       const validIcons = [
-        'good', 'outsider', 'minion', 'evil', 'fabled', 'custom',
-        'imp', 'witch', 'widow', 'washerwoman', 'voudon', 'vortox', 'virgin',
-        'vigormortis', 'undertaker', 'toymaker', 'towncrier', 'tinker', 'thief',
-        'tealady', 'sweetheart', 'stormcatcher', 'spy', 'spiritofivory', 'soldier',
-        'snitch', 'snakecharmer', 'slayer', 'shabaloth', 'sentinel', 'seamstress',
-        'scarletwoman', 'scapegoat', 'savant', 'saint', 'sailor', 'sage', 'riot',
-        'revolutionary', 'recluse', 'ravenkeeper', 'puzzlemaster', 'pukka',
-        'psychopath', 'professor', 'preacher', 'poppygrower', 'politician',
-        'poisoner', 'po', 'plus', 'pixie', 'pithag', 'philosopher', 'pacifist',
-        'oracle', 'nodashii', 'noble', 'nightwatchman', 'mutant', 'moonchild',
-        'monk', 'minstrel', 'mezepheles', 'mephit', 'mayor', 'matron',
-        'mathematician', 'mastermind', 'marionette', 'magician', 'lycanthrope',
-        'lunatic', 'lleech', 'lilmonsta', 'librarian', 'leviathan', 'legion',
-        'klutz', 'king', 'juggler', 'judge', 'investigator', 'innkeeper',
-        'huntsman', 'heretic', 'hellslibrarian', 'harlot', 'gunslinger',
-        'grandmother', 'gossip', 'goon', 'golem', 'godfather', 'goblin',
-        'general', 'gangster', 'gambler', 'fortuneteller', 'fool', 'flowergirl'
+        "good",
+        "outsider",
+        "minion",
+        "evil",
+        "fabled",
+        "custom",
+        "imp",
+        "witch",
+        "widow",
+        "washerwoman",
+        "voudon",
+        "vortox",
+        "virgin",
+        "vigormortis",
+        "undertaker",
+        "toymaker",
+        "towncrier",
+        "tinker",
+        "thief",
+        "tealady",
+        "sweetheart",
+        "stormcatcher",
+        "spy",
+        "spiritofivory",
+        "soldier",
+        "snitch",
+        "snakecharmer",
+        "slayer",
+        "shabaloth",
+        "sentinel",
+        "seamstress",
+        "scarletwoman",
+        "scapegoat",
+        "savant",
+        "saint",
+        "sailor",
+        "sage",
+        "riot",
+        "revolutionary",
+        "recluse",
+        "ravenkeeper",
+        "puzzlemaster",
+        "pukka",
+        "psychopath",
+        "professor",
+        "preacher",
+        "poppygrower",
+        "politician",
+        "poisoner",
+        "po",
+        "plus",
+        "pixie",
+        "pithag",
+        "philosopher",
+        "pacifist",
+        "oracle",
+        "nodashii",
+        "noble",
+        "nightwatchman",
+        "mutant",
+        "moonchild",
+        "monk",
+        "minstrel",
+        "mezepheles",
+        "mephit",
+        "mayor",
+        "matron",
+        "mathematician",
+        "mastermind",
+        "marionette",
+        "magician",
+        "lycanthrope",
+        "lunatic",
+        "lleech",
+        "lilmonsta",
+        "librarian",
+        "leviathan",
+        "legion",
+        "klutz",
+        "king",
+        "juggler",
+        "judge",
+        "investigator",
+        "innkeeper",
+        "huntsman",
+        "heretic",
+        "hellslibrarian",
+        "harlot",
+        "gunslinger",
+        "grandmother",
+        "gossip",
+        "goon",
+        "golem",
+        "godfather",
+        "goblin",
+        "general",
+        "gangster",
+        "gambler",
+        "fortuneteller",
+        "fool",
+        "flowergirl",
       ];
-      
+
       // 如果图标名称不在有效列表中，使用基于团队的默认图标
       if (!validIcons.includes(iconName)) {
-        console.warn(`Invalid icon name: ${iconName} for role: ${this.role.id}, using team-based fallback`);
-        iconName = {
-          townsfolk: 'good',
-          outsider: 'outsider',
-          minion: 'minion',
-          demon: 'evil',
-          fabled: 'fabled'
-        }[this.role.team] || 'custom';
+        console.warn(
+          `Invalid icon name: ${iconName} for role: ${this.role.id}, using team-based fallback`,
+        );
+        iconName =
+          {
+            townsfolk: "good",
+            outsider: "outsider",
+            minion: "minion",
+            demon: "evil",
+            fabled: "fabled",
+          }[this.role.team] || "custom";
       }
-      
+
       try {
         return require(`../assets/icons/${iconName}.png`);
       } catch (error) {
-        console.error(`Failed to load icon: ${iconName}.png for role: ${this.role.id}`, error);
+        console.error(
+          `Failed to load icon: ${iconName}.png for role: ${this.role.id}`,
+          error,
+        );
         // 最后的回退方案
-        return require('../assets/icons/custom.png');
+        return require("../assets/icons/custom.png");
       }
-    }
+    },
   },
   mounted() {
     // 组件挂载时重置图片状态
@@ -179,7 +276,7 @@ export default {
     this.useFallbackIcon = false;
   },
   watch: {
-    'role.image': {
+    "role.image": {
       handler() {
         // 当角色图片变化时，重置图片状态并强制重新计算
         console.log(`Role image changed for ${this.role.id}:`, this.role.image);
@@ -190,9 +287,9 @@ export default {
           this.$forceUpdate();
         });
       },
-      immediate: true
+      immediate: true,
     },
-    'grimoire.isImageOptIn': {
+    "grimoire.isImageOptIn": {
       handler() {
         // 当图片显示设置变化时，重置图片状态并强制重新计算
         console.log(`Image opt-in changed:`, this.grimoire.isImageOptIn);
@@ -203,9 +300,9 @@ export default {
           this.$forceUpdate();
         });
       },
-      immediate: true
+      immediate: true,
     },
-    'role.id': {
+    "role.id": {
       handler() {
         // 当角色ID变化时，重置图片状态
         console.log(`Role ID changed:`, this.role.id);
@@ -216,9 +313,9 @@ export default {
           this.$forceUpdate();
         });
       },
-      immediate: true
-    }
-  }
+      immediate: true,
+    },
+  },
 };
 </script>
 

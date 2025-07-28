@@ -1,65 +1,77 @@
 <template>
   <Modal
     class="roles"
-    v-if="modals.roles && nonTravelers >= 5"
+    v-if="modals.roles && nonTravelers >= 1"
     @close="toggleModal('roles')"
   >
     <div v-if="!hasRoles" class="loading">
-      {{ $t('roleSelection.loadingRoles') }}
+      {{ $t("roleSelection.loadingRoles") }}
     </div>
     <div v-else>
-      <h3>{{ $t('roleSelection.selectCharacters', { count: nonTravelers }) }}</h3>
+      <h3>
+        {{ $t("roleSelection.selectCharacters", { count: nonTravelers }) }}
+      </h3>
       <ul class="tokens" v-for="(teamRoles, team) in roleSelection" :key="team">
-      <li class="count" :class="[team]">
-        {{ teamRoles.reduce((a, { selected }) => a + selected, 0) }} /
-        {{ game[nonTravelers - 5][team] }}
-      </li>
-      <li
-        v-for="role in teamRoles"
-        :class="[role.team, role.selected ? 'selected' : '']"
-        :key="role.id"
-        @click="role.selected = role.selected ? 0 : 1"
-      >
-        <Token :role="role" />
-        <font-awesome-icon icon="exclamation-triangle" v-if="role.setup" />
-        <div class="buttons" v-if="allowMultiple">
-          <font-awesome-icon
-            icon="minus-circle"
-            @click.stop="role.selected--"
-          />
-          <span>{{ role.selected > 1 ? "x" + role.selected : "" }}</span>
-          <font-awesome-icon icon="plus-circle" @click.stop="role.selected++" />
+        <li class="count" :class="[team]">
+          {{ teamRoles.reduce((a, { selected }) => a + selected, 0) }} /
+          {{
+            game[Math.max(0, nonTravelers - 5)]
+              ? game[Math.max(0, nonTravelers - 5)][team]
+              : 0
+          }}
+        </li>
+        <li
+          v-for="role in teamRoles"
+          :class="[role.team, role.selected ? 'selected' : '']"
+          :key="role.id"
+          @click="role.selected = role.selected ? 0 : 1"
+        >
+          <Token :role="role" />
+          <font-awesome-icon icon="exclamation-triangle" v-if="role.setup" />
+          <div class="buttons" v-if="allowMultiple">
+            <font-awesome-icon
+              icon="minus-circle"
+              @click.stop="role.selected--"
+            />
+            <span>{{ role.selected > 1 ? "x" + role.selected : "" }}</span>
+            <font-awesome-icon
+              icon="plus-circle"
+              @click.stop="role.selected++"
+            />
+          </div>
+        </li>
+      </ul>
+      <div class="warning" v-if="hasSelectedSetupRoles">
+        <font-awesome-icon icon="exclamation-triangle" />
+        <span>
+          {{ $t("roleSelection.warningSetupRoles") }}
+        </span>
+      </div>
+      <label class="multiple" :class="{ checked: allowMultiple }">
+        <font-awesome-icon :icon="allowMultiple ? 'check-square' : 'square'" />
+        <input type="checkbox" name="allow-multiple" v-model="allowMultiple" />
+        {{ $t("roleSelection.allowDuplicateCharacters") }}
+      </label>
+      <div class="button-group">
+        <div
+          class="button"
+          @click="assignRoles"
+          :class="{
+            disabled: selectedRoles > nonTravelers || !selectedRoles,
+          }"
+        >
+          <font-awesome-icon icon="people-arrows" />
+          {{
+            $t("roleSelection.assignCharactersRandomly", {
+              count: selectedRoles,
+            })
+          }}
         </div>
-      </li>
-    </ul>
-    <div class="warning" v-if="hasSelectedSetupRoles">
-      <font-awesome-icon icon="exclamation-triangle" />
-      <span>
-        {{ $t('roleSelection.warningSetupRoles') }}
-      </span>
-    </div>
-    <label class="multiple" :class="{ checked: allowMultiple }">
-      <font-awesome-icon :icon="allowMultiple ? 'check-square' : 'square'" />
-      <input type="checkbox" name="allow-multiple" v-model="allowMultiple" />
-      {{ $t('roleSelection.allowDuplicateCharacters') }}
-    </label>
-    <div class="button-group">
-      <div
-        class="button"
-        @click="assignRoles"
-        :class="{
-          disabled: selectedRoles > nonTravelers || !selectedRoles
-        }"
-      >
-        <font-awesome-icon icon="people-arrows" />
-        {{ $t('roleSelection.assignCharactersRandomly', { count: selectedRoles }) }}
+        <div class="button" @click="selectRandomRoles">
+          <font-awesome-icon icon="random" />
+          {{ $t("roleSelection.shuffleCharacters") }}
+        </div>
       </div>
-      <div class="button" @click="selectRandomRoles">
-        <font-awesome-icon icon="random" />
-        {{ $t('roleSelection.shuffleCharacters') }}
-      </div>
-
-    </div>
     </div>
   </Modal>
 </template>
@@ -69,41 +81,46 @@ import Modal from "./Modal";
 import gameJSON from "./../../game";
 import Token from "./../Token";
 import { mapGetters, mapMutations, mapState } from "vuex";
-import i18n from '../../i18n';
+import i18n from "../../i18n";
 
-const randomElement = arr => arr[Math.floor(Math.random() * arr.length)];
+const randomElement = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
 export default {
   components: {
     Token,
-    Modal
+    Modal,
   },
-  data: function() {
+  data: function () {
     return {
       roleSelection: {},
       game: gameJSON,
-      allowMultiple: false
+      allowMultiple: false,
     };
   },
   computed: {
-    selectedRoles: function() {
+    selectedRoles: function () {
       return Object.values(this.roleSelection)
-        .map(roles => roles.reduce((a, { selected }) => a + selected, 0))
+        .map((roles) => roles.reduce((a, { selected }) => a + selected, 0))
         .reduce((a, b) => a + b, 0);
     },
-    hasSelectedSetupRoles: function() {
-      return Object.values(this.roleSelection).some(roles =>
-        roles.some(role => role.selected && role.setup)
+    hasSelectedSetupRoles: function () {
+      return Object.values(this.roleSelection).some((roles) =>
+        roles.some((role) => role.selected && role.setup),
       );
     },
     hasRoles() {
       const hasRoles = this.roles && this.roles.size > 0;
-      console.log("hasRoles check:", hasRoles, "roles count:", this.roles ? this.roles.size : 0);
+      console.log(
+        "hasRoles check:",
+        hasRoles,
+        "roles count:",
+        this.roles ? this.roles.size : 0,
+      );
       return hasRoles;
     },
     ...mapState(["roles", "modals"]),
     ...mapState("players", ["players"]),
-    ...mapGetters({ nonTravelers: "players/nonTravelers" })
+    ...mapGetters({ nonTravelers: "players/nonTravelers" }),
   },
   methods: {
     $t(key, params = {}) {
@@ -115,28 +132,36 @@ export default {
         console.log("No roles available for selection");
         return;
       }
-      
+
       console.log("Initializing role selection with", this.roles.size, "roles");
       this.roleSelection = {};
-      
-      this.roles.forEach(role => {
+
+      this.roles.forEach((role) => {
         if (!this.roleSelection[role.team]) {
           this.$set(this.roleSelection, role.team, []);
         }
         this.roleSelection[role.team].push(role);
         this.$set(role, "selected", 0);
       });
-      
+
       delete this.roleSelection["traveler"];
-      
+
       const playerCount = Math.max(5, this.nonTravelers);
-      const composition = this.game[playerCount - 5];
-      
-      Object.keys(composition).forEach(team => {
+      const composition =
+        this.game[Math.max(0, playerCount - 5)] || this.game[0];
+
+      console.log(
+        "Using composition for",
+        playerCount,
+        "players:",
+        composition,
+      );
+
+      Object.keys(composition).forEach((team) => {
         for (let x = 0; x < composition[team]; x++) {
           if (this.roleSelection[team]) {
             const available = this.roleSelection[team].filter(
-              role => !role.selected
+              (role) => !role.selected,
             );
             if (available.length) {
               randomElement(available).selected = 1;
@@ -144,52 +169,88 @@ export default {
           }
         }
       });
-      
-      console.log("Role selection initialized:", Object.keys(this.roleSelection).length, "teams");
+
+      console.log(
+        "Role selection initialized:",
+        Object.keys(this.roleSelection).length,
+        "teams",
+      );
     },
     assignRoles() {
+      console.log(
+        "assignRoles called, selectedRoles:",
+        this.selectedRoles,
+        "nonTravelers:",
+        this.nonTravelers,
+      );
       if (this.selectedRoles <= this.nonTravelers && this.selectedRoles) {
         // generate list of selected roles and randomize it
         const roles = Object.values(this.roleSelection)
-          .map(roles =>
+          .map((roles) =>
             roles
               // duplicate roles selected more than once and filter unselected
-              .reduce((a, r) => [...a, ...Array(r.selected).fill(r)], [])
+              .reduce((a, r) => [...a, ...Array(r.selected).fill(r)], []),
           )
           // flatten into a single array
           .reduce((a, b) => [...a, ...b], [])
           // 过滤掉无效的角色
-          .filter(role => role && typeof role === 'object')
-          .map(a => [Math.random(), a])
+          .filter((role) => role && typeof role === "object")
+          .map((a) => [Math.random(), a])
           .sort((a, b) => a[0] - b[0])
-          .map(a => a[1]);
-        this.players.forEach(player => {
+          .map((a) => a[1]);
+        this.players.forEach((player) => {
           if (player.role.team !== "traveler" && roles.length) {
             const value = roles.pop();
             this.$store.commit("players/update", {
               player,
               property: "role",
-              value
+              value,
             });
           }
         });
+
+        // 检查是否为新局
+        if (this.$store.state.history.events.length > 0) {
+          if (confirm("检测到历史记录，是否清除上一局的记录？")) {
+            this.$store.commit("clearHistory");
+          }
+        }
+
+        // 移除角色分配历史记录
+        // this.$store.commit("addHistoryEvent", {
+        //   action: "role_assignment",
+        //   summary: `分配了 ${this.selectedRoles} 个角色给玩家`,
+        //   details: `为 ${this.nonTravelers} 个非旅行者玩家分配了角色`,
+        //   isPublic: false,
+        // });
+
         this.$store.commit("toggleModal", "roles");
       }
     },
 
-    ...mapMutations(["toggleModal"])
+    ...mapMutations(["toggleModal"]),
   },
-  mounted: function() {
-    console.log("RolesModal mounted, roles count:", this.roles ? this.roles.size : 0);
+  mounted: function () {
+    console.log(
+      "RolesModal mounted, roles count:",
+      this.roles ? this.roles.size : 0,
+    );
     // 在mounted时检查roles是否已经准备好
-    if (this.roles && this.roles.size > 0 && !Object.keys(this.roleSelection).length) {
+    if (
+      this.roles &&
+      this.roles.size > 0 &&
+      !Object.keys(this.roleSelection).length
+    ) {
       this.$nextTick(() => {
         this.selectRandomRoles();
       });
     }
   },
   activated() {
-    console.log("RolesModal activated, roles count:", this.roles ? this.roles.size : 0);
+    console.log(
+      "RolesModal activated, roles count:",
+      this.roles ? this.roles.size : 0,
+    );
     // 当模态框被激活时，确保角色列表已初始化
     if (this.roles && this.roles.size > 0) {
       this.$nextTick(() => {
@@ -200,7 +261,12 @@ export default {
   watch: {
     roles: {
       handler(newRoles, oldRoles) {
-        console.log("Roles changed:", newRoles ? newRoles.size : 0, "old:", oldRoles ? oldRoles.size : 0);
+        console.log(
+          "Roles changed:",
+          newRoles ? newRoles.size : 0,
+          "old:",
+          oldRoles ? oldRoles.size : 0,
+        );
         // 确保roles有内容后再初始化
         if (this.roles && this.roles.size > 0) {
           this.$nextTick(() => {
@@ -212,9 +278,9 @@ export default {
         }
       },
       immediate: true,
-      deep: true
-    }
-  }
+      deep: true,
+    },
+  },
 };
 </script>
 
@@ -254,19 +320,29 @@ ul.tokens {
       }
     }
     &.townsfolk {
-      box-shadow: 0 0 10px $townsfolk, 0 0 10px #004cff;
+      box-shadow:
+        0 0 10px $townsfolk,
+        0 0 10px #004cff;
     }
     &.outsider {
-      box-shadow: 0 0 10px $outsider, 0 0 10px $outsider;
+      box-shadow:
+        0 0 10px $outsider,
+        0 0 10px $outsider;
     }
     &.minion {
-      box-shadow: 0 0 10px $minion, 0 0 10px $minion;
+      box-shadow:
+        0 0 10px $minion,
+        0 0 10px $minion;
     }
     &.demon {
-      box-shadow: 0 0 10px $demon, 0 0 10px $demon;
+      box-shadow:
+        0 0 10px $demon,
+        0 0 10px $demon;
     }
     &.traveler {
-      box-shadow: 0 0 10px $traveler, 0 0 10px $traveler;
+      box-shadow:
+        0 0 10px $traveler,
+        0 0 10px $traveler;
     }
     &:hover {
       transform: scale(1.2);

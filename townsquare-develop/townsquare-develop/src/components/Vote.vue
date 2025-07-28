@@ -6,22 +6,25 @@
     </div>
     <div class="overlay">
       <audio src="../assets/sounds/countdown.mp3" preload="auto"></audio>
-      <em class="blue">{{ nominator.name }}</em> {{ $t('vote.nominated') }}
+      <em class="blue">{{ nominator.name }}</em> {{ $t("vote.nominated") }}
       <em>{{ nominee.name }}</em
       >!
       <br />
       <em class="blue">
-        {{ voters.length }} {{ $t('vote.vote') }}{{ voters.length !== 1 ? "s" : "" }}
+        {{ voters.length }} {{ $t("vote.vote")
+        }}{{ voters.length !== 1 ? "s" : "" }}
       </em>
-      {{ $t('vote.inFavor') }}
+      {{ $t("vote.inFavor") }}
       <em v-if="nominee.role.team !== 'traveler'">
-        ({{ $t('vote.majority') }} {{ Math.ceil(alive / 2) }})
+        ({{ $t("vote.majority") }} {{ Math.ceil(alive / 2) }})
       </em>
-      <em v-else>({{ $t('vote.majority') }} {{ Math.ceil(players.length / 2) }})</em>
+      <em v-else
+        >({{ $t("vote.majority") }} {{ Math.ceil(players.length / 2) }})</em
+      >
 
       <template v-if="!session.isSpectator">
         <div v-if="!session.isVoteInProgress && session.lockedVote < 1">
-          {{ $t('vote.timePerPlayer') }}
+          {{ $t("vote.timePerPlayer") }}
           <font-awesome-icon
             @mousedown.prevent="setVotingSpeed(-500)"
             icon="minus-circle"
@@ -38,10 +41,10 @@
             v-if="!session.isVoteInProgress"
             @click="countdown"
           >
-            {{ $t('vote.countdown') }}
+            {{ $t("vote.countdown") }}
           </div>
           <div class="button" v-if="!session.isVoteInProgress" @click="start">
-            {{ session.lockedVote ? $t('vote.restart') : $t('vote.start') }}
+            {{ session.lockedVote ? $t("vote.restart") : $t("vote.start") }}
           </div>
           <template v-else>
             <div
@@ -49,30 +52,30 @@
               :class="{ disabled: !session.lockedVote }"
               @click="pause"
             >
-              {{ voteTimer ? $t('vote.pause') : $t('vote.resume') }}
+              {{ voteTimer ? $t("vote.pause") : $t("vote.resume") }}
             </div>
-            <div class="button" @click="stop">{{ $t('vote.reset') }}</div>
+            <div class="button" @click="stop">{{ $t("vote.reset") }}</div>
           </template>
-          <div class="button demon" @click="finish">{{ $t('vote.close') }}</div>
+          <div class="button demon" @click="finish">{{ $t("vote.close") }}</div>
         </div>
         <div class="button-group mark" v-if="nominee.role.team !== 'traveler'">
           <div
             class="button"
             :class="{
-              disabled: session.nomination[1] === session.markedPlayer
+              disabled: session.nomination[1] === session.markedPlayer,
             }"
             @click="setMarked"
           >
-            {{ $t('vote.markForExecution') }}
+            {{ $t("vote.markForExecution") }}
           </div>
           <div class="button" @click="removeMarked">
-            {{ $t('vote.clearMark') }}
+            {{ $t("vote.clearMark") }}
           </div>
         </div>
       </template>
       <template v-else-if="canVote">
         <div v-if="!session.isVoteInProgress">
-          {{ session.votingSpeed / 1000 }} {{ $t('vote.secondsBetweenVotes') }}
+          {{ session.votingSpeed / 1000 }} {{ $t("vote.secondsBetweenVotes") }}
         </div>
         <div class="button-group">
           <div
@@ -80,19 +83,19 @@
             @click="vote(false)"
             :class="{ disabled: !currentVote }"
           >
-            {{ $t('vote.handDown') }}
+            {{ $t("vote.handDown") }}
           </div>
           <div
             class="button demon"
             @click="vote(true)"
             :class="{ disabled: currentVote }"
           >
-            {{ $t('vote.handUp') }}
+            {{ $t("vote.handUp") }}
           </div>
         </div>
       </template>
       <div v-else-if="!player">
-        {{ $t('vote.pleaseClaimSeat') }}
+        {{ $t("vote.pleaseClaimSeat") }}
       </div>
     </div>
     <transition name="blur">
@@ -103,7 +106,7 @@
         <span>3</span>
         <span>2</span>
         <span>1</span>
-        <span>{{ $t('vote.go') }}</span>
+        <span>{{ $t("vote.go") }}</span>
         <audio
           :autoplay="!grimoire.isMuted"
           src="../assets/sounds/countdown.mp3"
@@ -116,45 +119,45 @@
 
 <script>
 import { mapGetters, mapState } from "vuex";
-import i18n from '../i18n';
+import i18n from "../i18n";
 
 export default {
   computed: {
     ...mapState("players", ["players"]),
     ...mapState(["session", "grimoire"]),
     ...mapGetters({ alive: "players/alive" }),
-    nominator: function() {
+    nominator: function () {
       if (!this.session.nomination || !this.session.nomination[0]) {
         return null;
       }
       return this.players[this.session.nomination[0]];
     },
-    nominatorStyle: function() {
+    nominatorStyle: function () {
       const players = this.players.length;
       if (!this.session.nomination || !this.session.nomination[0]) {
         return {
-          transform: 'rotate(0deg)',
-          transitionDuration: this.session.votingSpeed - 100 + "ms"
+          transform: "rotate(0deg)",
+          transitionDuration: this.session.votingSpeed - 100 + "ms",
         };
       }
       const nomination = this.session.nomination[0];
       return {
         transform: `rotate(${Math.round((nomination / players) * 360)}deg)`,
-        transitionDuration: this.session.votingSpeed - 100 + "ms"
+        transitionDuration: this.session.votingSpeed - 100 + "ms",
       };
     },
-    nominee: function() {
+    nominee: function () {
       if (!this.session.nomination || !this.session.nomination[1]) {
         return null;
       }
       return this.players[this.session.nomination[1]];
     },
-    nomineeStyle: function() {
+    nomineeStyle: function () {
       const players = this.players.length;
       if (!this.session.nomination || !this.session.nomination[1]) {
         return {
-          transform: 'rotate(0deg)',
-          transitionDuration: this.session.votingSpeed - 100 + "ms"
+          transform: "rotate(0deg)",
+          transitionDuration: this.session.votingSpeed - 100 + "ms",
         };
       }
       const nomination = this.session.nomination[1];
@@ -162,17 +165,19 @@ export default {
       const rotation = (360 * (nomination + Math.min(lock, players))) / players;
       return {
         transform: `rotate(${Math.round(rotation)}deg)`,
-        transitionDuration: this.session.votingSpeed - 100 + "ms"
+        transitionDuration: this.session.votingSpeed - 100 + "ms",
       };
     },
-    player: function() {
-      return this.players.find(p => p.id === this.session.playerId);
+    player: function () {
+      return this.players.find((p) => p.id === this.session.playerId);
     },
-    currentVote: function() {
-      const index = this.players.findIndex(p => p.id === this.session.playerId);
+    currentVote: function () {
+      const index = this.players.findIndex(
+        (p) => p.id === this.session.playerId,
+      );
       return index >= 0 ? !!this.session.votes[index] : undefined;
     },
-    canVote: function() {
+    canVote: function () {
       if (!this.player) return false;
       if (this.player.isVoteless && this.nominee.role.team !== "traveler")
         return false;
@@ -183,26 +188,27 @@ export default {
         (index - 1 + players - session.nomination[1]) % players;
       return indexAdjusted >= session.lockedVote - 1;
     },
-    voters: function() {
+    voters: function () {
       const nomination = this.session.nomination[1];
       const voters = Array(this.players.length)
         .fill("")
         .map((x, index) =>
-          this.session.votes[index] ? this.players[index].name : ""
+          this.session.votes[index] ? this.players[index].name : "",
         );
       const reorder = [
         ...voters.slice(nomination + 1),
-        ...voters.slice(0, nomination + 1)
+        ...voters.slice(0, nomination + 1),
       ];
-      return (this.session.lockedVote
-        ? reorder.slice(0, this.session.lockedVote - 1)
-        : reorder
-      ).filter(n => !!n);
-    }
+      return (
+        this.session.lockedVote
+          ? reorder.slice(0, this.session.lockedVote - 1)
+          : reorder
+      ).filter((n) => !!n);
+    },
   },
   data() {
     return {
-      voteTimer: null
+      voteTimer: null,
     };
   },
   methods: {
@@ -251,13 +257,40 @@ export default {
     finish() {
       clearInterval(this.voteTimer);
       this.$store.commit("session/addHistory", this.players);
+
+      // 移除处决历史记录
+      // const nominee = this.nominee;
+      // const voteCount = this.voters.length;
+      // const majority = Math.ceil(this.alive / 2);
+      // const isExecuted = voteCount >= majority;
+
+      // this.$store.commit("addHistoryEvent", {
+      //   action: "execution",
+      //   summary: `${nominee.name} ${isExecuted ? "被处决" : "未被处决"}`,
+      //   details: `投票结果: ${voteCount}/${majority} 票，${
+      //     isExecuted ? "达到多数票" : "未达到多数票"
+      //   }`,
+      //   isPublic: true,
+      // });
+
       this.$store.commit("session/nomination");
     },
     vote(vote) {
       if (!this.canVote) return false;
-      const index = this.players.findIndex(p => p.id === this.session.playerId);
+      const index = this.players.findIndex(
+        (p) => p.id === this.session.playerId,
+      );
       if (index >= 0 && !!this.session.votes[index] !== vote) {
         this.$store.commit("session/voteSync", [index, vote]);
+
+        // 移除投票历史记录
+        // const player = this.players[index];
+        // this.$store.commit("addHistoryEvent", {
+        //   action: "vote",
+        //   summary: `${player.name} ${vote ? "举手" : "手放下"}`,
+        //   details: `${player.name} 对 ${this.nominee.name} 的提名进行了投票`,
+        //   isPublic: true,
+        // });
       }
     },
     setVotingSpeed(diff) {
@@ -271,8 +304,8 @@ export default {
     },
     removeMarked() {
       this.$store.commit("session/setMarkedPlayer", -1);
-    }
-  }
+    },
+  },
 };
 </script>
 
@@ -290,7 +323,10 @@ export default {
   background: url("../assets/demon-head.png") center center no-repeat;
   background-size: auto 75%;
   text-align: center;
-  text-shadow: 0 1px 2px #000000, 0 -1px 2px #000000, 1px 0 2px #000000,
+  text-shadow:
+    0 1px 2px #000000,
+    0 -1px 2px #000000,
+    1px 0 2px #000000,
     -1px 0 2px #000000;
 
   .mark .button {

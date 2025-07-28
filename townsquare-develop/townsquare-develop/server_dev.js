@@ -1,4 +1,3 @@
-const fs = require("fs");
 const http = require("http");
 const WebSocket = require("ws");
 const client = require("prom-client");
@@ -10,7 +9,7 @@ process.env.NODE_ENV = "development";
 const register = new client.Registry();
 // Add a default label which is added to all metrics
 register.setDefaultLabels({
-  app: "clocktower-online"
+  app: "clocktower-online",
 });
 
 const PING_INTERVAL = 30000; // 30 seconds
@@ -19,11 +18,11 @@ const PING_INTERVAL = 30000; // 30 seconds
 const server = http.createServer();
 const wss = new WebSocket.Server({
   port: 8081,
-  verifyClient: info =>
+  verifyClient: (info) =>
     info.origin &&
     !!info.origin.match(
-      /^https?:\/\/([^.]+\.github\.io|localhost|clocktower\.online|eddbra1nprivatetownsquare\.xyz)/i
-    )
+      /^https?:\/\/([^.]+\.github\.io|localhost|clocktower\.online|eddbra1nprivatetownsquare\.xyz)/i,
+    ),
 });
 
 console.log("开发模式：WebSocket服务器运行在端口8081");
@@ -48,14 +47,14 @@ const metrics = {
     help: "Concurrent Players",
     collect() {
       this.set(wss.clients.size);
-    }
+    },
   }),
   channels_concurrent: new client.Gauge({
     name: "channels_concurrent",
     help: "Concurrent Channels",
     collect() {
       this.set(Object.keys(channels).length);
-    }
+    },
   }),
   channels_list: new client.Gauge({
     name: "channel_players",
@@ -66,35 +65,35 @@ const metrics = {
         this.set(
           { name: channel },
           channels[channel].filter(
-            ws =>
+            (ws) =>
               ws &&
               (ws.readyState === WebSocket.OPEN ||
-                ws.readyState === WebSocket.CONNECTING)
-          ).length
+                ws.readyState === WebSocket.CONNECTING),
+          ).length,
         );
       }
-    }
+    },
   }),
   messages_incoming: new client.Counter({
     name: "messages_incoming",
-    help: "Incoming messages"
+    help: "Incoming messages",
   }),
   messages_outgoing: new client.Counter({
     name: "messages_outgoing",
-    help: "Outgoing messages"
+    help: "Outgoing messages",
   }),
   connection_terminated_host: new client.Counter({
     name: "connection_terminated_host",
-    help: "Terminated connection due to host already present"
+    help: "Terminated connection due to host already present",
   }),
   connection_terminated_spam: new client.Counter({
     name: "connection_terminated_spam",
-    help: "Terminated connection due to message spam"
+    help: "Terminated connection due to message spam",
   }),
   connection_terminated_timeout: new client.Counter({
     name: "connection_terminated_timeout",
-    help: "Terminated connection due to timeout"
-  })
+    help: "Terminated connection due to timeout",
+  }),
 };
 
 // register metrics
@@ -122,7 +121,7 @@ wss.on("connection", function connection(ws, req) {
   }
 
   // check if host already exists
-  if (ws.isHost && channels[ws.channel].some(client => client.isHost)) {
+  if (ws.isHost && channels[ws.channel].some((client) => client.isHost)) {
     metrics.connection_terminated_host.inc();
     ws.close();
     return;
@@ -209,4 +208,4 @@ if (process.env.NODE_ENV === "development") {
   server.listen(443, () => {
     console.log("HTTPS服务器启动完成");
   });
-} 
+}

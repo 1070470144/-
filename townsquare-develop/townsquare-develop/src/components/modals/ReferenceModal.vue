@@ -8,12 +8,12 @@
       @click="toggleModal('nightOrder')"
       icon="cloud-moon"
       class="toggle"
-              :title="$t('tooltips.showNightOrder')"
+      :title="$t('tooltips.showNightOrder')"
     />
     <h3>
-      {{ $t('reference.title') }}
+      {{ $t("reference.title") }}
       <font-awesome-icon icon="address-card" />
-      {{ edition.name || $t('nightOrder.customScript') }}
+      {{ edition.name || $t("nightOrder.customScript") }}
     </h3>
     <div
       v-for="(teamRoles, team) in rolesGrouped"
@@ -32,10 +32,12 @@
               backgroundImage: `url(${
                 role.image && grimoire.isImageOptIn
                   ? role.image
-                  : require('../../assets/icons/' +
-                      (role.imageAlt || role.id) +
-                      '.png')
-              })`
+                  : require(
+                      '../../assets/icons/' +
+                        (role.imageAlt || role.id) +
+                        '.png',
+                    )
+              })`,
             }"
           ></span>
           <div class="role">
@@ -60,17 +62,17 @@
           <span
             class="icon"
             :style="{
-              backgroundImage: `url(${require('../../assets/icons/' +
-                jinx.first.id +
-                '.png')})`
+              backgroundImage: `url(${require(
+                '../../assets/icons/' + jinx.first.id + '.png',
+              )})`,
             }"
           ></span>
           <span
             class="icon"
             :style="{
-              backgroundImage: `url(${require('../../assets/icons/' +
-                jinx.second.id +
-                '.png')})`
+              backgroundImage: `url(${require(
+                '../../assets/icons/' + jinx.second.id + '.png',
+              )})`,
             }"
           ></span>
           <div class="role">
@@ -90,27 +92,27 @@
 <script>
 import Modal from "./Modal";
 import { mapMutations, mapState } from "vuex";
-import i18n from '../../i18n';
+import i18n from "../../i18n";
 
 export default {
   components: {
-    Modal
+    Modal,
   },
   computed: {
     /**
      * Return a list of jinxes in the form of role IDs and a reason
      * @returns {*[]} [{first, second, reason}]
      */
-    jinxed: function() {
+    jinxed: function () {
       const jinxed = [];
-      this.roles.forEach(role => {
+      this.roles.forEach((role) => {
         if (this.jinxes.get(role.id)) {
           this.jinxes.get(role.id).forEach((reason, second) => {
             if (this.roles.get(second)) {
               jinxed.push({
                 first: role,
                 second: this.roles.get(second),
-                reason
+                reason,
               });
             }
           });
@@ -118,9 +120,9 @@ export default {
       });
       return jinxed;
     },
-    rolesGrouped: function() {
+    rolesGrouped: function () {
       const rolesGrouped = {};
-      this.roles.forEach(role => {
+      this.roles.forEach((role) => {
         if (!rolesGrouped[role.team]) {
           rolesGrouped[role.team] = [];
         }
@@ -129,7 +131,7 @@ export default {
       delete rolesGrouped["traveler"];
       return rolesGrouped;
     },
-    playersByRole: function() {
+    playersByRole: function () {
       const players = {};
       this.players.forEach(({ name, role }) => {
         if (role && role.id && role.team !== "traveler") {
@@ -142,14 +144,14 @@ export default {
       return players;
     },
     ...mapState(["roles", "modals", "edition", "grimoire", "jinxes"]),
-    ...mapState("players", ["players"])
+    ...mapState("players", ["players"]),
   },
   methods: {
     $t(key, params = {}) {
       return i18n.t(key, params);
     },
-    ...mapMutations(["toggleModal"])
-  }
+    ...mapMutations(["toggleModal"]),
+  },
 };
 </script>
 
