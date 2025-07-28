@@ -137,6 +137,18 @@ export default {
 
 .modal-fade-enter-active,
 .modal-fade-leave-active {
-  transition: opacity 0.2s ease;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.modal-fade-enter,
+.modal-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.9);
+}
+
+.modal-fade-enter-to,
+.modal-fade-leave {
+  opacity: 1;
+  transform: scale(1);
 }
 </style>

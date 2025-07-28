@@ -135,7 +135,10 @@ ul.reminders .reminder {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
   cursor: pointer;
   line-height: 100%;
-  transition: transform 500ms ease;
+  transition: transform 400ms cubic-bezier(0.4, 0, 0.2, 1);
+  &:hover {
+    transform: scale(1.1) rotate(5deg);
+  }
 
   .icon {
     position: absolute;

@@ -337,7 +337,7 @@ export default {
     position: absolute;
     width: 100%;
     height: 100%;
-    transition: transform 2.9s ease-in-out;
+    transition: transform 2.9s cubic-bezier(0.4, 0, 0.2, 1);
   }
   span:before {
     content: " ";
@@ -362,7 +362,7 @@ export default {
 
 @keyframes countdown {
   0% {
-    transform: scale(1.5);
+    transform: scale(1.5) rotate(-10deg);
     opacity: 0;
     filter: blur(20px);
   }
@@ -370,15 +370,17 @@ export default {
     opacity: 1;
   }
   50% {
-    transform: scale(1);
+    transform: scale(1) rotate(0deg);
     filter: blur(0);
   }
   90% {
     color: $townsfolk;
     opacity: 1;
+    transform: scale(1.1);
   }
   100% {
     opacity: 0;
+    transform: scale(0.8);
   }
 }
 

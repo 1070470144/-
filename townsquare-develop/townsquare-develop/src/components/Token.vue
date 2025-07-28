@@ -93,7 +93,12 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 250ms;
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  transform: scale(1);
+  &:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
+  }
 
   &:hover .name .label {
     stroke: black;

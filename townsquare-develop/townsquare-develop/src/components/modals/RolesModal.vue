@@ -175,9 +175,16 @@ ul.tokens {
     width: 5vw;
     margin: 5px;
     opacity: 0.5;
-    transition: all 250ms;
+    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    transform: scale(1);
+    &:hover {
+      transform: scale(1.1);
+      z-index: 15;
+    }
     &.selected {
       opacity: 1;
+      transform: scale(1.1);
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
       .buttons {
         display: flex;
       }

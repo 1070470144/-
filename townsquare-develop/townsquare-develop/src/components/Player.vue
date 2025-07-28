@@ -386,7 +386,7 @@ export default {
     cursor: pointer;
     transform: rotateX(0deg);
     transform-origin: top center;
-    transition: transform 200ms ease-in-out;
+    transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 2;
     filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.8));
 
@@ -440,7 +440,7 @@ export default {
     border: 3px solid black;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     cursor: pointer;
-    transition: transform 200ms ease-in-out;
+    transition: transform 400ms cubic-bezier(0.4, 0, 0.2, 1);
     transform: perspective(400px) rotateY(180deg);
     backface-visibility: hidden;
     position: absolute;
@@ -546,7 +546,7 @@ export default {
     height: 60%;
     opacity: 0;
     pointer-events: none;
-    transition: all 250ms;
+    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
     transform: scale(0.2);
     * {
       stroke-width: 10px;

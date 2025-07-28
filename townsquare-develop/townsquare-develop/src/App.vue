@@ -226,13 +226,15 @@ ul {
 
 .blur-enter-active,
 .blur-leave-active {
-  transition: all 250ms;
+  transition: all 400ms cubic-bezier(0.4, 0, 0.2, 1);
   filter: blur(0);
+  transform: scale(1);
 }
 .blur-enter,
 .blur-leave-to {
   opacity: 0;
   filter: blur(20px);
+  transform: scale(0.95);
 }
 
 // Buttons
@@ -273,10 +275,21 @@ ul {
   line-height: 170%;
   margin: 5px auto;
   cursor: pointer;
-  transition: all 200ms;
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
+  transform: translateY(0);
   &:hover {
     color: red;
+    transform: translateY(-2px);
+    box-shadow: inset 0 1px 1px #9c9c9c, 0 4px 15px rgba(0, 0, 0, 0.3);
+  }
+  &:active {
+    transform: translateY(0) scale(0.98);
+    transition: all 100ms;
+  }
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
   }
   &.disabled {
     color: gray;
@@ -352,6 +365,8 @@ video#background {
     background-size: 2000px auto;
     animation: move-background 120s linear infinite;
     opacity: 0.3;
+    filter: hue-rotate(0deg);
+    animation: move-background 120s linear infinite, hue-shift 30s ease-in-out infinite;
   }
 }
 
@@ -361,6 +376,15 @@ video#background {
   }
   to {
     transform: translate3d(0px, 0px, 0px);
+  }
+}
+
+@keyframes hue-shift {
+  0%, 100% {
+    filter: hue-rotate(0deg);
+  }
+  50% {
+    filter: hue-rotate(10deg);
   }
 }
 

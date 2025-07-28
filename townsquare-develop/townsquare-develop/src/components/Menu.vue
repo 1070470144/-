@@ -436,7 +436,7 @@ export default {
 .menu {
   width: 220px;
   transform-origin: 200px 22px;
-  transition: transform 500ms cubic-bezier(0.68, -0.55, 0.27, 1.55);
+  transition: transform 600ms cubic-bezier(0.68, -0.55, 0.27, 1.55);
   transform: rotate(-90deg);
   position: absolute;
   right: 0;
@@ -498,9 +498,10 @@ export default {
           border-right: 3px solid black;
           padding: 5px 0;
           cursor: pointer;
-          transition: color 250ms;
+          transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
           &:hover {
             color: red;
+            transform: scale(1.1);
           }
           &:last-child {
             border-right: 0;
