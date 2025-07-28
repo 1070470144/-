@@ -136,6 +136,8 @@ export default {
     handleTrigger(playerIndex, [method, params]) {
       if (typeof this[method] === "function") {
         this[method](playerIndex, params);
+      } else if (method === "openActionPanel") {
+        this.$emit("open-action-panel", playerIndex);
       }
     },
     claimSeat(playerIndex) {

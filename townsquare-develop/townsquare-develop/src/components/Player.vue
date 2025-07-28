@@ -39,7 +39,10 @@
 
       <Token
         :role="player.role"
+        :disable-click="true"
+        :allow-parent-click="true"
         @set-role="$emit('trigger', ['openRoleModal'])"
+        @click="openActionPanel"
       />
 
       <!-- Overlay icons -->
@@ -162,11 +165,13 @@
             :class="{ disabled: player.id && player.id !== session.playerId }"
           >
             <font-awesome-icon icon="chair" />
-            <template v-if="!player.id"> Claim seat </template>
-            <template v-else-if="player.id === session.playerId">
-              Vacate seat
+            <template v-if="!player.id">
+              {{ $t("player.claimSeat") }}
             </template>
-            <template v-else> Seat occupied</template>
+            <template v-else-if="player.id === session.playerId">
+              {{ $t("player.vacateSeat") }}
+            </template>
+            <template v-else> {{ $t("player.seatOccupied") }} </template>
           </li>
         </ul>
       </transition>
@@ -428,6 +433,9 @@ export default {
         this.index,
         !this.session.votes[this.index],
       ]);
+    },
+    openActionPanel() {
+      this.$emit("trigger", ["openActionPanel"]);
     },
   },
 };

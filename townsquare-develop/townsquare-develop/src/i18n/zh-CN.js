@@ -165,6 +165,21 @@ export default {
     loadingRoles: "正在加载角色...",
   },
 
+  // 玩家相关
+  player: {
+    claimSeat: "认领座位",
+    vacateSeat: "离开座位",
+    seatOccupied: "座位已占用",
+    changePronouns: "更改代词",
+    rename: "重命名",
+    movePlayer: "移动玩家",
+    swapSeats: "交换座位",
+    remove: "移除",
+    emptySeat: "清空座位",
+    nomination: "提名",
+    pronouns: "玩家代词",
+  },
+
   // 确认对话框
   confirm: {
     leaveActiveGame: "您确定要离开当前活跃的游戏吗？",
@@ -243,11 +258,6 @@ export default {
     custom: "自定义备注",
     chooseReminder: "选择提醒标记：",
     addCustomReminder: "添加自定义提醒备注",
-  },
-
-  // 玩家
-  player: {
-    pronouns: "玩家代词",
   },
 
   // 投票历史

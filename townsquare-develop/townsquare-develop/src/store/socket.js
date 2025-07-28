@@ -611,9 +611,30 @@ class LiveSession {
    */
   claimSeat(seat) {
     if (!this._isSpectator) return;
+
+    console.log("claimSeat called:", {
+      seat,
+      playerId: this._store.state.session.playerId,
+    });
+
     const players = this._store.state.players.players;
+    console.log(
+      "Available players:",
+      players.map((p, i) => ({ index: i, name: p.name, id: p.id })),
+    );
+
     if (players.length > seat && (seat < 0 || !players[seat].id)) {
+      console.log(
+        `Claiming seat ${seat} for player ${this._store.state.session.playerId}`,
+      );
       this._send("claim", [seat, this._store.state.session.playerId]);
+    } else {
+      console.warn(`Cannot claim seat ${seat}:`, {
+        playersLength: players.length,
+        seat,
+        seatExists: seat < players.length,
+        seatOccupied: seat >= 0 ? players[seat]?.id : false,
+      });
     }
   }
 
@@ -625,25 +646,39 @@ class LiveSession {
    */
   _updateSeat([index, value]) {
     if (this._isSpectator) return;
+
+    console.log("_updateSeat called:", { index, value });
+    console.log("Current players:", this._store.state.players.players);
+
     const property = "id";
     const players = this._store.state.players.players;
+
     // remove previous seat
     const oldIndex = players.findIndex(({ id }) => id === value);
     if (oldIndex >= 0 && oldIndex !== index) {
+      console.log(`Removing player from seat ${oldIndex}`);
       this._store.commit("players/update", {
         player: players[oldIndex],
         property,
         value: "",
       });
     }
+
     // add playerId to new seat
     if (index >= 0) {
       const player = players[index];
-      if (!player) return;
+      if (!player) {
+        console.error(`No player at index ${index}`);
+        return;
+      }
+      console.log(`Adding player ${value} to seat ${index} (${player.name})`);
       this._store.commit("players/update", { player, property, value });
     }
+
     // update player session list as if this was a ping
     this._handlePing([true, value, 0]);
+
+    console.log("Seat update completed");
   }
 
   /**
@@ -652,17 +687,53 @@ class LiveSession {
    */
   distributeRoles() {
     if (this._isSpectator) return;
+
+    console.log("distributeRoles called");
+    console.log("Current players:", this._store.state.players.players);
+
     const message = {};
+    let validPlayers = 0;
+    let totalPlayers = 0;
+
     this._store.state.players.players.forEach((player, index) => {
-      if (player.id && player.role) {
+      totalPlayers++;
+      console.log(`Player ${index}:`, {
+        name: player.name,
+        id: player.id,
+        hasRole: !!player.role,
+        roleId: player.role?.id,
+        roleTeam: player.role?.team,
+      });
+
+      if (player.id && player.role && player.role.id) {
         message[player.id] = [
           "player",
           { index, property: "role", value: player.role.id },
         ];
+        validPlayers++;
+        console.log(
+          `Added player ${player.name} (${player.id}) with role ${player.role.id}`,
+        );
+      } else {
+        console.warn(`Player ${player.name} cannot receive role:`, {
+          hasId: !!player.id,
+          hasRole: !!player.role,
+          hasRoleId: !!(player.role && player.role.id),
+        });
       }
     });
+
+    console.log(
+      `Total players: ${totalPlayers}, Valid players: ${validPlayers}`,
+    );
+    console.log("Message to send:", message);
+
     if (Object.keys(message).length) {
       this._send("direct", message);
+      console.log("Roles distributed successfully");
+    } else {
+      console.error("No valid players to distribute roles to!");
+      console.error("Requirements: player.id && player.role && player.role.id");
     }
   }
 

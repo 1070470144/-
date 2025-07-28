@@ -314,8 +314,37 @@ export default {
     },
     distributeRoles() {
       if (this.session.isSpectator) return;
+
+      // 检查是否有玩家
+      if (this.players.length === 0) {
+        alert("没有玩家可以发送角色！请先添加玩家。");
+        return;
+      }
+
+      // 检查是否有玩家有角色
+      const playersWithRoles = this.players.filter(
+        (player) => player.role && player.role.id,
+      );
+      if (playersWithRoles.length === 0) {
+        alert("没有玩家分配了角色！请先分配角色。");
+        return;
+      }
+
+      // 检查是否有玩家有ID（已认领座位）
+      const playersWithId = this.players.filter((player) => player.id);
+      if (playersWithId.length === 0) {
+        alert("没有玩家认领座位！玩家需要先认领座位才能接收角色。");
+        return;
+      }
+
       const popup = this.$t("prompts.distributeCharacters");
       if (confirm(popup)) {
+        console.log("Distributing roles to players:", {
+          totalPlayers: this.players.length,
+          playersWithRoles: playersWithRoles.length,
+          playersWithId: playersWithId.length,
+        });
+
         this.$store.commit("session/distributeRoles", true);
         setTimeout(
           (() => {

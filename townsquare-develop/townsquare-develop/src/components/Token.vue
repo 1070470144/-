@@ -1,5 +1,10 @@
 <template>
-  <div class="token" @click="setRole" :class="[role.id]">
+  <div
+    class="token"
+    @click="handleClick"
+    :class="[role.id]"
+    :disabled="disableClick"
+  >
     <img
       v-if="role.id"
       class="icon"
@@ -52,6 +57,14 @@ export default {
     role: {
       type: Object,
       default: () => ({}),
+    },
+    disableClick: {
+      type: Boolean,
+      default: false,
+    },
+    allowParentClick: {
+      type: Boolean,
+      default: false,
     },
   },
   computed: {
@@ -112,8 +125,13 @@ export default {
     nameToFontSize: (name) => (name && name.length > 10 ? "90%" : "110%"),
   },
   methods: {
-    setRole() {
-      this.$emit("set-role");
+    handleClick() {
+      if (!this.disableClick) {
+        this.$emit("set-role");
+      } else if (this.allowParentClick) {
+        // 如果禁用了点击但允许父组件点击，则触发父组件的点击事件
+        this.$emit("click");
+      }
     },
     onImageLoad() {
       this.imageLoaded = true;
@@ -334,6 +352,11 @@ export default {
   justify-content: center;
   transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
   transform: scale(1);
+
+  &[disabled="true"] {
+    pointer-events: none;
+  }
+
   &:hover {
     transform: scale(1.05);
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.7);
@@ -406,6 +429,24 @@ export default {
     width: 100%;
     height: 100%;
     font-size: 24px; // svg fonts are relative to document font size
+
+    // 确保SVG内的所有元素都不阻止点击事件
+    svg {
+      pointer-events: none;
+    }
+
+    path {
+      pointer-events: none;
+    }
+
+    text {
+      pointer-events: none;
+    }
+
+    textPath {
+      pointer-events: none;
+    }
+
     .label {
       fill: black;
       stroke: white;
@@ -415,6 +456,7 @@ export default {
       font-weight: bold;
       text-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
       letter-spacing: 1px;
+      pointer-events: none; // 确保文本元素也不阻止点击
 
       @-moz-document url-prefix() {
         &.mozilla {

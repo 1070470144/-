@@ -166,6 +166,21 @@ export default {
     loadingRoles: "Loading roles...",
   },
 
+  // Player related
+  player: {
+    claimSeat: "Claim seat",
+    vacateSeat: "Vacate seat",
+    seatOccupied: "Seat occupied",
+    changePronouns: "Change Pronouns",
+    rename: "Rename",
+    movePlayer: "Move player",
+    swapSeats: "Swap seats",
+    remove: "Remove",
+    emptySeat: "Empty seat",
+    nomination: "Nomination",
+    pronouns: "Player pronouns",
+  },
+
   // Confirm dialogs
   confirm: {
     leaveActiveGame: "Are you sure you want to leave the active live game?",
@@ -246,11 +261,6 @@ export default {
     custom: "Custom note",
     chooseReminder: "Choose a reminder token:",
     addCustomReminder: "Add a custom reminder note",
-  },
-
-  // Player
-  player: {
-    pronouns: "Player pronouns",
   },
 
   // Vote history summary

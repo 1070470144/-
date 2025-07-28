@@ -26,11 +26,25 @@
       <TownInfo v-if="players.length && !session.nomination"></TownInfo>
       <Vote v-if="session.nomination"></Vote>
     </transition>
-    <TownSquare></TownSquare>
+    <TownSquare @open-action-panel="openActionPanel"></TownSquare>
     <Menu ref="menu"></Menu>
     <HistoryPanel
       :isVisible="showHistoryPanel"
       @close="showHistoryPanel = false"
+    />
+    <PlayerActionPanel
+      :isVisible="showActionPanel"
+      :player="selectedPlayer"
+      :playerIndex="selectedPlayerIndex"
+      @close="showActionPanel = false"
+      @open-role-modal="openRoleModal"
+    />
+    <PlayerDrawer
+      :isVisible="showDrawer"
+      :player="selectedPlayer"
+      :playerIndex="selectedPlayerIndex"
+      @close="showDrawer = false"
+      @open-role-modal="openRoleModal"
     />
     <EditionModal />
     <FabledModal />
@@ -63,6 +77,8 @@ import VoteHistoryModal from "@/components/modals/VoteHistoryModal";
 import GameStateModal from "@/components/modals/GameStateModal";
 import HistoryPanel from "@/components/HistoryPanel";
 import RoleAbilityModal from "@/components/modals/RoleAbilityModal";
+import PlayerActionPanel from "@/components/PlayerActionPanel";
+import PlayerDrawer from "@/components/PlayerDrawer";
 
 export default {
   components: {
@@ -81,6 +97,8 @@ export default {
     Gradients,
     HistoryPanel,
     RoleAbilityModal,
+    PlayerActionPanel,
+    PlayerDrawer,
   },
   computed: {
     ...mapState(["grimoire", "session"]),
@@ -90,6 +108,10 @@ export default {
     return {
       version,
       showHistoryPanel: false,
+      showActionPanel: false,
+      showDrawer: false,
+      selectedPlayer: null,
+      selectedPlayerIndex: -1,
     };
   },
   methods: {
@@ -134,6 +156,15 @@ export default {
         case "escape":
           this.$store.commit("toggleModal");
       }
+    },
+    openRoleModal(playerIndex) {
+      this.$store.commit("modals/open", "roles");
+      this.$store.commit("players/setSelectedPlayer", playerIndex);
+    },
+    openActionPanel(playerIndex) {
+      this.selectedPlayer = this.players[playerIndex];
+      this.selectedPlayerIndex = playerIndex;
+      this.showDrawer = true;
     },
   },
 };
