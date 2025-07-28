@@ -267,7 +267,7 @@ import i18n from "../i18n";
 
 export default {
   computed: {
-    ...mapState(["grimoire", "session", "edition", "roles"]),
+    ...mapState(["grimoire", "session", "edition", "roles", "history"]),
     ...mapState("players", ["players"]),
     currentLanguage() {
       return i18n.getCurrentLanguage();
@@ -384,21 +384,41 @@ export default {
       if (this.grimoire.isNight) {
         this.$store.commit("session/setMarkedPlayer", -1);
 
-        // 移除夜晚切换历史记录
-        // this.$store.commit("addHistoryEvent", {
-        //   action: "wake_up",
-        //   summary: "切换到夜晚阶段",
-        //   details: "说书人开始夜晚操作",
-        //   isPublic: false,
-        // });
+        // 设置夜晚阶段
+        this.$store.commit("setCurrentPhase", "night");
+
+        // 如果是第一次夜晚，设置为首夜
+        if (!this.history.currentRound || this.history.currentRound === 1) {
+          this.$store.commit("setCurrentRound", 1);
+        }
+
+        // 记录夜晚切换历史
+        this.$store.commit("addHistoryEvent", {
+          action: "phase_change",
+          summary: "切换到夜晚阶段",
+          details: "说书人开始夜晚操作",
+          phase: "night",
+          round: this.history.currentRound,
+          isPublic: false,
+        });
       } else {
-        // 移除白天切换历史记录
-        // this.$store.commit("addHistoryEvent", {
-        //   action: "wake_up",
-        //   summary: "切换到白天阶段",
-        //   details: "夜晚结束，开始白天讨论",
-        //   isPublic: false,
-        // });
+        // 设置白天阶段
+        this.$store.commit("setCurrentPhase", "day");
+
+        // 如果是第一次白天，设置为第一个白天
+        if (!this.history.currentRound || this.history.currentRound === 1) {
+          this.$store.commit("setCurrentRound", 1);
+        }
+
+        // 记录白天切换历史
+        this.$store.commit("addHistoryEvent", {
+          action: "phase_change",
+          summary: "切换到白天阶段",
+          details: "夜晚结束，开始白天讨论",
+          phase: "day",
+          round: this.history.currentRound,
+          isPublic: false,
+        });
       }
     },
     toggleLanguage() {

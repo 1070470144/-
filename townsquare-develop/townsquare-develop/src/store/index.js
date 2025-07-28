@@ -56,6 +56,28 @@ const generateUniqueId = () => {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 };
 
+// 数字转中文
+const getChineseNumber = (num) => {
+  const chineseNumbers = {
+    1: "first",
+    2: "second",
+    3: "third",
+    4: "fourth",
+    5: "fifth",
+    6: "sixth",
+    7: "seventh",
+    8: "eighth",
+    9: "ninth",
+    10: "tenth",
+    11: "eleventh",
+    12: "twelfth",
+    13: "thirteenth",
+    14: "fourteenth",
+    15: "fifteenth",
+  };
+  return chineseNumbers[num] || `round_${num}`;
+};
+
 // global data maps
 const editionJSONbyId = new Map(
   editionJSON.map((edition) => [edition.id, edition]),
@@ -432,6 +454,73 @@ export default new Vuex.Store({
     },
     setCurrentPhase(state, phase) {
       state.history.currentPhase = phase;
+
+      // 自动更新轮次
+      if (phase === "day" && state.history.currentRound === 1) {
+        // 第一个白天
+        state.history.currentRound = "first_day";
+      } else if (phase === "night" && state.history.currentRound === 1) {
+        // 首夜
+        state.history.currentRound = "first_night";
+      } else if (
+        phase === "day" &&
+        typeof state.history.currentRound === "number"
+      ) {
+        // 后续白天
+        const roundNumber = state.history.currentRound;
+        if (roundNumber === 1) {
+          state.history.currentRound = "first_day";
+        } else {
+          state.history.currentRound = `${getChineseNumber(roundNumber)}_day`;
+        }
+      } else if (
+        phase === "night" &&
+        typeof state.history.currentRound === "number"
+      ) {
+        // 后续夜晚
+        const roundNumber = state.history.currentRound;
+        if (roundNumber === 1) {
+          state.history.currentRound = "first_night";
+        } else {
+          state.history.currentRound = `${getChineseNumber(roundNumber)}_night`;
+        }
+      } else if (
+        phase === "day" &&
+        state.history.currentRound &&
+        state.history.currentRound.includes("night")
+      ) {
+        // 从夜晚切换到白天，增加轮次
+        const currentRound = state.history.currentRound;
+        if (currentRound === "first_night") {
+          state.history.currentRound = "first_day";
+        } else {
+          // 提取轮次数字
+          const roundMatch = currentRound.match(/(\d+)_night/);
+          if (roundMatch) {
+            const roundNumber = parseInt(roundMatch[1]);
+            state.history.currentRound = `${getChineseNumber(roundNumber)}_day`;
+          }
+        }
+      } else if (
+        phase === "night" &&
+        state.history.currentRound &&
+        state.history.currentRound.includes("day")
+      ) {
+        // 从白天切换到夜晚，增加轮次
+        const currentRound = state.history.currentRound;
+        if (currentRound === "first_day") {
+          state.history.currentRound = "second_night";
+        } else {
+          // 提取轮次数字
+          const roundMatch = currentRound.match(/(\d+)_day/);
+          if (roundMatch) {
+            const roundNumber = parseInt(roundMatch[1]) + 1;
+            state.history.currentRound = `${getChineseNumber(
+              roundNumber,
+            )}_night`;
+          }
+        }
+      }
     },
     loadHistoryFromStorage(state) {
       const savedHistory = localStorage.getItem("gameHistory");

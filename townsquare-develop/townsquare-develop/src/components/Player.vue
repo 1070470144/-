@@ -322,41 +322,69 @@ export default {
       )
         return;
 
-      // 移除玩家状态变更记录
-      // if (property === "isDead") {
-      //   if (value) {
-      //     // 玩家死亡
-      //     this.$store.commit("addHistoryEvent", {
-      //       action: "player_died",
-      //       playerName: this.player.name,
-      //       reason: "被处决",
-      //       isPublic: true,
-      //     });
-      //   } else {
-      //     // 玩家复活
-      //     this.$store.commit("addHistoryEvent", {
-      //       action: "player_revived",
-      //       playerName: this.player.name,
-      //       isPublic: false,
-      //     });
-      //   }
-      // } else if (property === "isVoteless") {
-      //   if (value) {
-      //     // 玩家失去投票权
-      //     this.$store.commit("addHistoryEvent", {
-      //       action: "player_voteless",
-      //       playerName: this.player.name,
-      //       isPublic: false,
-      //     });
-      //   } else {
-      //     // 玩家恢复投票权
-      //     this.$store.commit("addHistoryEvent", {
-      //       action: "player_vote_restored",
-      //       playerName: this.player.name,
-      //       isPublic: false,
-      //     });
-      //   }
-      // }
+      // 记录玩家状态变更
+      if (property === "isDead") {
+        if (value) {
+          // 玩家死亡
+          this.$store.commit("addHistoryEvent", {
+            action: "player_died",
+            playerName: this.player.name,
+            reason: "被处决",
+            summary: `${this.player.name} 死亡`,
+            details: `玩家 ${this.player.name} 被处决死亡`,
+            isPublic: true,
+          });
+        } else {
+          // 玩家复活
+          this.$store.commit("addHistoryEvent", {
+            action: "player_revived",
+            playerName: this.player.name,
+            summary: `${this.player.name} 复活`,
+            details: `玩家 ${this.player.name} 复活`,
+            isPublic: true,
+          });
+        }
+      } else if (property === "isVoteless") {
+        if (value) {
+          // 玩家失去投票权
+          this.$store.commit("addHistoryEvent", {
+            action: "player_voteless",
+            playerName: this.player.name,
+            summary: `${this.player.name} 失去投票权`,
+            details: `玩家 ${this.player.name} 失去投票权`,
+            isPublic: false,
+          });
+        } else {
+          // 玩家恢复投票权
+          this.$store.commit("addHistoryEvent", {
+            action: "player_vote_restored",
+            playerName: this.player.name,
+            summary: `${this.player.name} 恢复投票权`,
+            details: `玩家 ${this.player.name} 恢复投票权`,
+            isPublic: false,
+          });
+        }
+      } else if (property === "isNominated") {
+        if (value) {
+          // 玩家被提名
+          this.$store.commit("addHistoryEvent", {
+            action: "player_nominated",
+            playerName: this.player.name,
+            summary: `${this.player.name} 被提名`,
+            details: `玩家 ${this.player.name} 被提名待处决`,
+            isPublic: true,
+          });
+        } else {
+          // 玩家提名被取消
+          this.$store.commit("addHistoryEvent", {
+            action: "player_nomination_cancelled",
+            playerName: this.player.name,
+            summary: `${this.player.name} 提名被取消`,
+            details: `玩家 ${this.player.name} 的提名被取消`,
+            isPublic: true,
+          });
+        }
+      }
 
       this.$store.commit("players/update", {
         player: this.player,
