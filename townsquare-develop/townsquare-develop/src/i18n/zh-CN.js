@@ -69,6 +69,7 @@ export default {
     zoom: "缩放",
     backgroundImage: "背景图片",
     showCustomImages: "显示自定义图片",
+    customImagesAvailable: "（已启用）",
     disableAnimations: "禁用动画",
     muteSounds: "静音",
     
@@ -265,7 +266,8 @@ export default {
     back: "返回",
     enterUrlPrompt: "输入自定义剧本JSON文件的URL",
     errorReadingScript: "读取自定义剧本时出错：",
-    errorLoadingScript: "加载自定义剧本时出错："
+    errorLoadingScript: "加载自定义剧本时出错：",
+    enableCustomImages: "已自动启用自定义图片"
   },
 
   // 语言切换

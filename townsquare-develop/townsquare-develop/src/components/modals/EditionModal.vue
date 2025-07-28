@@ -177,11 +177,21 @@ export default {
       if (metaIndex > -1) {
         meta = roles.splice(metaIndex, 1).pop();
       }
+      
+      // 检查是否包含自定义图片
+      const hasCustomImages = roles.some(role => role.image && role.image.trim() !== "");
+      
       this.$store.commit("setCustomRoles", roles);
       this.$store.commit(
         "setEdition",
         Object.assign({}, meta, { id: "custom" })
       );
+      
+      // 如果包含自定义图片，自动启用图片显示
+      if (hasCustomImages) {
+        this.$store.commit("toggleImageOptIn");
+      }
+      
       // check for fabled and set those too, if present
       if (roles.some((role) => this.$store.state.fabled.has(role.id || role))) {
         const fabled = [];

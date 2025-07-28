@@ -96,6 +96,9 @@
                   grimoire.isImageOptIn ? 'check-square' : 'square'
                 ]"
             /></em>
+            <small v-if="hasCustomImages && grimoire.isImageOptIn" class="custom-images-notice">
+              {{ $t('menu.customImagesAvailable') }}
+            </small>
           </li>
           <li @click="toggleStatic">
             {{ $t('menu.disableAnimations') }}
@@ -240,10 +243,16 @@ import i18n from '../i18n';
 
 export default {
   computed: {
-    ...mapState(["grimoire", "session", "edition"]),
+    ...mapState(["grimoire", "session", "edition", "roles"]),
     ...mapState("players", ["players"]),
     currentLanguage() {
       return i18n.getCurrentLanguage();
+    },
+    hasCustomImages() {
+      // 检查当前角色中是否有自定义图片
+      return Array.from(this.roles.values()).some(role => 
+        role.image && role.image.trim() !== ""
+      );
     }
   },
   data() {
@@ -293,10 +302,7 @@ export default {
       }
     },
     imageOptIn() {
-      const popup = this.$t('prompts.allowCustomImages');
-      if (this.grimoire.isImageOptIn || confirm(popup)) {
-        this.toggleImageOptIn();
-      }
+      this.toggleImageOptIn();
     },
     joinSession() {
       if (this.session.sessionId) return this.leaveSession();
@@ -531,6 +537,13 @@ export default {
         margin-left: 10px;
         font-size: 80%;
       }
+
+      .custom-images-notice {
+        color: #90ee90;
+        font-size: 70%;
+        margin-top: 2px;
+        font-style: italic;
+      }
     }
 
     .headline {
@@ -549,4 +562,6 @@ export default {
     }
   }
 }
+
+
 </style>

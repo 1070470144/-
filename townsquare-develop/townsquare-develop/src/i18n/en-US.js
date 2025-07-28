@@ -69,6 +69,7 @@ export default {
     zoom: "Zoom",
     backgroundImage: "Background image",
     showCustomImages: "Show Custom Images",
+    customImagesAvailable: "(enabled)",
     disableAnimations: "Disable Animations",
     muteSounds: "Mute Sounds",
     
@@ -265,7 +266,8 @@ export default {
     back: "Back",
     enterUrlPrompt: "Enter URL to a custom-script.json file",
     errorReadingScript: "Error reading custom script: ",
-    errorLoadingScript: "Error loading custom script: "
+    errorLoadingScript: "Error loading custom script: ",
+    enableCustomImages: "Custom images automatically enabled"
   },
 
   // Language switch
