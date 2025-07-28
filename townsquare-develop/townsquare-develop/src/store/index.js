@@ -142,6 +142,7 @@ export default new Vuex.Store({
       grimoire: false,
       edition: false,
       roles: false,
+      role: false,
       reference: false,
       nightOrder: false,
       fabled: false,

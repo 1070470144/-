@@ -49,6 +49,7 @@
     <EditionModal />
     <FabledModal />
     <RoleAbilityModal />
+    <RoleModal />
     <RolesModal />
     <ReferenceModal />
     <NightOrderModal />
@@ -79,6 +80,7 @@ import HistoryPanel from "@/components/HistoryPanel";
 import RoleAbilityModal from "@/components/modals/RoleAbilityModal";
 import PlayerActionPanel from "@/components/PlayerActionPanel";
 import PlayerDrawer from "@/components/PlayerDrawer";
+import RoleModal from "@/components/modals/RoleModal";
 
 export default {
   components: {
@@ -99,6 +101,7 @@ export default {
     RoleAbilityModal,
     PlayerActionPanel,
     PlayerDrawer,
+    RoleModal,
   },
   computed: {
     ...mapState(["grimoire", "session"]),
@@ -158,8 +161,8 @@ export default {
       }
     },
     openRoleModal(playerIndex) {
-      this.$store.commit("modals/open", "roles");
-      this.$store.commit("players/setSelectedPlayer", playerIndex);
+      this.$store.commit("toggleModal", "role");
+      this.$store.commit("setSelectedPlayer", playerIndex);
     },
     openActionPanel(playerIndex) {
       this.selectedPlayer = this.players[playerIndex];

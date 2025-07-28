@@ -23,6 +23,15 @@
             </div>
           </div>
 
+          <!-- 切换角色 -->
+          <div class="change-role-section">
+            <h4>切换角色</h4>
+            <button @click="openRoleModal" class="change-role-btn">
+              <font-awesome-icon icon="exchange-alt" />
+              选择角色
+            </button>
+          </div>
+
           <!-- 状态切换 -->
           <div class="status-section">
             <h4>状态</h4>
@@ -93,15 +102,6 @@
             <button @click="openReminderModal" class="add-reminder-btn">
               <font-awesome-icon icon="plus" />
               选择标记
-            </button>
-          </div>
-
-          <!-- 切换角色 -->
-          <div class="change-role-section">
-            <h4>切换角色</h4>
-            <button @click="openRoleModal" class="change-role-btn">
-              <font-awesome-icon icon="exchange-alt" />
-              选择角色
             </button>
           </div>
         </div>
@@ -195,7 +195,9 @@ export default {
     },
 
     openRoleModal() {
-      this.$emit("open-role-modal", this.playerIndex);
+      if (this.session.isSpectator) return;
+      this.$store.commit("setSelectedPlayer", this.playerIndex);
+      this.$store.commit("toggleModal", "role");
     },
   },
 };

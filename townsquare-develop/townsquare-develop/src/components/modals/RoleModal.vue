@@ -1,9 +1,12 @@
 <template>
-  <Modal v-if="modals.role && availableRoles.length" @close="close">
+  <Modal
+    v-if="modals.role && availableRoles.length && playerIndex >= 0"
+    @close="close"
+  >
     <h3>
       Choose a new character for
       {{
-        playerIndex >= 0 && players.length
+        playerIndex >= 0 && players.length > playerIndex
           ? players[playerIndex].name
           : "bluffing"
       }}
@@ -55,8 +58,10 @@ import Token from "../Token";
 
 export default {
   components: { Token, Modal },
-  props: ["playerIndex"],
   computed: {
+    playerIndex() {
+      return this.$store.state.selectedPlayer;
+    },
     availableRoles() {
       const availableRoles = [];
       const players = this.$store.state.players.players;
@@ -93,12 +98,15 @@ export default {
       } else {
         if (this.session.isSpectator && role.team === "traveler") return;
         // assign to player
-        const player = this.$store.state.players.players[this.playerIndex];
-        this.$store.commit("players/update", {
-          player,
-          property: "role",
-          value: role,
-        });
+        const players = this.$store.state.players.players;
+        if (this.playerIndex >= 0 && players.length > this.playerIndex) {
+          const player = players[this.playerIndex];
+          this.$store.commit("players/update", {
+            player,
+            property: "role",
+            value: role,
+          });
+        }
       }
       this.tab = "editionRoles";
       this.$store.commit("toggleModal", "role");
