@@ -110,7 +110,25 @@ export default {
     vote: "Vote",
     yes: "Yes",
     no: "No",
-    abstain: "Abstain"
+    abstain: "Abstain",
+    nominated: "nominated",
+    inFavor: "in favor",
+    majority: "majority is",
+    timePerPlayer: "Time per player:",
+    countdown: "Countdown",
+    start: "Start",
+    restart: "Restart",
+    pause: "Pause",
+    resume: "Resume",
+    reset: "Reset",
+    close: "Close",
+    markForExecution: "Mark for execution",
+    clearMark: "Clear mark",
+    handDown: "Hand DOWN",
+    handUp: "Hand UP",
+    pleaseClaimSeat: "Please claim a seat to vote.",
+    secondsBetweenVotes: "seconds between votes",
+    go: "GO"
   },
 
   // Role types
@@ -133,6 +151,23 @@ export default {
     drunk: "Drunk"
   },
 
+  // Role selection
+  roleSelection: {
+    selectCharacters: "Select the characters for {count} players:",
+    warningSetupRoles: "Warning: there are characters selected that modify the game setup! The randomizer does not account for these characters.",
+    allowDuplicateCharacters: "Allow duplicate characters",
+    assignCharactersRandomly: "Assign {count} characters randomly",
+    shuffleCharacters: "Shuffle characters"
+  },
+
+  // Confirm dialogs
+  confirm: {
+    leaveActiveGame: "Are you sure you want to leave the active live game?",
+    randomizeSeatings: "Are you sure you want to randomize seatings?",
+    removeAllPlayers: "Are you sure you want to remove all players?",
+    removeAllRoles: "Are you sure you want to remove all player roles?"
+  },
+
   // Prompts
   prompts: {
     enterBackgroundUrl: "Enter custom background URL",
@@ -140,6 +175,103 @@ export default {
     distributeCharacters: "Do you want to distribute assigned characters to all SEATED players?",
     allowCustomImages: "Are you sure you want to allow custom images? A malicious script file author might track your IP address this way.",
     enterJoinSession: "Enter the channel number / name of the session you want to join",
-    confirmRemovePlayer: "Do you really want to remove {name}?"
+    confirmRemovePlayer: "Do you really want to remove {name}?",
+    playerName: "Player name"
+  },
+
+  // Tooltips
+  tooltips: {
+    handUp: "Hand UP",
+    handDown: "Hand DOWN",
+    cancel: "Cancel",
+    swapSeats: "Swap seats with this player",
+    movePlayer: "Move player to this seat",
+    nominatePlayer: "Nominate this player",
+    ghostVote: "Ghost vote",
+    clearVoteHistory: "Clear vote history",
+    showNightOrder: "Show Night Order",
+    showCharacterReference: "Show Character Reference"
+  },
+
+  // Vote history
+  voteHistory: {
+    title: "Vote history",
+    accessibleToPlayers: "Accessible to players",
+    clearForEveryone: "Clear for everyone",
+    time: "Time",
+    nominator: "Nominator",
+    nominee: "Nominee",
+    type: "Type",
+    votes: "Votes",
+    majority: "Majority",
+    voters: "Voters"
+  },
+
+  // Night order
+  nightOrder: {
+    title: "Night Order",
+    firstNight: "First Night",
+    otherNights: "Other Nights",
+    customScript: "Custom Script",
+    minionInfo: "Minion info",
+    demonInfo: "Demon info & bluffs"
+  },
+
+  // Character reference
+  reference: {
+    title: "Character Reference"
+  },
+
+  // Game state
+  gameStateModal: {
+    title: "Current Game State",
+    copyJson: "Copy JSON",
+    loadState: "Load State",
+    unableToParseJson: "Unable to parse JSON: "
+  },
+
+  // Reminder
+  reminder: {
+    good: "Good",
+    evil: "Evil",
+    custom: "Custom note",
+    chooseReminder: "Choose a reminder token:",
+    addCustomReminder: "Add a custom reminder note"
+  },
+
+  // Player
+  player: {
+    pronouns: "Player pronouns"
+  },
+
+  // Vote history summary
+  voteHistorySummary: {
+    recent: "recent",
+    nomination: "nomination",
+    nominations: "nominations"
+  },
+
+  // Edition selection
+  edition: {
+    customScript: "Custom Script / Characters",
+    loadCustomScript: "Load custom script / characters",
+    customScriptDescription: "To play with a custom script, you need to select the characters you want to play with in the official Script Tool and then upload the generated \"custom-list.json\" either directly here or provide a URL to such a hosted JSON file.",
+    customCharactersDescription: "To play with custom characters, please read the documentation on how to write a custom character definition file.",
+    onlyLoadTrusted: "Only load custom JSON files from sources that you trust!",
+    popularScripts: "Some popular custom scripts:",
+    uploadJson: "Upload JSON",
+    enterUrl: "Enter URL",
+    useJsonFromClipboard: "Use JSON from Clipboard",
+    back: "Back",
+    enterUrlPrompt: "Enter URL to a custom-script.json file",
+    errorReadingScript: "Error reading custom script: ",
+    errorLoadingScript: "Error loading custom script: "
+  },
+
+  // Language switch
+  language: {
+    switch: "Language / 语言",
+    chinese: "中文",
+    english: "English"
   }
 }; 

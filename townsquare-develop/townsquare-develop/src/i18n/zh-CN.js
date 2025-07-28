@@ -86,7 +86,7 @@ export default {
     leaveSession: "离开会话",
     
     // 玩家菜单
-    addPlayer: "添加玩家",
+    addPlayer: "添加",
     randomizeSeatings: "随机座位",
     removeAll: "移除所有",
     
@@ -110,7 +110,25 @@ export default {
     vote: "投票",
     yes: "是",
     no: "否",
-    abstain: "弃权"
+    abstain: "弃权",
+    nominated: "提名了",
+    inFavor: "赞成",
+    majority: "多数票",
+    timePerPlayer: "每人时间",
+    countdown: "倒计时",
+    start: "开始",
+    restart: "重新开始",
+    pause: "暂停",
+    resume: "继续",
+    reset: "重置",
+    close: "关闭",
+    markForExecution: "标记处决",
+    clearMark: "清除标记",
+    handDown: "手放下",
+    handUp: "手举起",
+    pleaseClaimSeat: "请认领座位来投票",
+    secondsBetweenVotes: "秒间隔投票",
+    go: "开始"
   },
 
   // 角色类型
@@ -133,6 +151,23 @@ export default {
     drunk: "醉酒"
   },
 
+  // 角色选择
+  roleSelection: {
+    selectCharacters: "为 {count} 名玩家选择角色：",
+    warningSetupRoles: "警告：已选择修改游戏设置的角色！随机生成器不会考虑这些角色。",
+    allowDuplicateCharacters: "允许重复角色",
+    assignCharactersRandomly: "随机分配 {count} 个角色",
+    shuffleCharacters: "洗牌角色"
+  },
+
+  // 确认对话框
+  confirm: {
+    leaveActiveGame: "您确定要离开当前活跃的游戏吗？",
+    randomizeSeatings: "您确定要随机化座位吗？",
+    removeAllPlayers: "您确定要移除所有玩家吗？",
+    removeAllRoles: "您确定要移除所有玩家角色吗？"
+  },
+
   // 提示文本
   prompts: {
     enterBackgroundUrl: "请输入自定义背景图片URL",
@@ -140,6 +175,103 @@ export default {
     distributeCharacters: "您想要向所有就座的玩家分发分配的角色吗？",
     allowCustomImages: "您确定要允许自定义图片吗？恶意脚本文件作者可能会通过这种方式跟踪您的IP地址。",
     enterJoinSession: "请输入您要加入的会话频道号/名称",
-    confirmRemovePlayer: "您确定要移除 {name} 吗？"
+    confirmRemovePlayer: "您确定要移除 {name} 吗？",
+    playerName: "玩家姓名"
+  },
+
+  // 工具提示
+  tooltips: {
+    handUp: "举手",
+    handDown: "手放下",
+    cancel: "取消",
+    swapSeats: "与此玩家交换座位",
+    movePlayer: "将玩家移动到此座位",
+    nominatePlayer: "提名此玩家",
+    ghostVote: "幽灵投票",
+    clearVoteHistory: "清除投票历史",
+    showNightOrder: "显示夜晚顺序",
+    showCharacterReference: "显示角色参考"
+  },
+
+  // 投票历史
+  voteHistory: {
+    title: "投票历史",
+    accessibleToPlayers: "对玩家可见",
+    clearForEveryone: "为所有人清除",
+    time: "时间",
+    nominator: "提名者",
+    nominee: "被提名者",
+    type: "类型",
+    votes: "投票",
+    majority: "多数票",
+    voters: "投票者"
+  },
+
+  // 夜晚顺序
+  nightOrder: {
+    title: "夜晚顺序",
+    firstNight: "第一夜",
+    otherNights: "其他夜晚",
+    customScript: "自定义剧本",
+    minionInfo: "爪牙信息",
+    demonInfo: "恶魔信息与伪装"
+  },
+
+  // 角色参考
+  reference: {
+    title: "角色参考"
+  },
+
+  // 游戏状态
+  gameStateModal: {
+    title: "当前游戏状态",
+    copyJson: "复制JSON",
+    loadState: "加载状态",
+    unableToParseJson: "无法解析JSON："
+  },
+
+  // 提醒
+  reminder: {
+    good: "善良",
+    evil: "邪恶",
+    custom: "自定义备注",
+    chooseReminder: "选择提醒标记：",
+    addCustomReminder: "添加自定义提醒备注"
+  },
+
+  // 玩家
+  player: {
+    pronouns: "玩家代词"
+  },
+
+  // 投票历史
+  voteHistorySummary: {
+    recent: "最近的",
+    nomination: "提名",
+    nominations: "提名"
+  },
+
+  // 版本选择
+  edition: {
+    customScript: "自定义剧本/角色",
+    loadCustomScript: "加载自定义剧本/角色",
+    customScriptDescription: "要使用自定义剧本，您需要在官方脚本工具中选择想要的角色，然后上传生成的\"custom-list.json\"文件或提供托管JSON文件的URL。",
+    customCharactersDescription: "要使用自定义角色，请阅读文档了解如何编写自定义角色定义文件。",
+    onlyLoadTrusted: "只加载您信任的来源的自定义JSON文件！",
+    popularScripts: "一些流行的自定义剧本：",
+    uploadJson: "上传JSON",
+    enterUrl: "输入URL",
+    useJsonFromClipboard: "使用剪贴板中的JSON",
+    back: "返回",
+    enterUrlPrompt: "输入自定义剧本JSON文件的URL",
+    errorReadingScript: "读取自定义剧本时出错：",
+    errorLoadingScript: "加载自定义剧本时出错："
+  },
+
+  // 语言切换
+  language: {
+    switch: "语言 / Language",
+    chinese: "中文",
+    english: "English"
   }
 }; 

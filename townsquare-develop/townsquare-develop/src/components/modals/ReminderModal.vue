@@ -3,7 +3,7 @@
     v-if="modals.reminder && availableReminders.length && players[playerIndex]"
     @close="toggleModal('reminder')"
   >
-    <h3>Choose a reminder token:</h3>
+    <h3>{{ $t('reminder.chooseReminder') }}</h3>
     <ul class="reminders">
       <li
         v-for="reminder in availableReminders"
@@ -33,6 +33,7 @@
 <script>
 import Modal from "./Modal";
 import { mapMutations, mapState } from "vuex";
+import i18n from '../../i18n';
 
 /**
  * Helper function that maps a reminder name with a role-based object that provides necessary visual data.
@@ -82,20 +83,23 @@ export default {
         }
       });
 
-      reminders.push({ role: "good", name: "Good" });
-      reminders.push({ role: "evil", name: "Evil" });
-      reminders.push({ role: "custom", name: "Custom note" });
+              reminders.push({ role: "good", name: this.$t('reminder.good') });
+      reminders.push({ role: "evil", name: this.$t('reminder.evil') });
+      reminders.push({ role: "custom", name: this.$t('reminder.custom') });
       return reminders;
     },
     ...mapState(["modals", "grimoire"]),
     ...mapState("players", ["players"])
   },
   methods: {
+    $t(key, params = {}) {
+      return i18n.t(key, params);
+    },
     addReminder(reminder) {
       const player = this.$store.state.players.players[this.playerIndex];
       let value;
       if (reminder.role === "custom") {
-        const name = prompt("Add a custom reminder note");
+        const name = prompt(this.$t('reminder.addCustomReminder'));
         if (!name) return;
         value = [...player.reminders, { role: "custom", name }];
       } else {

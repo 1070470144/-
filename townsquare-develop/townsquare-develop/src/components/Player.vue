@@ -47,38 +47,38 @@
         <font-awesome-icon
           icon="hand-paper"
           class="vote"
-          title="Hand UP"
+          :title="$t('tooltips.handUp')"
           @click="vote()"
         />
         <font-awesome-icon
           icon="times"
           class="vote"
-          title="Hand DOWN"
+          :title="$t('tooltips.handDown')"
           @click="vote()"
         />
         <font-awesome-icon
           icon="times-circle"
           class="cancel"
-          title="Cancel"
+          :title="$t('tooltips.cancel')"
           @click="cancel()"
         />
         <font-awesome-icon
           icon="exchange-alt"
           class="swap"
           @click="swapPlayer(player)"
-          title="Swap seats with this player"
+          :title="$t('tooltips.swapSeats')"
         />
         <font-awesome-icon
           icon="redo-alt"
           class="move"
           @click="movePlayer(player)"
-          title="Move player to this seat"
+          :title="$t('tooltips.movePlayer')"
         />
         <font-awesome-icon
           icon="hand-point-right"
           class="nominate"
           @click="nominatePlayer(player)"
-          title="Nominate this player"
+          :title="$t('tooltips.nominatePlayer')"
         />
       </div>
 
@@ -96,7 +96,7 @@
         class="has-vote"
         v-if="player.isDead && !player.isVoteless"
         @click="updatePlayer('isVoteless', true)"
-        title="Ghost vote"
+        :title="$t('tooltips.ghostVote')"
       />
 
       <!-- On block icon -->
@@ -207,6 +207,7 @@
 <script>
 import Token from "./Token";
 import { mapGetters, mapState } from "vuex";
+import i18n from '../i18n';
 
 export default {
   components: {
@@ -253,10 +254,13 @@ export default {
     };
   },
   methods: {
+    $t(key, params = {}) {
+      return i18n.t(key, params);
+    },
     changePronouns() {
       if (this.session.isSpectator && this.player.id !== this.session.playerId)
         return;
-      const pronouns = prompt("Player pronouns", this.player.pronouns);
+      const pronouns = prompt(this.$t('player.pronouns'), this.player.pronouns);
       //Only update pronouns if not null (prompt was not cancelled)
       if (pronouns !== null) {
         this.updatePlayer("pronouns", pronouns, true);
@@ -287,7 +291,7 @@ export default {
     },
     changeName() {
       if (this.session.isSpectator) return;
-      const name = prompt("Player name", this.player.name) || this.player.name;
+      const name = prompt(this.$t('prompts.playerName'), this.player.name) || this.player.name;
       this.updatePlayer("name", name, true);
     },
     removeReminder(reminder) {

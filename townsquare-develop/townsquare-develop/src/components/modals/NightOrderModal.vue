@@ -8,16 +8,16 @@
       @click="toggleModal('reference')"
       icon="address-card"
       class="toggle"
-      title="Show Character Reference"
+              :title="$t('tooltips.showCharacterReference')"
     />
     <h3>
-      Night Order
+      {{ $t('nightOrder.title') }}
       <font-awesome-icon icon="cloud-moon" />
-      {{ edition.name || "Custom Script" }}
+      {{ edition.name || $t('nightOrder.customScript') }}
     </h3>
     <div class="night">
       <ul class="first">
-        <li class="headline">First Night</li>
+        <li class="headline">{{ $t('nightOrder.firstNight') }}</li>
         <li
           v-for="role in rolesFirstNight"
           :key="role.name"
@@ -56,7 +56,7 @@
         </li>
       </ul>
       <ul class="other">
-        <li class="headline">Other Nights</li>
+        <li class="headline">{{ $t('nightOrder.otherNights') }}</li>
         <li
           v-for="role in rolesOtherNight"
           :key="role.name"
@@ -101,6 +101,7 @@
 <script>
 import Modal from "./Modal";
 import { mapMutations, mapState } from "vuex";
+import i18n from '../../i18n';
 
 export default {
   components: {
@@ -114,7 +115,7 @@ export default {
         rolesFirstNight.push(
           {
             id: "evil",
-            name: "Minion info",
+            name: this.$t('nightOrder.minionInfo'),
             firstNight: 5,
             team: "minion",
             players: this.players.filter(p => p.role.team === "minion"),
@@ -124,7 +125,7 @@ export default {
           },
           {
             id: "evil",
-            name: "Demon info & bluffs",
+            name: this.$t('nightOrder.demonInfo'),
             firstNight: 8,
             team: "demon",
             players: this.players.filter(p => p.role.team === "demon"),
@@ -169,6 +170,9 @@ export default {
     ...mapState("players", ["players", "fabled"])
   },
   methods: {
+    $t(key, params = {}) {
+      return i18n.t(key, params);
+    },
     ...mapMutations(["toggleModal"])
   }
 };

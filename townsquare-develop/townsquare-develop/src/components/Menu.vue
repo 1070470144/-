@@ -5,8 +5,8 @@
       v-show="session.voteHistory.length && session.sessionId"
       @click="toggleModal('voteHistory')"
       :title="
-        `${session.voteHistory.length} recent ${
-          session.voteHistory.length == 1 ? 'nomination' : 'nominations'
+        `${session.voteHistory.length} ${$t('voteHistorySummary.recent')} ${
+          session.voteHistory.length == 1 ? $t('voteHistorySummary.nomination') : $t('voteHistorySummary.nominations')
         }`
       "
     >
@@ -193,8 +193,8 @@
           <!-- Help -->
           <li class="headline">{{ $t('menu.help') }}</li>
           <li @click="toggleLanguage">
-            Language / 语言
-            <em>{{ currentLanguage === 'zh-CN' ? '中文' : 'English' }}</em>
+            {{ $t('language.switch') }}
+            <em>{{ currentLanguage === 'zh-CN' ? $t('language.chinese') : $t('language.english') }}</em>
           </li>
           <li @click="toggleModal('reference')">
             {{ $t('menu.referenceSheet') }}
@@ -314,7 +314,7 @@ export default {
       }
     },
     leaveSession() {
-      if (confirm("Are you sure you want to leave the active live game?")) {
+      if (confirm(this.$t('confirm.leaveActiveGame'))) {
         this.$store.commit("session/setSpectator", false);
         this.$store.commit("session/setSessionId", "");
       }
@@ -322,20 +322,20 @@ export default {
     addPlayer() {
       if (this.session.isSpectator) return;
       if (this.players.length >= 20) return;
-      const name = prompt("Player name");
+      const name = prompt(this.$t('prompts.playerName'));
       if (name) {
         this.$store.commit("players/add", name);
       }
     },
     randomizeSeatings() {
       if (this.session.isSpectator) return;
-      if (confirm("Are you sure you want to randomize seatings?")) {
+      if (confirm(this.$t('confirm.randomizeSeatings'))) {
         this.$store.dispatch("players/randomize");
       }
     },
     clearPlayers() {
       if (this.session.isSpectator) return;
-      if (confirm("Are you sure you want to remove all players?")) {
+      if (confirm(this.$t('confirm.removeAllPlayers'))) {
         // abort vote if in progress
         if (this.session.nomination) {
           this.$store.commit("session/nomination");
@@ -344,7 +344,7 @@ export default {
       }
     },
     clearRoles() {
-      if (confirm("Are you sure you want to remove all player roles?")) {
+      if (confirm(this.$t('confirm.removeAllRoles'))) {
         this.$store.dispatch("players/clearRoles");
       }
     },

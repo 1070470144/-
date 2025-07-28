@@ -4,7 +4,7 @@
     v-if="modals.roles && nonTravelers >= 5"
     @close="toggleModal('roles')"
   >
-    <h3>Select the characters for {{ nonTravelers }} players:</h3>
+    <h3>{{ $t('roleSelection.selectCharacters', { count: nonTravelers }) }}</h3>
     <ul class="tokens" v-for="(teamRoles, team) in roleSelection" :key="team">
       <li class="count" :class="[team]">
         {{ teamRoles.reduce((a, { selected }) => a + selected, 0) }} /
@@ -31,14 +31,13 @@
     <div class="warning" v-if="hasSelectedSetupRoles">
       <font-awesome-icon icon="exclamation-triangle" />
       <span>
-        Warning: there are characters selected that modify the game setup! The
-        randomizer does not account for these characters.
+        {{ $t('roleSelection.warningSetupRoles') }}
       </span>
     </div>
     <label class="multiple" :class="{ checked: allowMultiple }">
       <font-awesome-icon :icon="allowMultiple ? 'check-square' : 'square'" />
       <input type="checkbox" name="allow-multiple" v-model="allowMultiple" />
-      Allow duplicate characters
+      {{ $t('roleSelection.allowDuplicateCharacters') }}
     </label>
     <div class="button-group">
       <div
@@ -49,11 +48,11 @@
         }"
       >
         <font-awesome-icon icon="people-arrows" />
-        Assign {{ selectedRoles }} characters randomly
+        {{ $t('roleSelection.assignCharactersRandomly', { count: selectedRoles }) }}
       </div>
       <div class="button" @click="selectRandomRoles">
         <font-awesome-icon icon="random" />
-        Shuffle characters
+        {{ $t('roleSelection.shuffleCharacters') }}
       </div>
     </div>
   </Modal>
@@ -64,6 +63,7 @@ import Modal from "./Modal";
 import gameJSON from "./../../game";
 import Token from "./../Token";
 import { mapGetters, mapMutations, mapState } from "vuex";
+import i18n from '../../i18n';
 
 const randomElement = arr => arr[Math.floor(Math.random() * arr.length)];
 
@@ -95,6 +95,9 @@ export default {
     ...mapGetters({ nonTravelers: "players/nonTravelers" })
   },
   methods: {
+    $t(key, params = {}) {
+      return i18n.t(key, params);
+    },
     selectRandomRoles() {
       this.roleSelection = {};
       this.roles.forEach(role => {

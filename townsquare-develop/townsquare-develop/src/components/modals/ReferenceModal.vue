@@ -8,12 +8,12 @@
       @click="toggleModal('nightOrder')"
       icon="cloud-moon"
       class="toggle"
-      title="Show Night Order"
+              :title="$t('tooltips.showNightOrder')"
     />
     <h3>
-      Character Reference
+      {{ $t('reference.title') }}
       <font-awesome-icon icon="address-card" />
-      {{ edition.name || "Custom Script" }}
+      {{ edition.name || $t('nightOrder.customScript') }}
     </h3>
     <div
       v-for="(teamRoles, team) in rolesGrouped"
@@ -90,6 +90,7 @@
 <script>
 import Modal from "./Modal";
 import { mapMutations, mapState } from "vuex";
+import i18n from '../../i18n';
 
 export default {
   components: {
@@ -144,6 +145,9 @@ export default {
     ...mapState("players", ["players"])
   },
   methods: {
+    $t(key, params = {}) {
+      return i18n.t(key, params);
+    },
     ...mapMutations(["toggleModal"])
   }
 };
