@@ -158,7 +158,8 @@ export default {
     warningSetupRoles: "Warning: there are characters selected that modify the game setup! The randomizer does not account for these characters.",
     allowDuplicateCharacters: "Allow duplicate characters",
     assignCharactersRandomly: "Assign {count} characters randomly",
-    shuffleCharacters: "Shuffle characters"
+    shuffleCharacters: "Shuffle characters",
+    loadingRoles: "Loading roles..."
   },
 
   // Confirm dialogs

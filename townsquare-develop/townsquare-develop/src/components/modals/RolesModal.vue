@@ -4,8 +4,12 @@
     v-if="modals.roles && nonTravelers >= 5"
     @close="toggleModal('roles')"
   >
-    <h3>{{ $t('roleSelection.selectCharacters', { count: nonTravelers }) }}</h3>
-    <ul class="tokens" v-for="(teamRoles, team) in roleSelection" :key="team">
+    <div v-if="!hasRoles" class="loading">
+      {{ $t('roleSelection.loadingRoles') }}
+    </div>
+    <div v-else>
+      <h3>{{ $t('roleSelection.selectCharacters', { count: nonTravelers }) }}</h3>
+      <ul class="tokens" v-for="(teamRoles, team) in roleSelection" :key="team">
       <li class="count" :class="[team]">
         {{ teamRoles.reduce((a, { selected }) => a + selected, 0) }} /
         {{ game[nonTravelers - 5][team] }}
@@ -54,6 +58,8 @@
         <font-awesome-icon icon="random" />
         {{ $t('roleSelection.shuffleCharacters') }}
       </div>
+
+    </div>
     </div>
   </Modal>
 </template>
@@ -90,6 +96,11 @@ export default {
         roles.some(role => role.selected && role.setup)
       );
     },
+    hasRoles() {
+      const hasRoles = this.roles && this.roles.size > 0;
+      console.log("hasRoles check:", hasRoles, "roles count:", this.roles ? this.roles.size : 0);
+      return hasRoles;
+    },
     ...mapState(["roles", "modals"]),
     ...mapState("players", ["players"]),
     ...mapGetters({ nonTravelers: "players/nonTravelers" })
@@ -99,7 +110,15 @@ export default {
       return i18n.t(key, params);
     },
     selectRandomRoles() {
+      // 确保roles存在且有内容
+      if (!this.roles || this.roles.size === 0) {
+        console.log("No roles available for selection");
+        return;
+      }
+      
+      console.log("Initializing role selection with", this.roles.size, "roles");
       this.roleSelection = {};
+      
       this.roles.forEach(role => {
         if (!this.roleSelection[role.team]) {
           this.$set(this.roleSelection, role.team, []);
@@ -107,9 +126,12 @@ export default {
         this.roleSelection[role.team].push(role);
         this.$set(role, "selected", 0);
       });
+      
       delete this.roleSelection["traveler"];
+      
       const playerCount = Math.max(5, this.nonTravelers);
       const composition = this.game[playerCount - 5];
+      
       Object.keys(composition).forEach(team => {
         for (let x = 0; x < composition[team]; x++) {
           if (this.roleSelection[team]) {
@@ -122,6 +144,8 @@ export default {
           }
         }
       });
+      
+      console.log("Role selection initialized:", Object.keys(this.roleSelection).length, "teams");
     },
     assignRoles() {
       if (this.selectedRoles <= this.nonTravelers && this.selectedRoles) {
@@ -134,6 +158,8 @@ export default {
           )
           // flatten into a single array
           .reduce((a, b) => [...a, ...b], [])
+          // 过滤掉无效的角色
+          .filter(role => role && typeof role === 'object')
           .map(a => [Math.random(), a])
           .sort((a, b) => a[0] - b[0])
           .map(a => a[1]);
@@ -150,16 +176,43 @@ export default {
         this.$store.commit("toggleModal", "roles");
       }
     },
+
     ...mapMutations(["toggleModal"])
   },
   mounted: function() {
-    if (!Object.keys(this.roleSelection).length) {
-      this.selectRandomRoles();
+    console.log("RolesModal mounted, roles count:", this.roles ? this.roles.size : 0);
+    // 在mounted时检查roles是否已经准备好
+    if (this.roles && this.roles.size > 0 && !Object.keys(this.roleSelection).length) {
+      this.$nextTick(() => {
+        this.selectRandomRoles();
+      });
+    }
+  },
+  activated() {
+    console.log("RolesModal activated, roles count:", this.roles ? this.roles.size : 0);
+    // 当模态框被激活时，确保角色列表已初始化
+    if (this.roles && this.roles.size > 0) {
+      this.$nextTick(() => {
+        this.selectRandomRoles();
+      });
     }
   },
   watch: {
-    roles() {
-      this.selectRandomRoles();
+    roles: {
+      handler(newRoles, oldRoles) {
+        console.log("Roles changed:", newRoles ? newRoles.size : 0, "old:", oldRoles ? oldRoles.size : 0);
+        // 确保roles有内容后再初始化
+        if (this.roles && this.roles.size > 0) {
+          this.$nextTick(() => {
+            this.selectRandomRoles();
+          });
+        } else {
+          // 如果roles为空，清空roleSelection
+          this.roleSelection = {};
+        }
+      },
+      immediate: true,
+      deep: true
     }
   }
 };
@@ -167,6 +220,14 @@ export default {
 
 <style lang="scss" scoped>
 @import "../../vars.scss";
+
+.loading {
+  text-align: center;
+  padding: 20px;
+  color: white;
+  font-size: 120%;
+  font-style: italic;
+}
 
 ul.tokens {
   padding-left: 5%;

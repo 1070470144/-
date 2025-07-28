@@ -158,7 +158,8 @@ export default {
     warningSetupRoles: "警告：已选择修改游戏设置的角色！随机生成器不会考虑这些角色。",
     allowDuplicateCharacters: "允许重复角色",
     assignCharactersRandomly: "随机分配 {count} 个角色",
-    shuffleCharacters: "洗牌角色"
+    shuffleCharacters: "洗牌角色",
+    loadingRoles: "正在加载角色..."
   },
 
   // 确认对话框

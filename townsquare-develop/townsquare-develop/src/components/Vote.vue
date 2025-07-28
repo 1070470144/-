@@ -124,10 +124,19 @@ export default {
     ...mapState(["session", "grimoire"]),
     ...mapGetters({ alive: "players/alive" }),
     nominator: function() {
+      if (!this.session.nomination || !this.session.nomination[0]) {
+        return null;
+      }
       return this.players[this.session.nomination[0]];
     },
     nominatorStyle: function() {
       const players = this.players.length;
+      if (!this.session.nomination || !this.session.nomination[0]) {
+        return {
+          transform: 'rotate(0deg)',
+          transitionDuration: this.session.votingSpeed - 100 + "ms"
+        };
+      }
       const nomination = this.session.nomination[0];
       return {
         transform: `rotate(${Math.round((nomination / players) * 360)}deg)`,
@@ -135,10 +144,19 @@ export default {
       };
     },
     nominee: function() {
+      if (!this.session.nomination || !this.session.nomination[1]) {
+        return null;
+      }
       return this.players[this.session.nomination[1]];
     },
     nomineeStyle: function() {
       const players = this.players.length;
+      if (!this.session.nomination || !this.session.nomination[1]) {
+        return {
+          transform: 'rotate(0deg)',
+          transitionDuration: this.session.votingSpeed - 100 + "ms"
+        };
+      }
       const nomination = this.session.nomination[1];
       const lock = this.session.lockedVote;
       const rotation = (360 * (nomination + Math.min(lock, players))) / players;

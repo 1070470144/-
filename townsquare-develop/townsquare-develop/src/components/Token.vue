@@ -1,16 +1,13 @@
 <template>
   <div class="token" @click="setRole" :class="[role.id]">
-    <span
-      class="icon"
+    <img
       v-if="role.id"
-      :style="{
-        backgroundImage: `url(${
-          role.image && grimoire.isImageOptIn
-            ? role.image
-            : require('../assets/icons/' + (role.imageAlt || role.id) + '.png')
-        })`
-      }"
-    ></span>
+      class="icon"
+      :src="iconUrl"
+      @load="onImageLoad"
+      @error="onImageError"
+      :alt="role.name || role.id"
+    />
     <span
       class="leaf-left"
       v-if="role.firstNight || role.firstNightReminder"
@@ -64,10 +61,47 @@ export default {
         (this.role.remindersGlobal || []).length
       );
     },
+    iconUrl() {
+      console.log(`Computing iconUrl for role: ${this.role.id}`);
+      console.log(`Role image:`, this.role.image);
+      console.log(`isImageOptIn:`, this.grimoire.isImageOptIn);
+      console.log(`useFallbackIcon:`, this.useFallbackIcon);
+      
+      // 如果图片加载失败，使用默认图标
+      if (this.useFallbackIcon) {
+        console.log(`Using fallback icon for role: ${this.role.id}`);
+        return this.getFallbackIconUrl();
+      }
+      
+      // 如果有自定义图片且启用了自定义图片
+      if (this.role.image && this.grimoire.isImageOptIn) {
+        console.log(`Loading custom image for role ${this.role.id}:`, this.role.image);
+        // 对于远程图片，添加时间戳防止缓存问题
+        const url = this.role.image;
+        if (url.startsWith('http')) {
+          const separator = url.includes('?') ? '&' : '?';
+          // 使用当前时间戳确保每次都是新的URL
+          const timestamp = Date.now();
+          const finalUrl = `${url}${separator}_t=${timestamp}`;
+          console.log(`Remote image URL with timestamp:`, finalUrl);
+          return finalUrl;
+        }
+        console.log(`Local image URL:`, url);
+        return url;
+      }
+      
+      // 使用默认图标
+      console.log(`Using fallback icon for role: ${this.role.id} (no custom image or image opt-in disabled)`);
+      return this.getFallbackIconUrl();
+    },
     ...mapState(["grimoire"])
   },
   data() {
-    return {};
+    return {
+      imageLoaded: false,
+      imageError: false,
+      useFallbackIcon: false
+    };
   },
   filters: {
     nameToFontSize: name => (name && name.length > 10 ? "90%" : "110%")
@@ -75,6 +109,114 @@ export default {
   methods: {
     setRole() {
       this.$emit("set-role");
+    },
+    onImageLoad() {
+      this.imageLoaded = true;
+      this.imageError = false;
+      console.log(`Image loaded successfully for role: ${this.role.id}`);
+    },
+    onImageError() {
+      this.imageError = true;
+      this.imageLoaded = false;
+      this.useFallbackIcon = true;
+      console.error(`Failed to load image for role: ${this.role.id}, falling back to default icon`);
+      // 强制重新渲染以使用默认图标
+      this.$nextTick(() => {
+        this.$forceUpdate();
+      });
+    },
+    getFallbackIconUrl() {
+      // 确定要使用的图标名称
+      let iconName = this.role.imageAlt || this.role.id;
+      
+      // 确保图标名称是有效的本地图标
+      const validIcons = [
+        'good', 'outsider', 'minion', 'evil', 'fabled', 'custom',
+        'imp', 'witch', 'widow', 'washerwoman', 'voudon', 'vortox', 'virgin',
+        'vigormortis', 'undertaker', 'toymaker', 'towncrier', 'tinker', 'thief',
+        'tealady', 'sweetheart', 'stormcatcher', 'spy', 'spiritofivory', 'soldier',
+        'snitch', 'snakecharmer', 'slayer', 'shabaloth', 'sentinel', 'seamstress',
+        'scarletwoman', 'scapegoat', 'savant', 'saint', 'sailor', 'sage', 'riot',
+        'revolutionary', 'recluse', 'ravenkeeper', 'puzzlemaster', 'pukka',
+        'psychopath', 'professor', 'preacher', 'poppygrower', 'politician',
+        'poisoner', 'po', 'plus', 'pixie', 'pithag', 'philosopher', 'pacifist',
+        'oracle', 'nodashii', 'noble', 'nightwatchman', 'mutant', 'moonchild',
+        'monk', 'minstrel', 'mezepheles', 'mephit', 'mayor', 'matron',
+        'mathematician', 'mastermind', 'marionette', 'magician', 'lycanthrope',
+        'lunatic', 'lleech', 'lilmonsta', 'librarian', 'leviathan', 'legion',
+        'klutz', 'king', 'juggler', 'judge', 'investigator', 'innkeeper',
+        'huntsman', 'heretic', 'hellslibrarian', 'harlot', 'gunslinger',
+        'grandmother', 'gossip', 'goon', 'golem', 'godfather', 'goblin',
+        'general', 'gangster', 'gambler', 'fortuneteller', 'fool', 'flowergirl'
+      ];
+      
+      // 如果图标名称不在有效列表中，使用基于团队的默认图标
+      if (!validIcons.includes(iconName)) {
+        console.warn(`Invalid icon name: ${iconName} for role: ${this.role.id}, using team-based fallback`);
+        iconName = {
+          townsfolk: 'good',
+          outsider: 'outsider',
+          minion: 'minion',
+          demon: 'evil',
+          fabled: 'fabled'
+        }[this.role.team] || 'custom';
+      }
+      
+      try {
+        return require(`../assets/icons/${iconName}.png`);
+      } catch (error) {
+        console.error(`Failed to load icon: ${iconName}.png for role: ${this.role.id}`, error);
+        // 最后的回退方案
+        return require('../assets/icons/custom.png');
+      }
+    }
+  },
+  mounted() {
+    // 组件挂载时重置图片状态
+    console.log(`Token mounted for role: ${this.role.id}`);
+    this.imageLoaded = false;
+    this.imageError = false;
+    this.useFallbackIcon = false;
+  },
+  watch: {
+    'role.image': {
+      handler() {
+        // 当角色图片变化时，重置图片状态并强制重新计算
+        console.log(`Role image changed for ${this.role.id}:`, this.role.image);
+        this.imageLoaded = false;
+        this.imageError = false;
+        this.useFallbackIcon = false;
+        this.$nextTick(() => {
+          this.$forceUpdate();
+        });
+      },
+      immediate: true
+    },
+    'grimoire.isImageOptIn': {
+      handler() {
+        // 当图片显示设置变化时，重置图片状态并强制重新计算
+        console.log(`Image opt-in changed:`, this.grimoire.isImageOptIn);
+        this.imageLoaded = false;
+        this.imageError = false;
+        this.useFallbackIcon = false;
+        this.$nextTick(() => {
+          this.$forceUpdate();
+        });
+      },
+      immediate: true
+    },
+    'role.id': {
+      handler() {
+        // 当角色ID变化时，重置图片状态
+        console.log(`Role ID changed:`, this.role.id);
+        this.imageLoaded = false;
+        this.imageError = false;
+        this.useFallbackIcon = false;
+        this.$nextTick(() => {
+          this.$forceUpdate();
+        });
+      },
+      immediate: true
     }
   }
 };
@@ -113,15 +255,14 @@ export default {
     }
   }
 
-  .icon,
-  &:before {
-    background-size: 100%;
-    background-repeat: no-repeat;
-    background-position: center 30%;
+  .icon {
     position: absolute;
     width: 100%;
     height: 100%;
+    object-fit: contain;
+    object-position: center 30%;
     margin-top: 3%;
+    pointer-events: none;
   }
 
   span {

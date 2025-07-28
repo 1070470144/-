@@ -202,9 +202,22 @@ export default new Vuex.Store({
      * @param roles Array of role IDs or full role definitions
      */
     setCustomRoles(state, roles) {
+      // 检查roles参数是否有效
+      if (!roles || !Array.isArray(roles)) {
+        console.warn('Invalid roles parameter:', roles);
+        return;
+      }
+      
+      console.log("Processing custom roles:", roles.length);
       const processedRoles = roles
         // replace numerical role object keys with matching key names
         .map(role => {
+          // 检查role是否存在且有效
+          if (!role || typeof role !== 'object') {
+            console.warn('Invalid role object:', role);
+            return null;
+          }
+          
           if (role[0]) {
             const customKeys = Object.keys(customRole);
             const mappedRole = {};
@@ -218,23 +231,73 @@ export default new Vuex.Store({
             return role;
           }
         })
-        // clean up role.id
+        // 过滤掉无效的角色对象
+        .filter(role => role !== null)
+        // clean up role.id but preserve original for lookup
         .map(role => {
+          // 检查role.id是否存在
+          if (!role.id) {
+            console.warn('Role missing id:', role);
+            return null;
+          }
+          
+          const originalId = role.id;
           role.id = clean(role.id);
+          role.originalId = originalId; // 保留原始ID用于查找
           return role;
         })
+        // 再次过滤掉无效的角色对象
+        .filter(role => role !== null)
         // map existing roles to base definition or pre-populate custom roles to ensure all properties
-        .map(
-          role =>
-            rolesJSONbyId.get(role.id) ||
-            state.roles.get(role.id) ||
-            Object.assign({}, customRole, role)
-        )
+        .map(role => {
+          // 首先尝试用清理后的ID查找
+          let foundRole = rolesJSONbyId.get(role.id) || state.roles.get(role.id);
+          
+          // 如果没找到，尝试用原始ID查找
+          if (!foundRole && role.originalId) {
+            foundRole = rolesJSONbyId.get(role.originalId) || state.roles.get(role.originalId);
+          }
+          
+          // 如果还是没找到，创建自定义角色
+          if (!foundRole) {
+            foundRole = Object.assign({}, customRole, role);
+          }
+          
+          return foundRole;
+        })
         // default empty icons and placeholders, clean up firstNight / otherNight
         .map(role => {
+          // 确保角色ID的一致性
+          if (role.originalId && !rolesJSONbyId.get(role.id)) {
+            // 如果是自定义角色，使用清理后的ID
+            role.id = clean(role.originalId);
+          }
+          
           if (rolesJSONbyId.get(role.id)) return role;
-          // 保留自定义角色的image字段，如果没有则设置默认的imageAlt
-          if (!role.image) {
+          
+          // 对于自定义角色，处理image字段
+          if (role.image) {
+            console.log(`Processing image for role ${role.id}:`, role.image);
+            // 检查image是否是有效的URL
+            try {
+              new URL(role.image);
+              // 如果是有效URL，保留image字段
+              console.log(`Valid URL for role ${role.id}:`, role.image);
+            } catch (e) {
+              // 如果不是有效URL，设置为null并设置imageAlt
+              console.warn(`Invalid URL for role ${role.id}:`, role.image);
+              role.image = null;
+              role.imageAlt = // map team to generic icon
+                {
+                  townsfolk: "good",
+                  outsider: "outsider",
+                  minion: "minion",
+                  demon: "evil",
+                  fabled: "fabled"
+                }[role.team] || "custom";
+            }
+          } else {
+            // 如果没有image字段，设置默认的imageAlt
             role.imageAlt = // map team to generic icon
               {
                 townsfolk: "good",
@@ -244,20 +307,36 @@ export default new Vuex.Store({
                 fabled: "fabled"
               }[role.team] || "custom";
           }
+          
           role.firstNight = Math.abs(role.firstNight);
           role.otherNight = Math.abs(role.otherNight);
           return role;
         })
         // filter out roles that don't match an existing role and also don't have name/ability/team
-        .filter(role => role.name && role.ability && role.team)
+        .filter(role => {
+          // 如果是已知角色（存在于rolesJSONbyId中），保留
+          if (rolesJSONbyId.get(role.id) || rolesJSONbyId.get(role.originalId)) {
+            return true;
+          }
+          // 如果是自定义角色，必须有name、ability和team
+          return role.name && role.ability && role.team;
+        })
         // sort by team
         .sort((a, b) => b.team.localeCompare(a.team));
       // convert to Map without Fabled
-      state.roles = new Map(
-        processedRoles
-          .filter(role => role.team !== "fabled")
-          .map(role => [role.id, role])
-      );
+      const finalRoles = processedRoles.filter(role => role.team !== "fabled");
+      console.log("Final roles to load:", finalRoles.length);
+      
+      // 清空现有角色并重新设置，确保Vue能够检测到变化
+      state.roles.clear();
+      finalRoles.forEach(role => {
+        state.roles.set(role.id, role);
+      });
+      
+      // 强制触发Vue的响应式更新
+      console.log("Roles updated, triggering reactivity");
+      // 确保Vue能够检测到Map的变化
+      state.roles = new Map(state.roles);
       // update Fabled to include custom Fabled from this script
       state.fabled = new Map([
         ...processedRoles.filter(r => r.team === "fabled").map(r => [r.id, r]),
@@ -271,12 +350,15 @@ export default new Vuex.Store({
       );
     },
     setEdition(state, edition) {
+      console.log("Setting edition:", edition.id);
       if (editionJSONbyId.has(edition.id)) {
         state.edition = editionJSONbyId.get(edition.id);
         state.roles = getRolesByEdition(state.edition);
         state.otherTravelers = getTravelersNotInEdition(state.edition);
+        console.log("Official edition set, roles count:", state.roles.size);
       } else {
         state.edition = edition;
+        console.log("Custom edition set, roles count:", state.roles.size);
       }
       state.modals.edition = false;
     }

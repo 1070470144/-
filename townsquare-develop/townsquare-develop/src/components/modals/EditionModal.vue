@@ -181,16 +181,55 @@ export default {
       // 检查是否包含自定义图片
       const hasCustomImages = roles.some(role => role.image && role.image.trim() !== "");
       
-      this.$store.commit("setCustomRoles", roles);
+      console.log("Loading custom roles:", roles.length, "roles");
+      console.log("Roles with custom images:", hasCustomImages);
+      
+      // 打印包含自定义图片的角色信息
+      if (hasCustomImages) {
+        roles.forEach(role => {
+          if (role.image && role.image.trim() !== "") {
+            console.log(`Role ${role.id} has custom image:`, role.image);
+          }
+        });
+      }
+      
+      // 如果包含自定义图片，先启用图片显示
+      if (hasCustomImages) {
+        console.log("Enabling custom images for script");
+        this.$store.commit("toggleImageOptIn", true);
+        // 确保设置被保存到localStorage
+        localStorage.setItem("imageOptIn", "1");
+      }
+      
+      // 先设置版本，再设置自定义角色
       this.$store.commit(
         "setEdition",
         Object.assign({}, meta, { id: "custom" })
       );
       
-      // 如果包含自定义图片，自动启用图片显示
-      if (hasCustomImages) {
-        this.$store.commit("toggleImageOptIn");
-      }
+      // 设置自定义角色
+      console.log("Setting custom roles with images:", roles.filter(r => r.image).length);
+      this.$store.commit("setCustomRoles", roles);
+      
+      // 验证角色是否正确加载
+      console.log("Loaded roles count:", this.$store.state.roles.size);
+      
+      // 强制更新所有Token组件，确保图片能够正确加载
+      this.$nextTick(() => {
+        this.$forceUpdate();
+        // 延迟更新，确保所有组件都已更新
+        setTimeout(() => {
+          this.$forceUpdate();
+          // 再次延迟更新，确保图片能够正确加载
+          setTimeout(() => {
+            this.$forceUpdate();
+            // 最后一次更新，确保所有图片都已加载
+            setTimeout(() => {
+              this.$forceUpdate();
+            }, 300);
+          }, 200);
+        }, 100);
+      });
       
       // check for fabled and set those too, if present
       if (roles.some((role) => this.$store.state.fabled.has(role.id || role))) {
