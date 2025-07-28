@@ -12,7 +12,7 @@
       }"
     ></li>
     <li v-if="players.length - teams.traveler < 5">
-      Please add more players!
+      {{ $t('townInfo.addMorePlayers') }}
     </li>
     <li>
       <span class="meta" v-if="!edition.isOfficial">
@@ -64,7 +64,7 @@
         />
       </span>
       <span v-if="grimoire.isNight">
-        Night phase
+        {{ $t('townInfo.nightPhase') }}
         <font-awesome-icon :icon="['fas', 'cloud-moon']" />
       </span>
     </li>
@@ -74,6 +74,7 @@
 <script>
 import gameJSON from "./../game";
 import { mapState } from "vuex";
+import i18n from '../i18n';
 
 export default {
   computed: {
@@ -94,6 +95,11 @@ export default {
     },
     ...mapState(["edition", "grimoire"]),
     ...mapState("players", ["players"])
+  },
+  methods: {
+    $t(key, params = {}) {
+      return i18n.t(key, params);
+    }
   }
 };
 </script>

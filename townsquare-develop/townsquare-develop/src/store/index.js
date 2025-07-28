@@ -98,32 +98,44 @@ export default new Vuex.Store({
   },
   state: {
     grimoire: {
-      isNight: false,
-      isNightOrder: true,
       isPublic: true,
+      isNight: false,
+      isNightOrder: false,
       isMenuOpen: false,
       isStatic: false,
       isMuted: false,
       isImageOptIn: false,
       zoom: 0,
-      background: ""
+      background: null
     },
     modals: {
+      grimoire: false,
       edition: false,
-      fabled: false,
-      gameState: false,
-      nightOrder: false,
-      reference: false,
-      reminder: false,
-      role: false,
       roles: false,
-      voteHistory: false
+      reference: false,
+      nightOrder: false,
+      fabled: false,
+      voteHistory: false,
+      gameState: false
     },
-    edition: editionJSONbyId.get("tb"),
+    edition: editionJSON[0],
     roles: getRolesByEdition(),
-    otherTravelers: getTravelersNotInEdition(),
+    travelers: getTravelersNotInEdition(),
     fabled,
-    jinxes
+    jinxes,
+    session: {
+      sessionId: null,
+      playerId: null,
+      isSpectator: false,
+      isReconnecting: false,
+      playerCount: 0,
+      ping: null,
+      nomination: null,
+      lockedVote: false,
+      voteHistory: [],
+      distributeRoles: false
+    },
+    locale: 'en-US' // 添加语言设置
   },
   getters: {
     /**
@@ -171,6 +183,10 @@ export default new Vuex.Store({
     toggleNight: toggle("isNight"),
     toggleGrimoire: toggle("isPublic"),
     toggleImageOptIn: toggle("isImageOptIn"),
+    setLocale(state, locale) {
+      state.locale = locale;
+      localStorage.setItem('language', locale);
+    },
     toggleModal({ modals }, name) {
       if (name) {
         modals[name] = !modals[name];
