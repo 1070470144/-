@@ -1,5 +1,6 @@
 const fs = require("fs");
 const https = require("https");
+const http = require("http");
 const WebSocket = require("ws");
 const client = require("prom-client");
 
@@ -12,22 +13,41 @@ register.setDefaultLabels({
 
 const PING_INTERVAL = 30000; // 30 seconds
 
-const options = {};
+let server;
+let wss;
 
 if (process.env.NODE_ENV !== "development") {
-  options.cert = fs.readFileSync("cert.pem");
-  options.key = fs.readFileSync("key.pem");
+  // Production: HTTPS with SSL certificates
+  const options = {};
+  try {
+    options.cert = fs.readFileSync("cert.pem");
+    options.key = fs.readFileSync("key.pem");
+    server = https.createServer(options);
+    wss = new WebSocket.Server({
+      server,
+      verifyClient: info =>
+        info.origin &&
+        !!info.origin.match(
+          /^https?:\/\/([^.]+\.github\.io|localhost|clocktower\.online|eddbra1nprivatetownsquare\.xyz)/i
+        )
+    });
+  } catch (error) {
+    console.error("SSL证书文件缺失，请确保cert.pem和key.pem文件存在");
+    process.exit(1);
+  }
+} else {
+  // Development: HTTP without SSL
+  server = http.createServer();
+  wss = new WebSocket.Server({
+    port: 8081,
+    verifyClient: info =>
+      info.origin &&
+      !!info.origin.match(
+        /^https?:\/\/([^.]+\.github\.io|localhost|clocktower\.online|eddbra1nprivatetownsquare\.xyz)/i
+      )
+  });
+  console.log("开发模式：WebSocket服务器运行在端口8081");
 }
-
-const server = https.createServer(options);
-const wss = new WebSocket.Server({
-  ...(process.env.NODE_ENV === "development" ? { port: 8081 } : { server }),
-  verifyClient: info =>
-    info.origin &&
-    !!info.origin.match(
-      /^https?:\/\/([^.]+\.github\.io|localhost|clocktower\.online|eddbra1nprivatetownsquare\.xyz)/i
-    )
-});
 
 function noop() {}
 
