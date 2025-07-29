@@ -116,6 +116,8 @@ module.exports = (store) => {
     console.log("是否为玩家模式:", isPlayerMode);
     console.log("当前玩家ID:", userStorage.getItem("playerId"));
     console.log("存储的玩家数据:", userStorage.getItem("players"));
+    console.log("当前用户信息:", userStorage.getUserInfo());
+    console.log("存储键前缀:", userStorage.getUserInfo().userId);
 
     if (isPlayerMode) {
       // 玩家模式：恢复座位信息和自己的角色信息
@@ -123,8 +125,6 @@ module.exports = (store) => {
       const playersData = userStorage.getItem("players");
       console.log("玩家模式恢复，当前玩家ID:", currentPlayerId);
       console.log("玩家数据:", playersData);
-      console.log("当前用户信息:", userStorage.getUserInfo());
-      console.log("存储键前缀:", userStorage.getUserInfo().userId);
 
       store.commit(
         "players/set",
@@ -191,6 +191,14 @@ module.exports = (store) => {
       if (userInfo.role === "storyteller" && hasStorytellerData) {
         console.log("检测到说书人数据，恢复说书人玩家数据");
         console.log("恢复说书人玩家数据:", storytellerPlayers);
+        console.log("说书人数据检查结果:", {
+          userRole: userInfo.role,
+          hasStorytellerData: hasStorytellerData,
+          storytellerPlayers: storytellerPlayers,
+          storytellerEdition: storytellerEdition,
+          storytellerFabled: storytellerFabled,
+          storytellerBluffs: storytellerBluffs
+        });
         
         if (storytellerPlayers && Array.isArray(storytellerPlayers)) {
           const restoredPlayers = storytellerPlayers.map((player) => {
@@ -200,7 +208,7 @@ module.exports = (store) => {
               ...player,
               role: role,
             };
-            console.log("恢复玩家:", player.name, "角色:", roleId, "->", role);
+            console.log("恢复玩家:", player.name, "座位ID:", player.id, "角色:", roleId, "->", role);
             return restoredPlayer;
           });
           
@@ -225,9 +233,14 @@ module.exports = (store) => {
           console.log("说书人玩家数据无效:", storytellerPlayers);
         }
       } else {
-        console.log("用户角色不是说书人或无说书人数据，跳过玩家数据恢复");
-        console.log("用户角色:", userInfo.role);
-        console.log("是否有说书人数据:", hasStorytellerData);
+        console.log("说书人数据恢复条件不满足:", {
+          userRole: userInfo.role,
+          hasStorytellerData: hasStorytellerData,
+          storytellerPlayers: storytellerPlayers,
+          storytellerEdition: storytellerEdition,
+          storytellerFabled: storytellerFabled,
+          storytellerBluffs: storytellerBluffs
+        });
       }
     }
   } else {
@@ -375,10 +388,14 @@ module.exports = (store) => {
           console.log("当前角色:", userStorage.getUserInfo().role);
           const playerData = state.players.players.map((player) => {
             const roleToSave = player.role && player.role.id ? player.role.id : {};
-            console.log(`保存玩家 ${player.name} 的角色:`, {
-              originalRole: player.role,
+            console.log(`保存玩家 ${player.name} 的数据:`, {
+              name: player.name,
+              id: player.id,
+              role: player.role,
               roleId: player.role?.id,
-              savedRole: roleToSave
+              savedRole: roleToSave,
+              isDead: player.isDead,
+              isVoteless: player.isVoteless
             });
             return {
               ...player,
@@ -418,3 +435,9 @@ module.exports = (store) => {
     }
   });
 };
+
+// 导出hash角色标志位相关函数
+module.exports.setHashRoleFlag = require("../utils/userStorage").setHashRoleFlag;
+module.exports.getHashRoleFlag = require("../utils/userStorage").getHashRoleFlag;
+module.exports.clearHashRoleFlag = require("../utils/userStorage").clearHashRoleFlag;
+module.exports.getUserSpecificKey = require("../utils/userStorage").getUserSpecificKey; 
