@@ -308,17 +308,23 @@ export default {
         this.$nextTick(() => {
           console.log("设置说书人会话，isSpectator:", this.session.isSpectator);
           this.$store.commit("session/setSessionId", sessionId);
-          
+
           // 更新说书人的URL hash，确保刷新后能正确识别
           const currentUrl = window.location.href.split("#")[0];
           const newUrl = currentUrl + "#" + sessionId;
           window.history.pushState(null, "", newUrl);
           console.log("说书人创建对局，更新URL hash:", newUrl);
-          
+
           // 设置hash角色标志位
-          const { setHashRoleFlag } = require("../utils/userStorage");
+          const {
+            setHashRoleFlag,
+            setStorytellerUserId,
+          } = require("../utils/userStorage");
           setHashRoleFlag(sessionId, "storyteller");
-          
+
+          // 设置说书人用户ID
+          setStorytellerUserId();
+
           this.copySessionUrl();
         });
       }
@@ -326,14 +332,14 @@ export default {
     async copySessionUrl() {
       const url = window.location.href.split("#")[0];
       const link = url + "#" + this.session.sessionId;
-      
+
       try {
         // 尝试使用现代剪贴板API
         await navigator.clipboard.writeText(link);
         console.log("链接已复制到剪贴板:", link);
       } catch (error) {
         console.warn("现代剪贴板API失败，尝试备用方法:", error);
-        
+
         // 备用方法：使用传统的document.execCommand
         const textArea = document.createElement("textarea");
         textArea.value = link;
@@ -343,7 +349,7 @@ export default {
         document.body.appendChild(textArea);
         textArea.focus();
         textArea.select();
-        
+
         try {
           const successful = document.execCommand("copy");
           if (successful) {
@@ -512,14 +518,14 @@ export default {
         this.$store.commit("session/setSpectator", true);
         this.$store.commit("toggleGrimoire", false);
         this.$store.commit("session/setSessionId", sessionId);
-        
+
         // 更新URL hash，确保游客模式被正确识别为玩家模式
         this.$nextTick(() => {
           const currentUrl = window.location.href.split("#")[0];
           const newUrl = currentUrl + "#" + sessionId;
           window.history.pushState(null, "", newUrl);
           console.log("游客加入对局，更新URL hash:", newUrl);
-          
+
           // 设置hash角色标志位
           const { setHashRoleFlag } = require("../utils/userStorage");
           setHashRoleFlag(sessionId, "player");
@@ -531,7 +537,7 @@ export default {
         const sessionId = this.session.sessionId;
         this.$store.commit("session/setSpectator", false);
         this.$store.commit("session/setSessionId", "");
-        
+
         // 清除hash角色标志位
         if (sessionId) {
           const { clearHashRoleFlag } = require("../utils/userStorage");

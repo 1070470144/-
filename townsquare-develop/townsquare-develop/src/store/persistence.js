@@ -16,43 +16,70 @@ module.exports = (store) => {
   console.log("初始化存储，用户信息:", userStorage.getUserInfo());
 
   // 检查是否有说书人数据需要恢复
+  // 只有在没有URL hash时才检查说书人数据，避免裸链接进入时误判
+  const hasUrlHash = window.location.hash.substr(1);
   const userId = userStorage.userId;
-  const storytellerPlayers = localStorage.getItem(`${userId}_storyteller_players`);
-  const storytellerSession = localStorage.getItem(`${userId}_storyteller_session`);
-  const storytellerEdition = localStorage.getItem(`${userId}_storyteller_edition`);
-  const storytellerFabled = localStorage.getItem(`${userId}_storyteller_fabled`);
-  const storytellerBluffs = localStorage.getItem(`${userId}_storyteller_bluffs`);
-  
+  const storytellerPlayers = localStorage.getItem(
+    `${userId}_storyteller_players`,
+  );
+  const storytellerSession = localStorage.getItem(
+    `${userId}_storyteller_session`,
+  );
+  const storytellerEdition = localStorage.getItem(
+    `${userId}_storyteller_edition`,
+  );
+  const storytellerFabled = localStorage.getItem(
+    `${userId}_storyteller_fabled`,
+  );
+  const storytellerBluffs = localStorage.getItem(
+    `${userId}_storyteller_bluffs`,
+  );
+
   console.log("检查说书人数据:");
+  console.log("- URL hash:", hasUrlHash);
   console.log("- 说书人玩家数据:", storytellerPlayers);
   console.log("- 说书人会话数据:", storytellerSession);
   console.log("- 说书人版本数据:", storytellerEdition);
   console.log("- 说书人寓言数据:", storytellerFabled);
   console.log("- 说书人恶魔伪装数据:", storytellerBluffs);
-  
-  // 如果有任何说书人数据，强制设置为说书人模式
-  if (storytellerPlayers || storytellerEdition || storytellerFabled || storytellerBluffs) {
-    console.log("检测到说书人数据，强制设置为说书人模式");
-    userStorage.setRole("storyteller");
-  }
-  
-  // 检查全局会话数据，如果是说书人会话则强制设置为说书人模式
-  const globalSessionData = localStorage.getItem("session");
-  console.log("- 全局会话数据:", globalSessionData);
-  
-  if (globalSessionData && globalSessionData !== "null" && globalSessionData !== "undefined") {
-    try {
-      const [isSpectator] = JSON.parse(globalSessionData);
-      if (!isSpectator) {
-        console.log("检测到全局说书人会话，强制设置为说书人模式");
-        userStorage.setRole("storyteller");
-      }
-    } catch (e) {
-      if (globalSessionData.length > 0) {
-        console.log("检测到全局会话字符串，强制设置为说书人模式");
-        userStorage.setRole("storyteller");
+
+  // 只有在没有URL hash时才检查说书人数据
+  if (!hasUrlHash) {
+    // 如果有任何说书人数据，强制设置为说书人模式
+    if (
+      storytellerPlayers ||
+      storytellerEdition ||
+      storytellerFabled ||
+      storytellerBluffs
+    ) {
+      console.log("检测到说书人数据，强制设置为说书人模式");
+      userStorage.setRole("storyteller");
+    }
+
+    // 检查全局会话数据，如果是说书人会话则强制设置为说书人模式
+    const globalSessionData = localStorage.getItem("session");
+    console.log("- 全局会话数据:", globalSessionData);
+
+    if (
+      globalSessionData &&
+      globalSessionData !== "null" &&
+      globalSessionData !== "undefined"
+    ) {
+      try {
+        const [isSpectator] = JSON.parse(globalSessionData);
+        if (!isSpectator) {
+          console.log("检测到全局说书人会话，强制设置为说书人模式");
+          userStorage.setRole("storyteller");
+        }
+      } catch (e) {
+        if (globalSessionData.length > 0) {
+          console.log("检测到全局会话字符串，强制设置为说书人模式");
+          userStorage.setRole("storyteller");
+        }
       }
     }
+  } else {
+    console.log("检测到URL hash，跳过说书人数据检查，避免误判");
   }
 
   // initialize data
@@ -90,11 +117,12 @@ module.exports = (store) => {
     // 检查是否有说书人数据
     const userInfo = userStorage.getUserInfo();
     const userId = userStorage.userId;
-    const hasStorytellerData = localStorage.getItem(`${userId}_storyteller_players`) ||
-                              localStorage.getItem(`${userId}_storyteller_edition`) ||
-                              localStorage.getItem(`${userId}_storyteller_fabled`) ||
-                              localStorage.getItem(`${userId}_storyteller_bluffs`);
-    
+    const hasStorytellerData =
+      localStorage.getItem(`${userId}_storyteller_players`) ||
+      localStorage.getItem(`${userId}_storyteller_edition`) ||
+      localStorage.getItem(`${userId}_storyteller_fabled`) ||
+      localStorage.getItem(`${userId}_storyteller_bluffs`);
+
     if (userInfo.role === "storyteller" || hasStorytellerData) {
       console.log("检测到说书人数据，恢复寓言数据");
       store.commit("players/setFabled", {
@@ -131,8 +159,12 @@ module.exports = (store) => {
         playersData.map((player) => {
           if (player.id === currentPlayerId) {
             // 当前玩家：恢复自己的角色信息和座位信息
-            const roleId = typeof player.role === 'string' ? player.role : player.role?.id;
-            const role = store.state.roles.get(roleId) || store.getters.rolesJSONbyId.get(roleId) || {};
+            const roleId =
+              typeof player.role === "string" ? player.role : player.role?.id;
+            const role =
+              store.state.roles.get(roleId) ||
+              store.getters.rolesJSONbyId.get(roleId) ||
+              {};
             console.log(`恢复当前玩家角色: ${roleId} ->`, role);
             return {
               ...player,
@@ -147,18 +179,27 @@ module.exports = (store) => {
           }
         }),
       );
-      
+
       // 玩家模式下恢复恶魔伪装（如果是恶魔的话）
       if (userStorage.getItem("bluffs") !== null) {
         console.log("检查玩家是否为恶魔，恢复恶魔伪装");
-        const currentPlayer = store.state.players.players.find(p => p.id === currentPlayerId);
-        
-        if (currentPlayer && currentPlayer.role && currentPlayer.role.team === "demon") {
+        const currentPlayer = store.state.players.players.find(
+          (p) => p.id === currentPlayerId,
+        );
+
+        if (
+          currentPlayer &&
+          currentPlayer.role &&
+          currentPlayer.role.team === "demon"
+        ) {
           console.log("检测到恶魔玩家，恢复恶魔伪装");
           const bluffsData = userStorage.getItem("bluffs");
           console.log("恶魔伪装数据:", bluffsData);
           bluffsData.forEach((roleId, index) => {
-            const role = store.state.roles.get(roleId) || store.getters.rolesJSONbyId.get(roleId) || {};
+            const role =
+              store.state.roles.get(roleId) ||
+              store.getters.rolesJSONbyId.get(roleId) ||
+              {};
             console.log(`恢复恶魔伪装 ${index}: ${roleId} ->`, role);
             store.commit("players/setBluff", {
               index,
@@ -173,20 +214,24 @@ module.exports = (store) => {
       // 说书人模式：检查是否有说书人数据
       const userInfo = userStorage.getUserInfo();
       console.log("说书人模式恢复，用户信息:", userInfo);
-      
+
       // 检查是否有说书人数据
       const storytellerPlayers = userStorage.getItem("players");
       const storytellerEdition = userStorage.getItem("edition");
       const storytellerFabled = userStorage.getItem("fabled");
       const storytellerBluffs = userStorage.getItem("bluffs");
-      const hasStorytellerData = storytellerPlayers || storytellerEdition || storytellerFabled || storytellerBluffs;
-      
+      const hasStorytellerData =
+        storytellerPlayers ||
+        storytellerEdition ||
+        storytellerFabled ||
+        storytellerBluffs;
+
       console.log("检查说书人数据:");
       console.log("- 说书人玩家数据:", storytellerPlayers);
       console.log("- 说书人版本数据:", storytellerEdition);
       console.log("- 说书人寓言数据:", storytellerFabled);
       console.log("- 说书人恶魔伪装数据:", storytellerBluffs);
-      
+
       // 只有在明确是说书人且有说书人数据时才恢复
       if (userInfo.role === "storyteller" && hasStorytellerData) {
         console.log("检测到说书人数据，恢复说书人玩家数据");
@@ -197,31 +242,47 @@ module.exports = (store) => {
           storytellerPlayers: storytellerPlayers,
           storytellerEdition: storytellerEdition,
           storytellerFabled: storytellerFabled,
-          storytellerBluffs: storytellerBluffs
+          storytellerBluffs: storytellerBluffs,
         });
-        
+
         if (storytellerPlayers && Array.isArray(storytellerPlayers)) {
           const restoredPlayers = storytellerPlayers.map((player) => {
-            const roleId = typeof player.role === 'string' ? player.role : player.role?.id;
-            const role = store.state.roles.get(roleId) || store.getters.rolesJSONbyId.get(roleId) || {};
+            const roleId =
+              typeof player.role === "string" ? player.role : player.role?.id;
+            const role =
+              store.state.roles.get(roleId) ||
+              store.getters.rolesJSONbyId.get(roleId) ||
+              {};
             const restoredPlayer = {
               ...player,
               role: role,
             };
-            console.log("恢复玩家:", player.name, "座位ID:", player.id, "角色:", roleId, "->", role);
+            console.log(
+              "恢复玩家:",
+              player.name,
+              "座位ID:",
+              player.id,
+              "角色:",
+              roleId,
+              "->",
+              role,
+            );
             return restoredPlayer;
           });
-          
+
           store.commit("players/set", restoredPlayers);
           console.log("成功恢复", restoredPlayers.length, "个玩家的数据");
-          
+
           // 说书人模式下恢复恶魔伪装
           if (userStorage.getItem("bluffs") !== null) {
             console.log("说书人模式，恢复恶魔伪装");
             const bluffsData = userStorage.getItem("bluffs");
             console.log("恶魔伪装数据:", bluffsData);
             bluffsData.forEach((roleId, index) => {
-              const role = store.state.roles.get(roleId) || store.getters.rolesJSONbyId.get(roleId) || {};
+              const role =
+                store.state.roles.get(roleId) ||
+                store.getters.rolesJSONbyId.get(roleId) ||
+                {};
               console.log(`恢复恶魔伪装 ${index}: ${roleId} ->`, role);
               store.commit("players/setBluff", {
                 index,
@@ -239,7 +300,7 @@ module.exports = (store) => {
           storytellerPlayers: storytellerPlayers,
           storytellerEdition: storytellerEdition,
           storytellerFabled: storytellerFabled,
-          storytellerBluffs: storytellerBluffs
+          storytellerBluffs: storytellerBluffs,
         });
       }
     }
@@ -256,25 +317,30 @@ module.exports = (store) => {
   // 检查用户特定的会话数据
   const userSessionData = userStorage.getItem("session");
   const userInfo = userStorage.getUserInfo();
-  
+
   // 对于说书人，即使有URL hash也要恢复会话
   // 对于玩家，只有在没有URL hash时才恢复会话（避免冲突）
-  const shouldRestoreSession = userSessionData && 
-    userSessionData !== "null" && 
-    userSessionData !== "undefined" && 
+  const shouldRestoreSession =
+    userSessionData &&
+    userSessionData !== "null" &&
+    userSessionData !== "undefined" &&
     (userInfo.role === "storyteller" || !window.location.hash.substr(1));
-    
+
   if (shouldRestoreSession) {
     try {
       const [spectator, sessionId] = userSessionData;
       const userInfo = userStorage.getUserInfo();
-      
+
       console.log("恢复用户会话数据:", { spectator, sessionId, userInfo });
-      
+
       // 根据当前检测到的角色强制设置会话类型，忽略存储的spectator标志
       if (userInfo.role === "storyteller") {
         // 说书人模式：强制设置为说书人会话
-        console.log("恢复说书人会话:", sessionId, "（忽略存储的spectator标志）");
+        console.log(
+          "恢复说书人会话:",
+          sessionId,
+          "（忽略存储的spectator标志）",
+        );
         store.commit("session/setSpectator", false);
         store.commit("session/setSessionId", sessionId);
       } else if (userInfo.role === "player") {
@@ -283,7 +349,10 @@ module.exports = (store) => {
         store.commit("session/setSpectator", true);
         store.commit("session/setSessionId", sessionId);
       } else {
-        console.log("未知角色，跳过会话恢复:", { spectator, role: userInfo.role });
+        console.log("未知角色，跳过会话恢复:", {
+          spectator,
+          role: userInfo.role,
+        });
       }
     } catch (e) {
       console.log("解析用户会话数据失败:", e);
@@ -387,7 +456,8 @@ module.exports = (store) => {
           console.log("当前用户信息:", userStorage.getUserInfo());
           console.log("当前角色:", userStorage.getUserInfo().role);
           const playerData = state.players.players.map((player) => {
-            const roleToSave = player.role && player.role.id ? player.role.id : {};
+            const roleToSave =
+              player.role && player.role.id ? player.role.id : {};
             console.log(`保存玩家 ${player.name} 的数据:`, {
               name: player.name,
               id: player.id,
@@ -395,7 +465,7 @@ module.exports = (store) => {
               roleId: player.role?.id,
               savedRole: roleToSave,
               isDead: player.isDead,
-              isVoteless: player.isVoteless
+              isVoteless: player.isVoteless,
             });
             return {
               ...player,
@@ -415,10 +485,17 @@ module.exports = (store) => {
           const userInfo = userStorage.getUserInfo();
           // 根据当前角色确定正确的isSpectator值
           const isSpectator = userInfo.role === "player";
-          
-          console.log("保存会话数据:", { isSpectator, sessionId: payload, role: userInfo.role });
+
+          console.log("保存会话数据:", {
+            isSpectator,
+            sessionId: payload,
+            role: userInfo.role,
+          });
           console.log("当前用户信息:", userInfo);
-          console.log("保存到存储键:", getUserSpecificKey("session", userInfo.role));
+          console.log(
+            "保存到存储键:",
+            getUserSpecificKey("session", userInfo.role),
+          );
           userStorage.setItem("session", [isSpectator, payload]);
         } else {
           console.log("清除会话数据");
@@ -437,7 +514,11 @@ module.exports = (store) => {
 };
 
 // 导出hash角色标志位相关函数
-module.exports.setHashRoleFlag = require("../utils/userStorage").setHashRoleFlag;
-module.exports.getHashRoleFlag = require("../utils/userStorage").getHashRoleFlag;
-module.exports.clearHashRoleFlag = require("../utils/userStorage").clearHashRoleFlag;
-module.exports.getUserSpecificKey = require("../utils/userStorage").getUserSpecificKey; 
+module.exports.setHashRoleFlag =
+  require("../utils/userStorage").setHashRoleFlag;
+module.exports.getHashRoleFlag =
+  require("../utils/userStorage").getHashRoleFlag;
+module.exports.clearHashRoleFlag =
+  require("../utils/userStorage").clearHashRoleFlag;
+module.exports.getUserSpecificKey =
+  require("../utils/userStorage").getUserSpecificKey;
