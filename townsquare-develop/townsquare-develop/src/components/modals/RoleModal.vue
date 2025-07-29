@@ -1,6 +1,6 @@
 <template>
   <Modal
-    v-if="modals.role && availableRoles.length && playerIndex >= 0"
+    v-if="modals.role && availableRoles.length && playerIndex !== undefined"
     @close="close"
   >
     <h3>
@@ -89,12 +89,21 @@ export default {
   },
   methods: {
     setRole(role) {
+      console.log("setRole called with role:", role);
+      console.log("playerIndex:", this.playerIndex);
+
       if (this.playerIndex < 0) {
         // assign to bluff slot (index < 0)
+        const bluffIndex = this.playerIndex * -1 - 1;
+        console.log("计算恶魔伪装索引:", bluffIndex);
+        console.log("当前bluffs数组:", this.$store.state.players.bluffs);
+
         this.$store.commit("players/setBluff", {
-          index: this.playerIndex * -1 - 1,
+          index: bluffIndex,
           role,
         });
+
+        console.log("设置后的bluffs数组:", this.$store.state.players.bluffs);
       } else {
         if (this.session.isSpectator && role.team === "traveler") return;
         // assign to player

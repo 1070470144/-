@@ -25,7 +25,7 @@
 
     <div
       class="bluffs"
-      v-if="players.length"
+      v-if="players.length && shouldShowBluffs"
       ref="bluffs"
       :class="{ closed: !isBluffsOpen }"
     >
@@ -42,8 +42,13 @@
           v-for="index in bluffSize"
           :key="index"
           @click="openRoleModal(index * -1)"
+          style="cursor: pointer"
         >
-          <Token :role="bluffs[index - 1]"></Token>
+          <Token
+            :role="bluffs[index - 1]"
+            :disable-click="true"
+            :allow-parent-click="true"
+          ></Token>
         </li>
       </ul>
     </div>
@@ -107,6 +112,21 @@ export default {
     ...mapGetters({ nightOrder: "players/nightOrder" }),
     ...mapState(["grimoire", "roles", "session"]),
     ...mapState("players", ["players", "bluffs", "fabled"]),
+    shouldShowBluffs() {
+      // 所有玩家和说书人都可以看到恶魔伪装区域
+      return true;
+    },
+    isCurrentPlayerDemon() {
+      // 检查当前玩家是否为恶魔
+      const currentPlayer = this.players.find(
+        (p) => p.id === this.session.playerId,
+      );
+      return (
+        currentPlayer &&
+        currentPlayer.role &&
+        currentPlayer.role.team === "demon"
+      );
+    },
   },
   data() {
     return {
@@ -153,11 +173,28 @@ export default {
       this.$store.commit("toggleModal", "reminder");
     },
     openRoleModal(playerIndex) {
+      console.log("openRoleModal called with playerIndex:", playerIndex);
+
+      // 处理恶魔伪装的负数索引
+      if (playerIndex < 0) {
+        console.log("处理恶魔伪装，索引:", playerIndex);
+        // 恶魔伪装区域，保持负数索引
+        this.selectedPlayer = playerIndex;
+        this.$store.commit("setSelectedPlayer", playerIndex);
+        this.$store.commit("toggleModal", "role");
+        console.log("恶魔伪装模态框已打开");
+        return;
+      }
+
+      // 正常玩家角色选择
+      console.log("处理玩家角色选择，索引:", playerIndex);
       const player = this.players[playerIndex];
       if (this.session.isSpectator && player && player.role.team === "traveler")
         return;
       this.selectedPlayer = playerIndex;
+      this.$store.commit("setSelectedPlayer", playerIndex);
       this.$store.commit("toggleModal", "role");
+      console.log("玩家角色选择模态框已打开");
     },
     removePlayer(playerIndex) {
       if (this.session.isSpectator || this.session.lockedVote) return;

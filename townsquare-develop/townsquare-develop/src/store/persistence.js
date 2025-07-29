@@ -33,12 +33,47 @@ module.exports = (store) => {
     store.commit("setEdition", JSON.parse(localStorage.edition));
   }
   if (localStorage.bluffs !== undefined) {
-    JSON.parse(localStorage.bluffs).forEach((role, index) => {
-      store.commit("players/setBluff", {
-        index,
-        role: store.state.roles.get(role) || {},
+    // 检查当前是否为恶魔玩家
+    const isPlayerMode =
+      window.location.hash.substr(1) ||
+      (localStorage.getItem("session") &&
+        JSON.parse(localStorage.getItem("session"))[0]);
+
+    if (isPlayerMode) {
+      // 玩家模式：检查是否为恶魔
+      const currentPlayerId = localStorage.getItem("playerId");
+      const playersData = localStorage.players
+        ? JSON.parse(localStorage.players)
+        : [];
+      const currentPlayer = playersData.find((p) => p.id === currentPlayerId);
+
+      if (currentPlayer && currentPlayer.role) {
+        const role =
+          store.state.roles.get(currentPlayer.role) ||
+          store.getters.rolesJSONbyId.get(currentPlayer.role);
+
+        if (role && role.team === "demon") {
+          // 恶魔玩家：恢复恶魔伪装
+          JSON.parse(localStorage.bluffs).forEach((role, index) => {
+            store.commit("players/setBluff", {
+              index,
+              role: store.state.roles.get(role) || {},
+            });
+          });
+        } else {
+          // 非恶魔玩家：不恢复恶魔伪装
+          console.log("非恶魔玩家，不恢复恶魔伪装");
+        }
+      }
+    } else {
+      // 说书人模式：恢复所有恶魔伪装
+      JSON.parse(localStorage.bluffs).forEach((role, index) => {
+        store.commit("players/setBluff", {
+          index,
+          role: store.state.roles.get(role) || {},
+        });
       });
-    });
+    }
   }
   if (localStorage.fabled !== undefined) {
     store.commit("players/setFabled", {
@@ -48,16 +83,51 @@ module.exports = (store) => {
     });
   }
   if (localStorage.players) {
-    store.commit(
-      "players/set",
-      JSON.parse(localStorage.players).map((player) => ({
-        ...player,
-        role:
-          store.state.roles.get(player.role) ||
-          store.getters.rolesJSONbyId.get(player.role) ||
-          {},
-      })),
-    );
+    // 检查当前是否为玩家模式
+    const isPlayerMode =
+      window.location.hash.substr(1) ||
+      (localStorage.getItem("session") &&
+        JSON.parse(localStorage.getItem("session"))[0]);
+
+    if (isPlayerMode) {
+      // 玩家模式：只恢复自己的角色信息
+      const currentPlayerId = localStorage.getItem("playerId");
+      const playersData = JSON.parse(localStorage.players);
+
+      store.commit(
+        "players/set",
+        playersData.map((player) => {
+          if (player.id === currentPlayerId) {
+            // 当前玩家：恢复自己的角色信息
+            return {
+              ...player,
+              role:
+                store.state.roles.get(player.role) ||
+                store.getters.rolesJSONbyId.get(player.role) ||
+                {},
+            };
+          } else {
+            // 其他玩家：不恢复角色信息
+            return {
+              ...player,
+              role: {},
+            };
+          }
+        }),
+      );
+    } else {
+      // 说书人模式：恢复所有信息包括角色
+      store.commit(
+        "players/set",
+        JSON.parse(localStorage.players).map((player) => ({
+          ...player,
+          role:
+            store.state.roles.get(player.role) ||
+            store.getters.rolesJSONbyId.get(player.role) ||
+            {},
+        })),
+      );
+    }
   }
   /**** Session related data *****/
   if (localStorage.getItem("playerId")) {
@@ -65,8 +135,16 @@ module.exports = (store) => {
   }
   if (localStorage.getItem("session") && !window.location.hash.substr(1)) {
     const [spectator, sessionId] = JSON.parse(localStorage.getItem("session"));
-    store.commit("session/setSpectator", spectator);
-    store.commit("session/setSessionId", sessionId);
+    // 确保说书人身份正确恢复
+    if (!spectator) {
+      // 说书人模式
+      store.commit("session/setSpectator", false);
+      store.commit("session/setSessionId", sessionId);
+    } else {
+      // 玩家模式
+      store.commit("session/setSpectator", true);
+      store.commit("session/setSessionId", sessionId);
+    }
   }
 
   // listen to mutations

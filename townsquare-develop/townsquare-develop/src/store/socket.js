@@ -11,6 +11,7 @@ class LiveSession {
     this._reconnectTimer = null;
     this._players = {}; // map of players connected to a session
     this._pings = {}; // map of player IDs to ping
+    this._isInitializing = true; // 添加初始化标志
     // reconnect to previous session
     if (this._store.state.session.sessionId) {
       this.connect(this._store.state.session.sessionId);
@@ -90,8 +91,10 @@ class LiveSession {
         this._store.state.session.playerId,
       );
     } else {
-      this.sendGamestate();
+      // 说书人连接时只发送基本信息，不包含角色信息
+      this.sendGamestate("", false, false);
     }
+    this._isInitializing = false; // 设置初始化完成
     this._ping();
   }
 
@@ -120,12 +123,14 @@ class LiveSession {
     let command, params;
     try {
       [command, params] = JSON.parse(data);
+      console.log("收到socket消息:", command, params);
     } catch (err) {
       console.log("unsupported socket message", data);
     }
     switch (command) {
       case "getGamestate":
-        this.sendGamestate(params);
+        // 玩家请求游戏状态时，不包含角色信息
+        this.sendGamestate(params, false, false);
         break;
       case "edition":
         this._updateEdition(params);
@@ -205,6 +210,14 @@ class LiveSession {
       case "pronouns":
         this._updatePlayerPronouns(params);
         break;
+      case "reset":
+        console.log("收到重置消息:", params);
+        console.log("当前是否为说书人:", this._isSpectator);
+        this._handleReset(params);
+        break;
+      default:
+        console.log("未处理的消息类型:", command);
+        break;
     }
   }
 
@@ -251,18 +264,58 @@ class LiveSession {
    * @param playerId
    * @param isLightweight
    */
-  sendGamestate(playerId = "", isLightweight = false) {
+  sendGamestate(playerId = "", isLightweight = false, includeRoles = false) {
     if (this._isSpectator) return;
-    this._gamestate = this._store.state.players.players.map((player) => ({
-      name: player.name,
-      id: player.id,
-      isDead: player.isDead,
-      isVoteless: player.isVoteless,
-      pronouns: player.pronouns,
-      ...(player.role && player.role.team === "traveler"
-        ? { roleId: player.role.id }
-        : {}),
-    }));
+
+    console.log("=== sendGamestate 被调用 ===");
+    console.log("playerId:", playerId);
+    console.log("isLightweight:", isLightweight);
+    console.log("includeRoles:", includeRoles);
+
+    // 检查目标玩家是否为玩家模式
+    let isTargetPlayerMode = false;
+    let targetPlayer = null;
+    if (playerId) {
+      targetPlayer = this._store.state.players.players.find(
+        (p) => p.id === playerId,
+      );
+      // 如果目标玩家有ID但没有角色，说明是玩家模式
+      isTargetPlayerMode =
+        targetPlayer && targetPlayer.id && !targetPlayer.role.id;
+    }
+
+    this._gamestate = this._store.state.players.players.map((player) => {
+      // 只向对应玩家发送角色信息
+      const isTargetPlayer = playerId && player.id === playerId;
+      const hasRole =
+        includeRoles &&
+        player.role &&
+        player.role.id &&
+        !isTargetPlayerMode &&
+        (isTargetPlayer || !playerId); // 如果是广播或目标玩家才发送角色
+
+      console.log(`玩家 ${player.name}:`, {
+        hasRole: hasRole,
+        roleId: player.role?.id,
+        roleTeam: player.role?.team,
+        isTargetPlayerMode: isTargetPlayerMode,
+        isTargetPlayer: isTargetPlayer,
+        playerId: playerId,
+      });
+
+      return {
+        name: player.name,
+        id: player.id,
+        isDead: player.isDead,
+        isVoteless: player.isVoteless,
+        pronouns: player.pronouns,
+        // 只向对应玩家发送角色信息
+        ...(hasRole ? { roleId: player.role.id } : {}),
+      };
+    });
+
+    console.log("生成的gamestate:", this._gamestate);
+
     if (isLightweight) {
       this._sendDirect(playerId, "gs", {
         gamestate: this._gamestate,
@@ -270,7 +323,19 @@ class LiveSession {
       });
     } else {
       const { session, grimoire } = this._store.state;
-      const { fabled } = this._store.state.players;
+      const { fabled, bluffs } = this._store.state.players;
+
+      // 检查目标玩家是否为恶魔
+      let shouldSendBluffs = false;
+      if (playerId && targetPlayer) {
+        shouldSendBluffs =
+          targetPlayer.role && targetPlayer.role.team === "demon";
+      } else {
+        // 如果没有指定playerId，说明是广播给所有玩家
+        // 在这种情况下，所有玩家都会收到，但只有恶魔玩家会处理
+        shouldSendBluffs = true;
+      }
+
       this.sendEdition(playerId);
       this._sendDirect(playerId, "gs", {
         gamestate: this._gamestate,
@@ -283,6 +348,8 @@ class LiveSession {
         markedPlayer: session.markedPlayer,
         fabled: fabled.map((f) => (f.isCustom ? f : { id: f.id })),
         ...(session.nomination ? { votes: session.votes } : {}),
+        // 只向恶魔玩家发送bluffs信息
+        ...(shouldSendBluffs ? { bluffs: bluffs } : {}),
       });
     }
   }
@@ -306,6 +373,7 @@ class LiveSession {
       isVoteInProgress,
       markedPlayer,
       fabled,
+      bluffs,
     } = data;
     const players = this._store.state.players.players;
     // adjust number of players
@@ -322,6 +390,14 @@ class LiveSession {
     gamestate.forEach((state, x) => {
       const player = players[x];
       const { roleId } = state;
+
+      console.log(`处理玩家 ${player.name} 的状态:`, {
+        hasRoleId: !!roleId,
+        roleId: roleId,
+        currentRoleId: player.role?.id,
+        isCurrentPlayer: player.id === this._store.state.session.playerId,
+      });
+
       // update relevant properties
       ["name", "id", "isDead", "isVoteless", "pronouns"].forEach((property) => {
         const value = state[property];
@@ -329,8 +405,11 @@ class LiveSession {
           this._store.commit("players/update", { player, property, value });
         }
       });
+
       // roles are special, because of travelers
+      // 只有在明确接收到roleId时才处理角色信息
       if (roleId && player.role.id !== roleId) {
+        console.log(`接收到角色信息: ${roleId} for player ${player.name}`);
         const role =
           this._store.state.roles.get(roleId) ||
           this._store.getters.rolesJSONbyId.get(roleId);
@@ -351,18 +430,39 @@ class LiveSession {
     });
     if (!isLightweight) {
       this._store.commit("toggleNight", !!isNight);
-      this._store.commit("session/setVoteHistoryAllowed", isVoteHistoryAllowed);
+      this._store.commit(
+        "session/setVoteHistoryAllowed",
+        !!isVoteHistoryAllowed,
+      );
       this._store.commit("session/nomination", {
-        nomination,
-        votes,
-        votingSpeed,
-        lockedVote,
-        isVoteInProgress,
+        nomination: !!nomination,
+        votes: votes || [],
+        votingSpeed: votingSpeed || 3000,
+        lockedVote: lockedVote || 0,
+        isVoteInProgress: !!isVoteInProgress,
       });
-      this._store.commit("session/setMarkedPlayer", markedPlayer);
-      this._store.commit("players/setFabled", {
-        fabled: fabled.map((f) => this._store.state.fabled.get(f.id) || f),
-      });
+      this._store.commit("session/setMarkedPlayer", markedPlayer || -1);
+      if (fabled) {
+        this._store.commit("players/setFabled", { fabled });
+      }
+      // 处理bluffs信息 - 只有恶魔玩家才会处理
+      if (bluffs) {
+        // 检查当前玩家是否为恶魔
+        const currentPlayer = this._store.state.players.players.find(
+          (p) => p.id === this._store.state.session.playerId,
+        );
+        const isCurrentPlayerDemon =
+          currentPlayer &&
+          currentPlayer.role &&
+          currentPlayer.role.team === "demon";
+
+        if (isCurrentPlayerDemon) {
+          console.log("恶魔玩家收到恶魔伪装信息:", bluffs);
+          this._store.commit("players/setBluff", { bluffs });
+        } else {
+          console.log("非恶魔玩家收到bluffs信息，忽略处理");
+        }
+      }
     }
   }
 
@@ -443,25 +543,22 @@ class LiveSession {
    * @param value
    */
   sendPlayer({ player, property, value }) {
+    console.log("=== sendPlayer 被调用 ===");
+    console.log("player:", player.name);
+    console.log("property:", property);
+    console.log("value:", value);
+    console.log("_isSpectator:", this._isSpectator);
+
     if (this._isSpectator || property === "reminders") return;
-    const index = this._store.state.players.players.indexOf(player);
+
+    // 角色信息不通过sendPlayer发送，只在distributeRoles时发送
     if (property === "role") {
-      if (value.team && value.team === "traveler") {
-        // update local gamestate to remember this player as a traveler
-        this._gamestate[index].roleId = value.id;
-        this._send("player", {
-          index,
-          property,
-          value: value.id,
-        });
-      } else if (this._gamestate[index].roleId) {
-        // player was previously a traveler
-        delete this._gamestate[index].roleId;
-        this._send("player", { index, property, value: "" });
-      }
-    } else {
-      this._send("player", { index, property, value });
+      console.log("角色信息不通过sendPlayer发送，跳过");
+      return;
     }
+
+    const index = this._store.state.players.players.indexOf(player);
+    this._send("player", { index, property, value });
   }
 
   /**
@@ -475,6 +572,7 @@ class LiveSession {
     if (!this._isSpectator) return;
     const player = this._store.state.players.players[index];
     if (!player) return;
+
     // special case where a player stops being a traveler
     if (property === "role") {
       if (!value && player.role.team === "traveler") {
@@ -706,6 +804,7 @@ class LiveSession {
       });
 
       if (player.id && player.role && player.role.id) {
+        // 只向对应玩家发送角色信息
         message[player.id] = [
           "player",
           { index, property: "role", value: player.role.id },
@@ -729,6 +828,10 @@ class LiveSession {
     console.log("Message to send:", message);
 
     if (Object.keys(message).length) {
+      // 向每个玩家发送只包含自己角色的游戏状态
+      Object.keys(message).forEach((playerId) => {
+        this.sendGamestate(playerId, false, true);
+      });
       this._send("direct", message);
       console.log("Roles distributed successfully");
     } else {
@@ -903,11 +1006,165 @@ class LiveSession {
     if (this._isSpectator) return;
     this._send("remove", payload);
   }
+
+  /**
+   * Send reset message to all players
+   * @param resetType "all" for storyteller reset, "player" for player reset
+   */
+  sendReset(resetType = "all", options = null) {
+    console.log("发送重置消息:", resetType, options);
+    if (this._socket && this._socket.readyState === 1) {
+      const message = JSON.stringify(["reset", { type: resetType, options }]);
+      this._socket.send(message);
+      console.log("重置消息已发送");
+    } else {
+      console.log("Socket未连接，无法发送重置消息");
+    }
+  }
+
+  /**
+   * Handle reset message from storyteller
+   * @param params reset parameters
+   */
+  _handleReset(params) {
+    console.log("处理重置消息:", params);
+    const { type, options = {} } = params;
+
+    if (type === "all") {
+      // 说书人重置所有玩家，按options执行
+      console.log("执行说书人重置，选项:", options);
+      const players = this._store.state.players.players;
+
+      if (options.roles) {
+        players.forEach((player) => {
+          this._store.commit("players/update", {
+            player,
+            property: "role",
+            value: { id: null, name: null },
+          });
+        });
+      }
+      if (options.bluffs) {
+        this._store.commit("players/setBluff", {});
+      }
+      if (options.reminders) {
+        players.forEach((player) => {
+          this._store.commit("players/update", {
+            player,
+            property: "reminders",
+            value: [],
+          });
+        });
+      }
+      if (options.deathStatus) {
+        players.forEach((player) => {
+          this._store.commit("players/update", {
+            player,
+            property: "isDead",
+            value: false,
+          });
+        });
+      }
+      if (options.nominationStatus) {
+        players.forEach((player) => {
+          this._store.commit("players/update", {
+            player,
+            property: "isNominated",
+            value: false,
+          });
+        });
+      }
+      if (options.aliveStatus) {
+        players.forEach((player) => {
+          this._store.commit("players/update", {
+            player,
+            property: "isDead",
+            value: false,
+          });
+        });
+      }
+      if (options.gameHistory) {
+        this._store.commit("clearHistory");
+      }
+      if (options.voteHistory) {
+        this._store.commit("session/clearVoteHistory");
+      }
+      if (options.roundInfo) {
+        // 可补充轮次重置逻辑
+      }
+      if (options.voteSettings) {
+        this._store.commit("session/clearVoteHistory");
+      }
+      if (options.nightSettings) {
+        this._store.commit("toggleNight", false);
+      }
+      if (options.markerSettings) {
+        this._store.commit("session/setMarkedPlayer", -1);
+      }
+      if (options.seatOccupation) {
+        // 可补充座位占用重置逻辑
+      }
+      if (options.playerIds) {
+        // 可补充玩家ID重置逻辑
+      }
+      console.log("说书人重置所有玩家完成");
+    } else if (type === "player") {
+      // 玩家重置本地所有玩家数据（不发送网络消息）
+      console.log("执行玩家本地重置所有玩家数据");
+
+      // 重置所有玩家
+      const players = this._store.state.players.players;
+      players.forEach((player) => {
+        this._store.commit("players/update", {
+          player,
+          property: "role",
+          value: { id: null, name: null },
+        });
+        this._store.commit("players/update", {
+          player,
+          property: "reminders",
+          value: [],
+        });
+        this._store.commit("players/update", {
+          player,
+          property: "isDead",
+          value: false,
+        });
+        this._store.commit("players/update", {
+          player,
+          property: "isNominated",
+          value: false,
+        });
+      });
+
+      // 重置恶魔伪装
+      this._store.commit("players/setBluff", {});
+
+      // 重置游戏历史
+      this._store.commit("clearHistory");
+
+      // 重置投票相关状态
+      this._store.commit("session/clearVoteHistory");
+      this._store.commit("session/nomination", {
+        nomination: false,
+        votes: [],
+        votingSpeed: 3000,
+        lockedVote: 0,
+        isVoteInProgress: false,
+      });
+      this._store.commit("session/setMarkedPlayer", -1);
+
+      console.log("玩家本地重置所有玩家数据完成");
+    }
+  }
 }
 
 export default (store) => {
   // setup
   const session = new LiveSession(store);
+
+  // 将socket实例暴露到store的state中
+  store.state.socket = session;
 
   // listen to mutations
   store.subscribe(({ type, payload }, state) => {
@@ -974,11 +1231,21 @@ export default (store) => {
       case "players/set":
       case "players/clear":
       case "players/add":
-        session.sendGamestate("", true);
+        // 只有在socket连接建立且不在初始化阶段时才发送游戏状态
+        if (
+          session._socket &&
+          session._socket.readyState === 1 &&
+          !session._isInitializing
+        ) {
+          session.sendGamestate("", true);
+        }
         break;
       case "players/update":
         if (payload.property === "pronouns") {
           session.sendPlayerPronouns(payload);
+        } else if (payload.property === "role") {
+          // 角色更新不自动发送，只在distributeRoles时发送
+          console.log("角色更新，但不自动发送:", payload);
         } else {
           session.sendPlayer(payload);
         }

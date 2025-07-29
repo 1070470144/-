@@ -91,22 +91,6 @@
             {{ $t("menu.backgroundImage") }}
             <em><font-awesome-icon icon="image" /></em>
           </li>
-          <li v-if="!edition.isOfficial" @click="imageOptIn">
-            <small>{{ $t("menu.showCustomImages") }}</small>
-            <em
-              ><font-awesome-icon
-                :icon="[
-                  'fas',
-                  grimoire.isImageOptIn ? 'check-square' : 'square',
-                ]"
-            /></em>
-            <small
-              v-if="hasCustomImages && grimoire.isImageOptIn"
-              class="custom-images-notice"
-            >
-              {{ $t("menu.customImagesAvailable") }}
-            </small>
-          </li>
           <li @click="toggleStatic">
             {{ $t("menu.disableAnimations") }}
             <em
@@ -164,6 +148,10 @@
             </li>
             <li @click="toggleHistoryPanel">
               {{ $t("menu.gameHistory") }}<em>[H]</em>
+            </li>
+            <li @click="resetGame">
+              {{ $t("menu.resetGame") }}
+              <em><font-awesome-icon icon="trash-alt" /></em>
             </li>
             <li @click="leaveSession">
               {{ $t("menu.leaveSession") }}
@@ -258,14 +246,23 @@
         </template>
       </ul>
     </div>
+    <ResetGameModal
+      v-if="showResetModal"
+      @close="showResetModal = false"
+      @confirm="handleResetConfirm"
+    />
   </div>
 </template>
 
 <script>
 import { mapMutations, mapState } from "vuex";
 import i18n from "../i18n";
+import ResetGameModal from "./modals/ResetGameModal.vue";
 
 export default {
+  components: {
+    ResetGameModal,
+  },
   computed: {
     ...mapState(["grimoire", "session", "edition", "roles", "history"]),
     ...mapState("players", ["players"]),
@@ -282,6 +279,7 @@ export default {
   data() {
     return {
       tab: "grimoire",
+      showResetModal: false,
     };
   },
   methods: {
@@ -356,6 +354,102 @@ export default {
     },
     imageOptIn() {
       this.toggleImageOptIn();
+    },
+    resetGame() {
+      this.openResetModal();
+    },
+    openResetModal() {
+      this.showResetModal = true;
+    },
+    handleResetConfirm(options) {
+      // 说书人和玩家分别处理重置逻辑
+      if (!this.session || this.session.isSpectator === false) {
+        // 说书人重置（同步所有玩家）
+        this.resetAllGameWithOptions(options);
+      } else {
+        // 玩家本地重置
+        this.resetPlayerGameWithOptions(options);
+      }
+    },
+    resetAllGameWithOptions(options) {
+      // 说书人重置：先执行本地重置，再发送网络消息
+      console.log("说书人执行重置，选项:", options);
+
+      // 先执行本地重置
+      this.resetPlayerGameWithOptions(options);
+
+      // 再发送socket消息给所有玩家
+      if (this.$store.state.socket) {
+        console.log("发送重置消息给所有玩家");
+        this.$store.state.socket.sendReset("all", options);
+      } else {
+        console.log("Socket实例不存在，无法发送重置消息");
+      }
+    },
+    resetPlayerGameWithOptions(options) {
+      // 本地重置所有玩家数据，根据options
+      const players = this.players;
+      if (options.roles) {
+        players.forEach((player) => {
+          this.$store.commit("players/update", {
+            player,
+            property: "role",
+            value: { id: null, name: null },
+          });
+        });
+      }
+      if (options.bluffs) {
+        this.$store.commit("players/setBluff", {});
+      }
+      if (options.reminders) {
+        players.forEach((player) => {
+          this.$store.commit("players/update", {
+            player,
+            property: "reminders",
+            value: [],
+          });
+        });
+      }
+      if (options.deathStatus) {
+        players.forEach((player) => {
+          this.$store.commit("players/update", {
+            player,
+            property: "isDead",
+            value: false,
+          });
+        });
+      }
+      if (options.nominationStatus) {
+        players.forEach((player) => {
+          this.$store.commit("players/update", {
+            player,
+            property: "isNominated",
+            value: false,
+          });
+        });
+      }
+      if (options.aliveStatus) {
+        players.forEach((player) => {
+          this.$store.commit("players/update", {
+            player,
+            property: "isDead",
+            value: false,
+          });
+        });
+      }
+      if (options.gameHistory) {
+        this.$store.commit("clearHistory");
+      }
+      if (options.voteSettings) {
+        this.$store.commit("session/clearVoteHistory");
+      }
+      if (options.nightSettings) {
+        // 可根据实际夜晚状态重置逻辑补充
+        this.$store.commit("toggleNight", false);
+      }
+      if (options.markerSettings) {
+        this.$store.commit("session/setMarkedPlayer", -1);
+      }
     },
     joinSession() {
       if (this.session.sessionId) return this.leaveSession();

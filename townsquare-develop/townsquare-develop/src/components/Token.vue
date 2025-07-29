@@ -83,42 +83,36 @@ export default {
       );
     },
     iconUrl() {
-      console.log(`Computing iconUrl for role: ${this.role.id}`);
-      console.log(`Role image:`, this.role.image);
+      console.log(`=== Token组件 iconUrl计算 ===`);
+      console.log(`角色ID: ${this.role.id}`);
+      console.log(`角色名称: ${this.role.name}`);
+      console.log(`角色对象:`, this.role);
+      console.log(`role.id类型:`, typeof this.role.id);
+      console.log(`role.id是否为null:`, this.role.id === null);
+      console.log(`role.id是否为undefined:`, this.role.id === undefined);
+      console.log(`role.id是否为falsy:`, !this.role.id);
       console.log(`isImageOptIn:`, this.grimoire.isImageOptIn);
       console.log(`useFallbackIcon:`, this.useFallbackIcon);
 
       // 如果图片加载失败，使用默认图标
       if (this.useFallbackIcon) {
-        console.log(`Using fallback icon for role: ${this.role.id}`);
+        console.log(`使用默认图标 for role: ${this.role.id}`);
         return this.getFallbackIconUrl();
       }
 
       // 如果有自定义图片且启用了自定义图片
       if (this.role.image && this.grimoire.isImageOptIn) {
         console.log(
-          `Loading custom image for role ${this.role.id}:`,
+          `加载自定义图片 for role ${this.role.id}:`,
           this.role.image,
         );
-        // 对于远程图片，添加时间戳防止缓存问题
-        const url = this.role.image;
-        if (url.startsWith("http")) {
-          const separator = url.includes("?") ? "&" : "?";
-          // 使用当前时间戳确保每次都是新的URL
-          const timestamp = Date.now();
-          const finalUrl = `${url}${separator}_t=${timestamp}`;
-          console.log(`Remote image URL with timestamp:`, finalUrl);
-          return finalUrl;
-        }
-        console.log(`Local image URL:`, url);
-        return url;
+        return this.role.image;
       }
 
-      // 使用默认图标
-      console.log(
-        `Using fallback icon for role: ${this.role.id} (no custom image or image opt-in disabled)`,
-      );
-      return this.getFallbackIconUrl();
+      // 使用默认图标路径
+      const defaultIconUrl = require(`../assets/icons/${this.role.id}.png`);
+      console.log(`使用默认图标路径:`, defaultIconUrl);
+      return defaultIconUrl;
     },
     ...mapState(["grimoire"]),
   },

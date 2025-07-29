@@ -188,6 +188,27 @@ const reminderToActionMap = {
 function inferRoleFromReminder(reminderName) {
   const name = reminderName.toLowerCase();
 
+  // 跳过已经特殊处理的标记类型
+  if (
+    name.includes("毒") ||
+    name.includes("poison") ||
+    name.includes("代处决") ||
+    name.includes("executed") ||
+    name.includes("死亡") ||
+    name.includes("dead") ||
+    name.includes("died") ||
+    name.includes("保护") ||
+    name.includes("protect") ||
+    name.includes("士兵") ||
+    name.includes("soldier") ||
+    name.includes("僧侣") ||
+    name.includes("monk") ||
+    name.includes("处女") ||
+    name.includes("virgin")
+  ) {
+    return null; // 这些标记已经特殊处理，不需要额外记录
+  }
+
   // 直接匹配
   for (const [roleId, config] of Object.entries(reminderToActionMap)) {
     if (
@@ -201,12 +222,6 @@ function inferRoleFromReminder(reminderName) {
   // 关键词匹配
   if (name.includes("调查") || name.includes("investigate")) {
     return reminderToActionMap.investigator;
-  }
-  if (name.includes("保护") || name.includes("protect")) {
-    return reminderToActionMap.soldier;
-  }
-  if (name.includes("毒") || name.includes("poison")) {
-    return reminderToActionMap.poisoner;
   }
   if (name.includes("杀死") || name.includes("kill")) {
     return reminderToActionMap.imp;
@@ -284,6 +299,33 @@ export function recordReminderAdded(reminder, player, store) {
       console.error("Error recording death:", error);
     }
     return; // 死亡标记只记录一个，不进行其他记录
+  }
+
+  // 特殊处理：保护类标记
+  if (
+    reminder.name.toLowerCase().includes("保护") ||
+    reminder.name.toLowerCase().includes("protect") ||
+    reminder.name.toLowerCase().includes("士兵") ||
+    reminder.name.toLowerCase().includes("soldier") ||
+    reminder.name.toLowerCase().includes("僧侣") ||
+    reminder.name.toLowerCase().includes("monk") ||
+    reminder.name.toLowerCase().includes("处女") ||
+    reminder.name.toLowerCase().includes("virgin")
+  ) {
+    try {
+      store.commit("addHistoryEvent", {
+        action: "reminder_added",
+        playerName: player.name,
+        reminderName: reminder.name,
+        summary: `为 ${player.name} 添加了标记: ${reminder.name}`,
+        details: `说书人为 ${player.name} 添加了 ${reminder.name} 标记`,
+        isPublic: false,
+      });
+      console.log("Protection record added successfully");
+    } catch (error) {
+      console.error("Error recording protection:", error);
+    }
+    return; // 保护类标记只记录一个，不进行其他记录
   }
 
   // 其他标记的正常处理

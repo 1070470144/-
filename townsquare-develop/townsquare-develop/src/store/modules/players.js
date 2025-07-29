@@ -136,11 +136,32 @@ const mutations = {
   move(state, [from, to]) {
     state.players.splice(to, 0, state.players.splice(from, 1)[0]);
   },
-  setBluff(state, { index, role } = {}) {
-    if (index !== undefined) {
+  setBluff(state, { index, role, bluffs } = {}) {
+    console.log(
+      "setBluff called with index:",
+      index,
+      "role:",
+      role,
+      "bluffs:",
+      bluffs,
+    );
+    console.log("当前bluffs数组:", state.bluffs);
+
+    if (bluffs !== undefined) {
+      // 直接设置整个bluffs数组
+      state.bluffs = bluffs;
+      console.log("设置bluffs数组:", state.bluffs);
+    } else if (index !== undefined) {
+      // 设置单个bluff
+      // 确保数组有足够的长度
+      while (state.bluffs.length <= index) {
+        state.bluffs.push({});
+      }
       state.bluffs.splice(index, 1, role);
+      console.log("设置后的bluffs数组:", state.bluffs);
     } else {
       state.bluffs = [];
+      console.log("清空bluffs数组");
     }
   },
   setFabled(state, { index, fabled } = {}) {

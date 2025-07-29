@@ -139,27 +139,51 @@ export default {
   },
   methods: {
     toggleStatus(status) {
-      if (this.session.isSpectator) return;
+      // 玩家和说书人都可以使用状态切换功能
+      let oldStatus = "存活";
+      if (this.player.isDead) oldStatus = "死亡";
+      if (this.player.isNominated) oldStatus = "待处决";
 
       switch (status) {
         case "alive":
           this.updatePlayer("isDead", false);
           this.updatePlayer("isNominated", false);
+          this.recordStatusChange("存活", oldStatus);
           break;
         case "dead":
           this.updatePlayer("isDead", true);
           this.updatePlayer("isNominated", false);
+          this.recordStatusChange("死亡", oldStatus);
           break;
         case "nominated":
           this.updatePlayer("isNominated", true);
           this.updatePlayer("isDead", false);
+          this.recordStatusChange("待处决", oldStatus);
           break;
       }
     },
 
-    updatePlayer(property, value) {
-      if (this.session.isSpectator) return;
+    recordStatusChange(newStatus, oldStatus) {
+      try {
+        this.$store.commit("addHistoryEvent", {
+          action: "status_change",
+          playerName: this.player.name,
+          oldStatus,
+          newStatus,
+          summary: `${this.player.name} 状态从 ${oldStatus} 变为 ${newStatus}`,
+          details: `${this.session.isSpectator ? "说书人" : "玩家"}将 ${
+            this.player.name
+          } 的状态从 ${oldStatus} 更改为 ${newStatus}`,
+          isPublic: true,
+        });
+        console.log("Status change recorded successfully");
+      } catch (error) {
+        console.error("Error recording status change:", error);
+      }
+    },
 
+    updatePlayer(property, value) {
+      // 玩家和说书人都可以更新玩家状态
       this.$store.commit("players/update", {
         player: this.player,
         property,
@@ -176,26 +200,24 @@ export default {
         this.updatePlayer("reminders", reminders);
 
         // 记录reminder移除
-        if (!this.session.isSpectator) {
-          console.log("Recording reminder removed");
-          try {
-            recordReminderRemoved(reminder, this.player, this.$store);
-          } catch (error) {
-            console.error("Error recording reminder removed:", error);
-          }
+        console.log("Recording reminder removed");
+        try {
+          recordReminderRemoved(reminder, this.player, this.$store);
+        } catch (error) {
+          console.error("Error recording reminder removed:", error);
         }
       }
     },
 
     openReminderModal() {
-      if (this.session.isSpectator) return;
+      // 玩家和说书人都可以打开标记模态框
       this.$store.commit("toggleModal", "reminder");
       // 设置选中的玩家索引
       this.$store.commit("setSelectedPlayer", this.playerIndex);
     },
 
     openRoleModal() {
-      if (this.session.isSpectator) return;
+      // 玩家和说书人都可以打开角色模态框
       this.$store.commit("setSelectedPlayer", this.playerIndex);
       this.$store.commit("toggleModal", "role");
     },

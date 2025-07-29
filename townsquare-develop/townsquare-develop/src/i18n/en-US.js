@@ -85,8 +85,9 @@ export default {
     delayToPlayers: "Delay to players",
     copyPlayerLink: "Copy player link",
     sendCharacters: "Send Characters",
-    voteHistory: "Vote history",
+    voteHistory: "Vote History",
     gameHistory: "Game History",
+    resetGame: "Reset Game",
     leaveSession: "Leave Session",
 
     // Players menu

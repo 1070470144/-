@@ -254,6 +254,23 @@ export default {
       }
     },
   },
+  watch: {
+    "player.role": {
+      handler(newRole, oldRole) {
+        console.log(`=== Player组件 role变化 ===`);
+        console.log(`玩家: ${this.player.name}`);
+        console.log(`旧角色:`, oldRole);
+        console.log(`新角色:`, newRole);
+        console.log(`新角色ID:`, newRole?.id);
+        console.log(`新角色ID类型:`, typeof newRole?.id);
+        console.log(`新角色ID是否为null:`, newRole?.id === null);
+        console.log(`新角色ID是否为undefined:`, newRole?.id === undefined);
+        console.log(`新角色ID是否为falsy:`, !newRole?.id);
+      },
+      deep: true,
+      immediate: true,
+    },
+  },
   data() {
     return {
       isMenuOpen: false,

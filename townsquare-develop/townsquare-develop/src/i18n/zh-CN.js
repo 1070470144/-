@@ -86,6 +86,7 @@ export default {
     sendCharacters: "发送角色",
     voteHistory: "投票历史",
     gameHistory: "游戏历史",
+    resetGame: "重置游戏",
     leaveSession: "离开会话",
 
     // 玩家菜单
