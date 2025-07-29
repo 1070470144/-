@@ -300,15 +300,65 @@ export default {
       );
       if (sessionId) {
         this.$store.commit("session/clearVoteHistory");
+        // 先清除现有会话，确保不会触发socket.js中的自动设置逻辑
+        this.$store.commit("session/setSessionId", "");
+        // 强制设置说书人模式
         this.$store.commit("session/setSpectator", false);
-        this.$store.commit("session/setSessionId", sessionId);
-        this.copySessionUrl();
+        // 确保isSpectator已经被设置后再设置sessionId
+        this.$nextTick(() => {
+          console.log("设置说书人会话，isSpectator:", this.session.isSpectator);
+          this.$store.commit("session/setSessionId", sessionId);
+          
+          // 更新说书人的URL hash，确保刷新后能正确识别
+          const currentUrl = window.location.href.split("#")[0];
+          const newUrl = currentUrl + "#" + sessionId;
+          window.history.pushState(null, "", newUrl);
+          console.log("说书人创建对局，更新URL hash:", newUrl);
+          
+          // 设置hash角色标志位
+          const { setHashRoleFlag } = require("../utils/userStorage");
+          setHashRoleFlag(sessionId, "storyteller");
+          
+          this.copySessionUrl();
+        });
       }
     },
-    copySessionUrl() {
+    async copySessionUrl() {
       const url = window.location.href.split("#")[0];
       const link = url + "#" + this.session.sessionId;
-      navigator.clipboard.writeText(link);
+      
+      try {
+        // 尝试使用现代剪贴板API
+        await navigator.clipboard.writeText(link);
+        console.log("链接已复制到剪贴板:", link);
+      } catch (error) {
+        console.warn("现代剪贴板API失败，尝试备用方法:", error);
+        
+        // 备用方法：使用传统的document.execCommand
+        const textArea = document.createElement("textarea");
+        textArea.value = link;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        
+        try {
+          const successful = document.execCommand("copy");
+          if (successful) {
+            console.log("链接已复制到剪贴板（备用方法）:", link);
+          } else {
+            console.error("复制失败");
+            alert("复制失败，请手动复制链接：" + link);
+          }
+        } catch (err) {
+          console.error("备用复制方法也失败:", err);
+          alert("复制失败，请手动复制链接：" + link);
+        } finally {
+          document.body.removeChild(textArea);
+        }
+      }
     },
     distributeRoles() {
       if (this.session.isSpectator) return;
@@ -462,12 +512,31 @@ export default {
         this.$store.commit("session/setSpectator", true);
         this.$store.commit("toggleGrimoire", false);
         this.$store.commit("session/setSessionId", sessionId);
+        
+        // 更新URL hash，确保游客模式被正确识别为玩家模式
+        this.$nextTick(() => {
+          const currentUrl = window.location.href.split("#")[0];
+          const newUrl = currentUrl + "#" + sessionId;
+          window.history.pushState(null, "", newUrl);
+          console.log("游客加入对局，更新URL hash:", newUrl);
+          
+          // 设置hash角色标志位
+          const { setHashRoleFlag } = require("../utils/userStorage");
+          setHashRoleFlag(sessionId, "player");
+        });
       }
     },
     leaveSession() {
       if (confirm(this.$t("confirm.leaveActiveGame"))) {
+        const sessionId = this.session.sessionId;
         this.$store.commit("session/setSpectator", false);
         this.$store.commit("session/setSessionId", "");
+        
+        // 清除hash角色标志位
+        if (sessionId) {
+          const { clearHashRoleFlag } = require("../utils/userStorage");
+          clearHashRoleFlag(sessionId);
+        }
       }
     },
     addPlayer() {

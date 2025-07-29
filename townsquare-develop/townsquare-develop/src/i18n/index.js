@@ -14,12 +14,14 @@ function getUserLanguage() {
 
 // 获取当前语言
 function getCurrentLanguage() {
-  return localStorage.getItem("language") || getUserLanguage();
+  const userStorage = require("../utils/userStorage").default;
+  return userStorage.getItem("language") || getUserLanguage();
 }
 
 // 设置语言
 function setLanguage(lang) {
-  localStorage.setItem("language", lang);
+  const userStorage = require("../utils/userStorage").default;
+  userStorage.setItem("language", lang);
   window.location.reload();
 }
 

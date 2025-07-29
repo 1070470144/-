@@ -224,7 +224,8 @@ export default new Vuex.Store({
     toggleImageOptIn: toggle("isImageOptIn"),
     setLocale(state, locale) {
       state.locale = locale;
-      localStorage.setItem("language", locale);
+      const userStorage = require("../utils/userStorage").default;
+      userStorage.setItem("language", locale);
     },
     toggleModal({ modals }, name) {
       if (name) {
@@ -430,25 +431,22 @@ export default new Vuex.Store({
 
       state.history.events.push(historyEvent);
       // 保存到本地存储
-      localStorage.setItem("gameHistory", JSON.stringify(state.history.events));
+      const userStorage = require("../utils/userStorage").default;
+      userStorage.setItem("gameHistory", state.history.events);
     },
     undoHistoryEvent(state) {
       if (state.history.events.length > 0) {
         state.history.events.pop();
-        localStorage.setItem(
-          "gameHistory",
-          JSON.stringify(state.history.events),
-        );
+        const userStorage = require("../utils/userStorage").default;
+        userStorage.setItem("gameHistory", state.history.events);
       }
     },
     addHistoryNote(state, { eventId, note }) {
       const event = state.history.events.find((e) => e.id === eventId);
       if (event) {
         event.note = note;
-        localStorage.setItem(
-          "gameHistory",
-          JSON.stringify(state.history.events),
-        );
+        const userStorage = require("../utils/userStorage").default;
+        userStorage.setItem("gameHistory", state.history.events);
       }
     },
     setCurrentRound(state, round) {
@@ -525,10 +523,11 @@ export default new Vuex.Store({
       }
     },
     loadHistoryFromStorage(state) {
-      const savedHistory = localStorage.getItem("gameHistory");
+      const userStorage = require("../utils/userStorage").default;
+      const savedHistory = userStorage.getItem("gameHistory");
       if (savedHistory) {
         try {
-          state.history.events = JSON.parse(savedHistory);
+          state.history.events = savedHistory;
         } catch (e) {
           console.warn("Failed to load history from storage:", e);
         }
@@ -536,7 +535,8 @@ export default new Vuex.Store({
     },
     clearHistory(state) {
       state.history.events = [];
-      localStorage.removeItem("gameHistory");
+      const userStorage = require("../utils/userStorage").default;
+      userStorage.removeItem("gameHistory");
     },
     checkNewGame(state) {
       // 检查是否有历史记录

@@ -84,13 +84,19 @@ class LiveSession {
    * @private
    */
   _onOpen() {
+    console.log("Socket连接已建立");
+    console.log("是否为观众模式:", this._isSpectator);
+    console.log("当前玩家ID:", this._store.state.session.playerId);
+    
     if (this._isSpectator) {
+      console.log("玩家模式：请求游戏状态");
       this._sendDirect(
         "host",
         "getGamestate",
         this._store.state.session.playerId,
       );
     } else {
+      console.log("说书人模式：发送游戏状态");
       // 说书人连接时只发送基本信息，不包含角色信息
       this.sendGamestate("", false, false);
     }
@@ -227,16 +233,39 @@ class LiveSession {
    * @param channel
    */
   connect(channel) {
+    // 只有在没有玩家ID时才生成新的玩家ID
     if (!this._store.state.session.playerId) {
-      this._store.commit(
-        "session/setPlayerId",
-        Math.random().toString(36).substr(2),
-      );
+      let playerId;
+      if (window.location.hash.substr(1)) {
+        // 使用URL参数作为玩家ID，基于hash生成稳定的ID
+        const hash = window.location.hash.substr(1);
+        // 使用hash作为基础，添加一个固定的后缀来区分不同浏览器实例
+        // 但不使用时间戳，这样刷新时ID保持一致
+        const browserId = localStorage.getItem('browser_instance_id') || Math.random().toString(36).substr(2, 6);
+        if (!localStorage.getItem('browser_instance_id')) {
+          localStorage.setItem('browser_instance_id', browserId);
+        }
+        playerId = hash + "_" + browserId;
+      } else {
+        // 生成基于会话ID的唯一玩家ID
+        playerId = "player_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
+      }
+      
+      console.log("生成新玩家ID:", playerId);
+      this._store.commit("session/setPlayerId", playerId);
+    } else {
+      console.log("使用现有玩家ID:", this._store.state.session.playerId);
     }
+    
+    // 重置连接状态
     this._pings = {};
     this._store.commit("session/setPlayerCount", 0);
     this._store.commit("session/setPing", 0);
+    this._store.commit("session/setReconnecting", false);
     this._isSpectator = this._store.state.session.isSpectator;
+    
+    console.log("开始连接，玩家ID:", this._store.state.session.playerId);
+    console.log("是否为观众模式:", this._isSpectator);
     this._open(channel);
   }
 
@@ -330,10 +359,12 @@ class LiveSession {
       if (playerId && targetPlayer) {
         shouldSendBluffs =
           targetPlayer.role && targetPlayer.role.team === "demon";
+        console.log(`检查恶魔伪装发送: ${targetPlayer.name}, 是否为恶魔: ${shouldSendBluffs}`);
       } else {
         // 如果没有指定playerId，说明是广播给所有玩家
         // 在这种情况下，所有玩家都会收到，但只有恶魔玩家会处理
         shouldSendBluffs = true;
+        console.log("广播模式，所有玩家都会收到恶魔伪装信息");
       }
 
       this.sendEdition(playerId);
@@ -456,9 +487,27 @@ class LiveSession {
           currentPlayer.role &&
           currentPlayer.role.team === "demon";
 
+        console.log("检查恶魔伪装处理:", {
+          currentPlayerId: this._store.state.session.playerId,
+          currentPlayer: currentPlayer,
+          currentPlayerRole: currentPlayer?.role,
+          isCurrentPlayerDemon: isCurrentPlayerDemon,
+          bluffs: bluffs
+        });
+
         if (isCurrentPlayerDemon) {
           console.log("恶魔玩家收到恶魔伪装信息:", bluffs);
-          this._store.commit("players/setBluff", { bluffs });
+          // 确保bluffs是数组格式
+          if (Array.isArray(bluffs)) {
+            bluffs.forEach((bluff, index) => {
+              this._store.commit("players/setBluff", {
+                index,
+                role: bluff,
+              });
+            });
+          } else {
+            this._store.commit("players/setBluff", { bluffs });
+          }
         } else {
           console.log("非恶魔玩家收到bluffs信息，忽略处理");
         }
@@ -573,10 +622,14 @@ class LiveSession {
     const player = this._store.state.players.players[index];
     if (!player) return;
 
+    console.log(`收到玩家更新: ${player.name}, 属性: ${property}, 值:`, value);
+
     // special case where a player stops being a traveler
     if (property === "role") {
+      console.log(`处理角色更新: ${player.name}, 角色ID: ${value}`);
       if (!value && player.role.team === "traveler") {
         // reset to an unknown role
+        console.log(`重置旅行者角色: ${player.name}`);
         this._store.commit("players/update", {
           player,
           property: "role",
@@ -588,6 +641,7 @@ class LiveSession {
           this._store.state.roles.get(value) ||
           this._store.getters.rolesJSONbyId.get(value) ||
           {};
+        console.log(`更新玩家角色: ${player.name}, 角色ID: ${value} ->`, role);
         this._store.commit("players/update", {
           player,
           property: "role",
@@ -596,6 +650,7 @@ class LiveSession {
       }
     } else {
       // just update the player otherwise
+      console.log(`更新玩家属性: ${player.name}, ${property}: ${value}`);
       this._store.commit("players/update", { player, property, value });
     }
   }
@@ -1253,11 +1308,42 @@ export default (store) => {
     }
   });
 
-  // check for session Id in hash
+  // check for session Id in hash (only on initial load)
   const sessionId = window.location.hash.substr(1);
-  if (sessionId) {
-    store.commit("session/setSpectator", true);
-    store.commit("session/setSessionId", sessionId);
-    store.commit("toggleGrimoire", false);
+  if (sessionId && !store.state.session.sessionId) {
+    // 只有在没有现有会话时才自动设置
+    const { getHashRoleFlag, setHashRoleFlag } = require("../utils/userStorage");
+    const hashRole = getHashRoleFlag(sessionId);
+    
+    if (hashRole === "storyteller") {
+      // 说书人模式
+      console.log("检测到说书人hash标志位，设置为说书人模式");
+      store.commit("session/setSpectator", false);
+      store.commit("session/setSessionId", sessionId);
+    } else if (hashRole === "player") {
+      // 玩家模式
+      console.log("检测到玩家hash标志位，设置为玩家模式");
+      store.commit("session/setSpectator", true);
+      store.commit("session/setSessionId", sessionId);
+      store.commit("toggleGrimoire", false);
+    } else {
+      // 没有标志位，默认为玩家模式（兼容旧版本）
+      console.log("没有hash角色标志位，默认为玩家模式");
+      store.commit("session/setSpectator", true);
+      store.commit("session/setSessionId", sessionId);
+      store.commit("toggleGrimoire", false);
+      
+      // 设置默认标志位
+      setHashRoleFlag(sessionId, "player");
+    }
   }
+  
+  // 确保在数据恢复完成后重新建立socket连接
+  // 使用setTimeout确保在下一个事件循环中执行
+  setTimeout(() => {
+    if (store.state.session.sessionId && !session._socket) {
+      console.log("数据恢复完成，重新建立socket连接");
+      session.connect(store.state.session.sessionId);
+    }
+  }, 100);
 };
