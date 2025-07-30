@@ -2,6 +2,7 @@
   <div
     id="app"
     @keyup="keyup"
+    @contextmenu="handleRightClick"
     tabindex="-1"
     :class="{
       night: grimoire.isNight,
@@ -55,6 +56,29 @@
     <NightOrderModal />
     <VoteHistoryModal />
     <GameStateModal />
+    <AdminPanel v-if="showAdminPanel" @close="showAdminPanel = false" />
+    
+    <!-- 管理员密码输入模态框 -->
+    <div v-if="showAdminPasswordModal" class="admin-password-modal">
+      <div class="modal-content">
+        <h3>请输入管理员密码</h3>
+        <div class="password-input">
+          <input
+            id="admin-password-input"
+            v-model="adminPassword"
+            type="password"
+            placeholder="请输入密码"
+            @keyup.enter="checkAdminPassword"
+            @keyup.escape="cancelAdminPassword"
+          />
+        </div>
+        <div class="modal-actions">
+          <button @click="checkAdminPassword" class="confirm-btn">确认</button>
+          <button @click="cancelAdminPassword" class="cancel-btn">取消</button>
+        </div>
+      </div>
+    </div>
+    
     <Gradients />
     <span id="version">v{{ version }}</span>
   </div>
@@ -81,6 +105,7 @@ import RoleAbilityModal from "@/components/modals/RoleAbilityModal";
 import PlayerActionPanel from "@/components/PlayerActionPanel";
 import PlayerDrawer from "@/components/PlayerDrawer";
 import RoleModal from "@/components/modals/RoleModal";
+import AdminPanel from "@/components/admin/AdminPanel";
 
 export default {
   components: {
@@ -102,6 +127,7 @@ export default {
     PlayerActionPanel,
     PlayerDrawer,
     RoleModal,
+    AdminPanel,
   },
   computed: {
     ...mapState(["grimoire", "session"]),
@@ -115,10 +141,28 @@ export default {
       showDrawer: false,
       selectedPlayer: null,
       selectedPlayerIndex: -1,
+      showAdminPanel: false,
+      adminClickSequence: [],
+      adminClickTimeout: null,
+      showAdminPasswordModal: false,
+      adminPassword: '',
+      adminPasswordAttempts: 0,
     };
   },
   methods: {
-    keyup({ key, ctrlKey, metaKey }) {
+    keyup({ key, ctrlKey, metaKey, altKey }) {
+      // 管理员面板快捷键：Ctrl + Alt + M
+      if (ctrlKey && altKey && key.toLowerCase() === 'm') {
+        this.showAdminPasswordModal = true;
+        this.$nextTick(() => {
+          const passwordInput = document.getElementById('admin-password-input');
+          if (passwordInput) {
+            passwordInput.focus();
+          }
+        });
+        return;
+      }
+      
       if (ctrlKey || metaKey) return;
       switch (key.toLocaleLowerCase()) {
         case "g":
@@ -168,6 +212,46 @@ export default {
       this.selectedPlayer = this.players[playerIndex];
       this.selectedPlayerIndex = playerIndex;
       this.showDrawer = true;
+    },
+    toggleAdminPanel() {
+      // 检查是否有管理员权限
+      if (this.session.isSpectator === false && this.session.sessionId) {
+        this.showAdminPanel = !this.showAdminPanel;
+        console.log('管理员面板已切换:', this.showAdminPanel);
+      } else {
+        console.log('无管理员权限');
+      }
+    },
+    checkAdminPassword() {
+      if (this.adminPassword === 'mm666') {
+        this.showAdminPasswordModal = false;
+        this.adminPassword = '';
+        this.adminPasswordAttempts = 0;
+        this.toggleAdminPanel();
+      } else {
+        this.adminPasswordAttempts++;
+        this.adminPassword = '';
+        if (this.adminPasswordAttempts >= 3) {
+          this.showAdminPasswordModal = false;
+          this.adminPasswordAttempts = 0;
+          alert('密码错误次数过多，请稍后再试');
+        } else {
+          alert(`密码错误，还剩 ${3 - this.adminPasswordAttempts} 次机会`);
+        }
+      }
+    },
+    cancelAdminPassword() {
+      this.showAdminPasswordModal = false;
+      this.adminPassword = '';
+      this.adminPasswordAttempts = 0;
+    },
+    handleRightClick(event) {
+      // 隐藏的右键菜单：在空白区域右键点击
+      const target = event.target;
+      if (target.id === 'app' || target.classList.contains('backdrop')) {
+        event.preventDefault();
+        // 移除右键菜单触发，改为更隐秘的方式
+      }
     },
   },
 };
@@ -445,5 +529,95 @@ video#background {
 
 #app.night > .backdrop {
   opacity: 0.5;
+}
+
+/* 管理员密码模态框样式 */
+.admin-password-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1200;
+  
+  .modal-content {
+    background: rgba(0, 0, 0, 0.95);
+    border: 2px solid #gold;
+    border-radius: 10px;
+    padding: 30px;
+    width: 90vw;
+    max-width: 400px;
+    color: white;
+    text-align: center;
+    
+    h3 {
+      color: #gold;
+      margin-bottom: 20px;
+      font-size: 18px;
+    }
+    
+    .password-input {
+      margin-bottom: 20px;
+      
+      input {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+        border-radius: 5px;
+        font-family: 'Papyrus', serif;
+        font-size: 16px;
+        text-align: center;
+        
+        &::placeholder {
+          color: rgba(255, 255, 255, 0.5);
+        }
+        
+        &:focus {
+          outline: none;
+          border-color: #gold;
+          box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+      }
+    }
+    
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      
+      .confirm-btn, .cancel-btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-family: 'Papyrus', serif;
+        font-size: 14px;
+      }
+      
+      .confirm-btn {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4caf50;
+        
+        &:hover {
+          background: rgba(76, 175, 80, 0.3);
+        }
+      }
+      
+      .cancel-btn {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.8);
+        
+        &:hover {
+          background: rgba(255, 255, 255, 0.2);
+        }
+      }
+    }
+  }
 }
 </style>

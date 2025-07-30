@@ -243,6 +243,7 @@
               </a>
             </em>
           </li>
+          <!-- 隐藏的管理员入口，通过快捷键 Ctrl+Shift+M 访问 -->
         </template>
       </ul>
     </div>
@@ -263,19 +264,22 @@ export default {
   components: {
     ResetGameModal,
   },
-  computed: {
-    ...mapState(["grimoire", "session", "edition", "roles", "history"]),
-    ...mapState("players", ["players"]),
-    currentLanguage() {
-      return i18n.getCurrentLanguage();
+      computed: {
+      ...mapState(["grimoire", "session", "edition", "roles", "history"]),
+      ...mapState("players", ["players"]),
+      currentLanguage() {
+        return i18n.getCurrentLanguage();
+      },
+      hasCustomImages() {
+        // 检查当前角色中是否有自定义图片
+        return Array.from(this.roles.values()).some(
+          (role) => role.image && role.image.trim() !== "",
+        );
+      },
+      isAdmin() {
+        return this.session.isSpectator === false && this.session.sessionId;
+      },
     },
-    hasCustomImages() {
-      // 检查当前角色中是否有自定义图片
-      return Array.from(this.roles.values()).some(
-        (role) => role.image && role.image.trim() !== "",
-      );
-    },
-  },
   data() {
     return {
       tab: "grimoire",
@@ -588,6 +592,9 @@ export default {
     },
     toggleHistoryPanel() {
       this.$parent.showHistoryPanel = !this.$parent.showHistoryPanel;
+    },
+    openAdminPanel() {
+      this.$parent.showAdminPanel = true;
     },
     toggleNight() {
       this.$store.commit("toggleNight");
