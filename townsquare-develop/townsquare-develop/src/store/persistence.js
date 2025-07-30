@@ -1,14 +1,12 @@
 const userStorage = require("../utils/userStorage").default;
 const { getUserSpecificKey } = require("../utils/userStorage");
+const { SYSTEM_KEYS, USER_DATA_KEYS } = require("../utils/storageKeys.js");
 
 module.exports = (store) => {
   const updatePagetitle = (isPublic) =>
     (document.title = `Blood on the Clocktower ${
       isPublic ? "Town Square" : "Grimoire"
     }`);
-
-  // 迁移旧数据
-  userStorage.migrateOldData();
 
   // 更新用户角色（确保初始化时角色检测正确）
   userStorage.updateRole();
@@ -57,7 +55,7 @@ module.exports = (store) => {
     }
 
     // 检查全局会话数据，如果是说书人会话则强制设置为说书人模式
-    const globalSessionData = localStorage.getItem("session");
+    const globalSessionData = localStorage.getItem(SYSTEM_KEYS.GLOBAL_SESSION);
     console.log("- 全局会话数据:", globalSessionData);
 
     if (
@@ -83,37 +81,37 @@ module.exports = (store) => {
   }
 
   // initialize data
-  if (userStorage.getItem("background")) {
+  if (userStorage.getItem(USER_DATA_KEYS.BACKGROUND)) {
     console.log("恢复背景设置");
-    store.commit("setBackground", userStorage.getItem("background"));
+    store.commit("setBackground", userStorage.getItem(USER_DATA_KEYS.BACKGROUND));
   }
-  if (userStorage.getItem("muted")) {
+  if (userStorage.getItem(USER_DATA_KEYS.MUTED)) {
     store.commit("toggleMuted", true);
   }
-  if (userStorage.getItem("static")) {
+  if (userStorage.getItem(USER_DATA_KEYS.STATIC)) {
     store.commit("toggleStatic", true);
   }
-  if (userStorage.getItem("imageOptIn")) {
+  if (userStorage.getItem(SYSTEM_KEYS.IMAGE_OPT_IN)) {
     store.commit("toggleImageOptIn", true);
   }
-  if (userStorage.getItem("zoom")) {
-    store.commit("setZoom", parseFloat(userStorage.getItem("zoom")));
+  if (userStorage.getItem(USER_DATA_KEYS.ZOOM)) {
+    store.commit("setZoom", parseFloat(userStorage.getItem(USER_DATA_KEYS.ZOOM)));
   }
-  if (userStorage.getItem("isGrimoire")) {
+  if (userStorage.getItem(USER_DATA_KEYS.IS_GRIMOIRE)) {
     store.commit("toggleGrimoire", false);
     updatePagetitle(false);
   }
-  if (userStorage.getItem("roles") !== null) {
-    store.commit("setCustomRoles", userStorage.getItem("roles"));
+  if (userStorage.getItem(USER_DATA_KEYS.ROLES) !== null) {
+    store.commit("setCustomRoles", userStorage.getItem(USER_DATA_KEYS.ROLES));
     store.commit("setEdition", { id: "custom" });
   }
-  if (userStorage.getItem("edition") !== null) {
+  if (userStorage.getItem(USER_DATA_KEYS.EDITION) !== null) {
     // this will initialize state.roles for official editions
-    store.commit("setEdition", userStorage.getItem("edition"));
+    store.commit("setEdition", userStorage.getItem(USER_DATA_KEYS.EDITION));
   }
   // 恶魔伪装恢复逻辑将在玩家数据恢复后执行
   // 这样可以确保能正确识别当前玩家是否为恶魔
-  if (userStorage.getItem("fabled") !== null) {
+  if (userStorage.getItem(USER_DATA_KEYS.FABLED) !== null) {
     // 检查是否有说书人数据
     const userInfo = userStorage.getUserInfo();
     const userId = userStorage.userId;
@@ -127,30 +125,30 @@ module.exports = (store) => {
       console.log("检测到说书人数据，恢复寓言数据");
       store.commit("players/setFabled", {
         fabled: userStorage
-          .getItem("fabled")
+          .getItem(USER_DATA_KEYS.FABLED)
           .map((fabled) => store.state.fabled.get(fabled.id) || fabled),
       });
     }
   }
-  if (userStorage.getItem("players") !== null) {
+  if (userStorage.getItem(USER_DATA_KEYS.PLAYERS) !== null) {
     console.log("找到玩家数据，开始恢复");
     // 检查当前是否为玩家模式
-    const sessionData = userStorage.getItem("session");
+    const sessionData = userStorage.getItem(USER_DATA_KEYS.SESSION);
     const hasUrlHash = window.location.hash.substr(1);
     const isPlayerMode = hasUrlHash || (sessionData && sessionData[0]);
 
     console.log("会话数据:", sessionData);
     console.log("URL参数:", hasUrlHash);
     console.log("是否为玩家模式:", isPlayerMode);
-    console.log("当前玩家ID:", userStorage.getItem("playerId"));
-    console.log("存储的玩家数据:", userStorage.getItem("players"));
+    console.log("当前玩家ID:", userStorage.getItem(USER_DATA_KEYS.PLAYER_ID));
+    console.log("存储的玩家数据:", userStorage.getItem(USER_DATA_KEYS.PLAYERS));
     console.log("当前用户信息:", userStorage.getUserInfo());
     console.log("存储键前缀:", userStorage.getUserInfo().userId);
 
     if (isPlayerMode) {
       // 玩家模式：恢复座位信息和自己的角色信息
-      const currentPlayerId = userStorage.getItem("playerId");
-      const playersData = userStorage.getItem("players");
+      const currentPlayerId = userStorage.getItem(USER_DATA_KEYS.PLAYER_ID);
+      const playersData = userStorage.getItem(USER_DATA_KEYS.PLAYERS);
       console.log("玩家模式恢复，当前玩家ID:", currentPlayerId);
       console.log("玩家数据:", playersData);
 
@@ -181,7 +179,7 @@ module.exports = (store) => {
       );
 
       // 玩家模式下恢复恶魔伪装（如果是恶魔的话）
-      if (userStorage.getItem("bluffs") !== null) {
+      if (userStorage.getItem(USER_DATA_KEYS.BLUFFS) !== null) {
         console.log("检查玩家是否为恶魔，恢复恶魔伪装");
         const currentPlayer = store.state.players.players.find(
           (p) => p.id === currentPlayerId,
@@ -193,7 +191,7 @@ module.exports = (store) => {
           currentPlayer.role.team === "demon"
         ) {
           console.log("检测到恶魔玩家，恢复恶魔伪装");
-          const bluffsData = userStorage.getItem("bluffs");
+          const bluffsData = userStorage.getItem(USER_DATA_KEYS.BLUFFS);
           console.log("恶魔伪装数据:", bluffsData);
           bluffsData.forEach((roleId, index) => {
             const role =
@@ -216,10 +214,10 @@ module.exports = (store) => {
       console.log("说书人模式恢复，用户信息:", userInfo);
 
       // 检查是否有说书人数据
-      const storytellerPlayers = userStorage.getItem("players");
-      const storytellerEdition = userStorage.getItem("edition");
-      const storytellerFabled = userStorage.getItem("fabled");
-      const storytellerBluffs = userStorage.getItem("bluffs");
+      const storytellerPlayers = userStorage.getItem(USER_DATA_KEYS.PLAYERS);
+      const storytellerEdition = userStorage.getItem(USER_DATA_KEYS.EDITION);
+      const storytellerFabled = userStorage.getItem(USER_DATA_KEYS.FABLED);
+      const storytellerBluffs = userStorage.getItem(USER_DATA_KEYS.BLUFFS);
       const hasStorytellerData =
         storytellerPlayers ||
         storytellerEdition ||
@@ -274,9 +272,9 @@ module.exports = (store) => {
           console.log("成功恢复", restoredPlayers.length, "个玩家的数据");
 
           // 说书人模式下恢复恶魔伪装
-          if (userStorage.getItem("bluffs") !== null) {
+          if (userStorage.getItem(USER_DATA_KEYS.BLUFFS) !== null) {
             console.log("说书人模式，恢复恶魔伪装");
-            const bluffsData = userStorage.getItem("bluffs");
+            const bluffsData = userStorage.getItem(USER_DATA_KEYS.BLUFFS);
             console.log("恶魔伪装数据:", bluffsData);
             bluffsData.forEach((roleId, index) => {
               const role =
@@ -309,13 +307,13 @@ module.exports = (store) => {
   }
   /**** Session related data *****/
   // 恢复玩家ID（使用用户特定的存储键）
-  const playerId = userStorage.getItem("playerId");
+  const playerId = userStorage.getItem(USER_DATA_KEYS.PLAYER_ID);
   if (playerId) {
     console.log("恢复玩家ID:", playerId);
     store.commit("session/setPlayerId", playerId);
   }
   // 检查用户特定的会话数据
-  const userSessionData = userStorage.getItem("session");
+  const userSessionData = userStorage.getItem(USER_DATA_KEYS.SESSION);
   const userInfo = userStorage.getUserInfo();
 
   // 对于说书人，即使有URL hash也要恢复会话
@@ -376,69 +374,69 @@ module.exports = (store) => {
     switch (type) {
       case "toggleGrimoire":
         if (!state.grimoire.isPublic) {
-          userStorage.setItem("isGrimoire", 1);
+          userStorage.setItem(USER_DATA_KEYS.IS_GRIMOIRE, 1);
         } else {
-          userStorage.removeItem("isGrimoire");
+          userStorage.removeItem(USER_DATA_KEYS.IS_GRIMOIRE);
         }
         updatePagetitle(state.grimoire.isPublic);
         break;
       case "setBackground":
         if (payload) {
-          userStorage.setItem("background", payload);
+          userStorage.setItem(USER_DATA_KEYS.BACKGROUND, payload);
         } else {
-          userStorage.removeItem("background");
+          userStorage.removeItem(USER_DATA_KEYS.BACKGROUND);
         }
         break;
       case "toggleMuted":
         if (state.grimoire.isMuted) {
-          userStorage.setItem("muted", 1);
+          userStorage.setItem(USER_DATA_KEYS.MUTED, 1);
         } else {
-          userStorage.removeItem("muted");
+          userStorage.removeItem(USER_DATA_KEYS.MUTED);
         }
         break;
       case "toggleStatic":
         if (state.grimoire.isStatic) {
-          userStorage.setItem("static", 1);
+          userStorage.setItem(USER_DATA_KEYS.STATIC, 1);
         } else {
-          userStorage.removeItem("static");
+          userStorage.removeItem(USER_DATA_KEYS.STATIC);
         }
         break;
       case "toggleImageOptIn":
         if (state.grimoire.isImageOptIn) {
-          userStorage.setItem("imageOptIn", 1);
+          userStorage.setItem(SYSTEM_KEYS.IMAGE_OPT_IN, 1);
         } else {
-          userStorage.removeItem("imageOptIn");
+          userStorage.removeItem(SYSTEM_KEYS.IMAGE_OPT_IN);
         }
         break;
       case "setZoom":
         if (payload !== 0) {
-          userStorage.setItem("zoom", payload);
+          userStorage.setItem(USER_DATA_KEYS.ZOOM, payload);
         } else {
-          userStorage.removeItem("zoom");
+          userStorage.removeItem(USER_DATA_KEYS.ZOOM);
         }
         break;
       case "setEdition":
-        userStorage.setItem("edition", payload);
+        userStorage.setItem(USER_DATA_KEYS.EDITION, payload);
         if (state.edition.isOfficial) {
-          userStorage.removeItem("roles");
+          userStorage.removeItem(USER_DATA_KEYS.ROLES);
         }
         break;
       case "setCustomRoles":
         if (!payload.length) {
-          userStorage.removeItem("roles");
+          userStorage.removeItem(USER_DATA_KEYS.ROLES);
         } else {
-          userStorage.setItem("roles", payload);
+          userStorage.setItem(USER_DATA_KEYS.ROLES, payload);
         }
         break;
       case "players/setBluff":
         userStorage.setItem(
-          "bluffs",
+          USER_DATA_KEYS.BLUFFS,
           state.players.bluffs.map(({ id }) => id),
         );
         break;
       case "players/setFabled":
         userStorage.setItem(
-          "fabled",
+          USER_DATA_KEYS.FABLED,
           state.players.fabled.map((fabled) =>
             fabled.isCustom ? fabled : { id: fabled.id },
           ),
@@ -474,10 +472,10 @@ module.exports = (store) => {
             };
           });
           console.log("要保存的玩家数据:", playerData);
-          userStorage.setItem("players", playerData);
+          userStorage.setItem(USER_DATA_KEYS.PLAYERS, playerData);
         } else {
           console.log("清除玩家数据");
-          userStorage.removeItem("players");
+          userStorage.removeItem(USER_DATA_KEYS.PLAYERS);
         }
         break;
       case "session/setSessionId":
@@ -494,19 +492,19 @@ module.exports = (store) => {
           console.log("当前用户信息:", userInfo);
           console.log(
             "保存到存储键:",
-            getUserSpecificKey("session", userInfo.role),
+            getUserSpecificKey(USER_DATA_KEYS.SESSION, userInfo.role),
           );
-          userStorage.setItem("session", [isSpectator, payload]);
+          userStorage.setItem(USER_DATA_KEYS.SESSION, [isSpectator, payload]);
         } else {
           console.log("清除会话数据");
-          userStorage.removeItem("session");
+          userStorage.removeItem(USER_DATA_KEYS.SESSION);
         }
         break;
       case "session/setPlayerId":
         if (payload) {
-          userStorage.setItem("playerId", payload);
+          userStorage.setItem(USER_DATA_KEYS.PLAYER_ID, payload);
         } else {
-          userStorage.removeItem("playerId");
+          userStorage.removeItem(USER_DATA_KEYS.PLAYER_ID);
         }
         break;
     }

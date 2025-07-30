@@ -3,59 +3,45 @@
  * 为每个用户创建独立的localStorage命名空间
  */
 
+import { SYSTEM_KEYS, USER_DATA_KEYS, getRoleFlagKey } from './storageKeys.js';
+
 // 生成用户ID
 function generateUserId() {
-  // 检查URL参数
-  const hash = window.location.hash.substr(1);
-
   // 优先检查是否有现有的说书人用户ID
-  let storytellerUserId = localStorage.getItem("_storyteller_userId");
+  let storytellerUserId = localStorage.getItem(SYSTEM_KEYS.STORYTELLER_USER_ID);
   if (storytellerUserId) {
     console.log("检测到现有说书人用户ID:", storytellerUserId);
     return storytellerUserId;
   }
 
-  // 如果有URL参数且没有说书人用户ID，说明是玩家模式
-  if (hash) {
-    // 玩家模式：为每个URL参数生成独立的用户ID
-    const playerUserId =
-      "player_" +
-      hash +
-      "_" +
-      Date.now() +
-      "_" +
-      Math.random().toString(36).substr(2, 6);
-    console.log("玩家模式，生成独立用户ID:", playerUserId);
-    return playerUserId;
+  // 检查是否有现有的浏览器窗口ID
+  let browserWindowId = localStorage.getItem(SYSTEM_KEYS.BROWSER_WINDOW_ID);
+  if (!browserWindowId) {
+    // 生成新的浏览器窗口ID
+    browserWindowId = "window_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem(SYSTEM_KEYS.BROWSER_WINDOW_ID, browserWindowId);
+  } else {
+    console.log("使用现有浏览器窗口ID:", browserWindowId);
   }
 
-  // 裸链接模式：默认生成游客用户ID
-  const spectatorUserId =
-    "spectator_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
-  console.log("裸链接模式，生成游客用户ID:", spectatorUserId);
+  // 根据浏览器窗口生成玩家用户ID
+  const playerUserId = "player_" + browserWindowId;
+  console.log("生成玩家用户ID:", playerUserId);
 
-  return spectatorUserId;
+  return playerUserId;
 }
 
 // 生成玩家会话ID
 function generatePlayerSessionId() {
-  // 检查URL参数中的玩家ID
-  const hash = window.location.hash.substr(1);
-  if (hash) {
-    console.log("从URL参数获取玩家会话ID:", hash);
-    // 使用hash作为基础，添加一个固定的后缀来区分不同浏览器实例
-    // 但不使用时间戳，这样刷新时ID保持一致
-    const browserId =
-      localStorage.getItem("browser_instance_id") ||
-      Math.random().toString(36).substr(2, 6);
-    if (!localStorage.getItem("browser_instance_id")) {
-      localStorage.setItem("browser_instance_id", browserId);
-    }
-    return hash + "_" + browserId;
+  // 使用浏览器窗口ID作为玩家会话ID
+  const browserWindowId = localStorage.getItem(SYSTEM_KEYS.BROWSER_WINDOW_ID);
+  if (browserWindowId) {
+    console.log("使用浏览器窗口ID作为玩家会话ID:", browserWindowId);
+    return browserWindowId;
   }
 
-  // 如果没有URL参数，说明不是玩家模式，返回null
-  console.log("没有URL参数，不是玩家模式");
+  // 如果没有浏览器窗口ID，返回null
+  console.log("没有浏览器窗口ID，不是玩家模式");
   return null;
 }
 
@@ -78,7 +64,7 @@ function getCurrentPlayerSessionId() {
 // 设置hash角色标志位
 function setHashRoleFlag(hash, role) {
   if (!hash) return;
-  const flagKey = `_hash_role_${hash}`;
+  const flagKey = getRoleFlagKey(hash);
   localStorage.setItem(flagKey, role);
   console.log(`设置hash角色标志位: ${hash} -> ${role}`);
 }
@@ -86,7 +72,7 @@ function setHashRoleFlag(hash, role) {
 // 获取hash角色标志位
 function getHashRoleFlag(hash) {
   if (!hash) return null;
-  const flagKey = `_hash_role_${hash}`;
+  const flagKey = getRoleFlagKey(hash);
   const role = localStorage.getItem(flagKey);
   console.log(`获取hash角色标志位: ${hash} -> ${role}`);
   return role;
@@ -95,7 +81,7 @@ function getHashRoleFlag(hash) {
 // 清除hash角色标志位
 function clearHashRoleFlag(hash) {
   if (!hash) return;
-  const flagKey = `_hash_role_${hash}`;
+  const flagKey = getRoleFlagKey(hash);
   localStorage.removeItem(flagKey);
   console.log(`清除hash角色标志位: ${hash}`);
 }
@@ -104,118 +90,102 @@ function clearHashRoleFlag(hash) {
 function setStorytellerUserId() {
   const storytellerUserId =
     "storyteller_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
-  localStorage.setItem("_storyteller_userId", storytellerUserId);
+  localStorage.setItem(SYSTEM_KEYS.STORYTELLER_USER_ID, storytellerUserId);
   console.log("设置说书人用户ID:", storytellerUserId);
   return storytellerUserId;
 }
 
 // 获取用户角色类型（说书人/玩家）
 function getUserRole() {
-  // 检查URL参数
-  const hash = window.location.hash.substr(1);
   console.log("=== 开始角色检测 ===");
-  console.log("URL hash:", hash);
 
-  // 优先检查hash角色标志位
-  if (hash) {
-    const hashRole = getHashRoleFlag(hash);
-    if (hashRole) {
-      console.log(`检测到hash角色标志位: ${hash} -> ${hashRole}`);
-      return hashRole;
-    }
-  }
+  // 检查浏览器窗口ID
+  const browserWindowId = localStorage.getItem(SYSTEM_KEYS.BROWSER_WINDOW_ID);
+  console.log("浏览器窗口ID:", browserWindowId);
 
   // 检查用户存储中的会话信息
   const userId = getCurrentUserId();
   console.log("当前用户ID:", userId);
 
   // 优先检查说书人会话数据（使用用户特定的存储键）
-  // 只有在没有URL hash时才检查说书人会话，避免裸链接进入时误判
-  if (!hash) {
-    const storytellerSession = localStorage.getItem(
-      `${userId}_storyteller_session`,
-    );
-    console.log("说书人会话数据:", storytellerSession);
+  const storytellerSession = localStorage.getItem(
+    `${userId}_storyteller_session`,
+  );
+  console.log("说书人会话数据:", storytellerSession);
 
-    // 如果有说书人会话数据，返回说书人模式
-    if (
-      storytellerSession &&
-      storytellerSession !== "null" &&
-      storytellerSession !== "undefined"
-    ) {
-      try {
-        const sessionData = JSON.parse(storytellerSession);
-        if (
-          sessionData &&
-          Array.isArray(sessionData) &&
-          sessionData.length >= 2
-        ) {
-          console.log("检测到有效的说书人会话，返回说书人模式");
-          return "storyteller";
-        }
-      } catch (e) {
-        if (storytellerSession.length > 0) {
-          console.log("检测到说书人会话字符串，返回说书人模式");
-          return "storyteller";
-        }
+  // 如果有说书人会话数据，返回说书人模式
+  if (
+    storytellerSession &&
+    storytellerSession !== "null" &&
+    storytellerSession !== "undefined"
+  ) {
+    try {
+      const sessionData = JSON.parse(storytellerSession);
+      if (
+        sessionData &&
+        Array.isArray(sessionData) &&
+        sessionData.length >= 2
+      ) {
+        console.log("检测到有效的说书人会话，返回说书人模式");
+        return "storyteller";
+      }
+    } catch (e) {
+      if (storytellerSession.length > 0) {
+        console.log("检测到说书人会话字符串，返回说书人模式");
+        return "storyteller";
       }
     }
   }
 
   // 检查是否有说书人数据（任何说书人相关的数据）
-  // 只有在没有URL hash时才检查说书人数据，避免裸链接进入时误判
-  if (!hash) {
-    const storytellerEdition = localStorage.getItem(
-      `${userId}_storyteller_edition`,
-    );
-    const storytellerFabled = localStorage.getItem(
-      `${userId}_storyteller_fabled`,
-    );
-    const storytellerBluffs = localStorage.getItem(
-      `${userId}_storyteller_bluffs`,
-    );
-    const storytellerPlayers = localStorage.getItem(
-      `${userId}_storyteller_players`,
-    );
+  const storytellerEdition = localStorage.getItem(
+    `${userId}_storyteller_edition`,
+  );
+  const storytellerFabled = localStorage.getItem(
+    `${userId}_storyteller_fabled`,
+  );
+  const storytellerBluffs = localStorage.getItem(
+    `${userId}_storyteller_bluffs`,
+  );
+  const storytellerPlayers = localStorage.getItem(
+    `${userId}_storyteller_players`,
+  );
 
-    console.log("说书人数据检查:");
-    console.log("- 版本数据:", storytellerEdition);
-    console.log("- 寓言数据:", storytellerFabled);
-    console.log("- 恶魔伪装数据:", storytellerBluffs);
-    console.log("- 玩家数据:", storytellerPlayers);
+  console.log("说书人数据检查:");
+  console.log("- 版本数据:", storytellerEdition);
+  console.log("- 寓言数据:", storytellerFabled);
+  console.log("- 恶魔伪装数据:", storytellerBluffs);
+  console.log("- 玩家数据:", storytellerPlayers);
 
-    // 如果有说书人数据，返回说书人模式
-    if (
-      storytellerPlayers &&
-      storytellerPlayers !== "null" &&
-      storytellerPlayers !== "undefined"
-    ) {
-      console.log("检测到说书人玩家数据，返回说书人模式");
-      return "storyteller";
-    }
+  // 如果有说书人数据，返回说书人模式
+  if (
+    storytellerPlayers &&
+    storytellerPlayers !== "null" &&
+    storytellerPlayers !== "undefined"
+  ) {
+    console.log("检测到说书人玩家数据，返回说书人模式");
+    return "storyteller";
+  }
 
-    if (
-      (storytellerEdition &&
-        storytellerEdition !== "null" &&
-        storytellerEdition !== "undefined") ||
-      (storytellerFabled &&
-        storytellerFabled !== "null" &&
-        storytellerFabled !== "undefined") ||
-      (storytellerBluffs &&
-        storytellerBluffs !== "null" &&
-        storytellerBluffs !== "undefined")
-    ) {
-      console.log("检测到说书人相关数据，返回说书人模式");
-      return "storyteller";
-    }
+  if (
+    (storytellerEdition &&
+      storytellerEdition !== "null" &&
+      storytellerEdition !== "undefined") ||
+    (storytellerFabled &&
+      storytellerFabled !== "null" &&
+      storytellerFabled !== "undefined") ||
+    (storytellerBluffs &&
+      storytellerBluffs !== "null" &&
+      storytellerBluffs !== "undefined")
+  ) {
+    console.log("检测到说书人相关数据，返回说书人模式");
+    return "storyteller";
   }
 
   // 检查全局会话数据（兼容旧数据）
-  // 只有在没有URL hash时才检查全局数据，避免裸链接进入时误判
-  const globalSessionData = localStorage.getItem("session");
+  const globalSessionData = localStorage.getItem(SYSTEM_KEYS.GLOBAL_SESSION);
 
   if (
-    !hash &&
     globalSessionData &&
     globalSessionData !== "null" &&
     globalSessionData !== "undefined"
@@ -317,9 +287,9 @@ function getUserRole() {
     }
   }
 
-  // 如果有URL参数且没有说书人数据，返回玩家模式
-  if (hash) {
-    console.log("检测到URL参数且无说书人数据，返回玩家模式");
+  // 如果有浏览器窗口ID且没有说书人数据，返回玩家模式
+  if (browserWindowId) {
+    console.log("检测到浏览器窗口ID且无说书人数据，返回玩家模式");
     return "player";
   }
 
@@ -334,14 +304,14 @@ function getUserSpecificKey(key, role = null) {
   const currentRole = role || getUserRole();
   const userId = getCurrentUserId();
 
-  // 如果是玩家模式，使用hash作为稳定的标识符
+  // 如果是玩家模式，使用浏览器窗口ID作为稳定的标识符
   if (currentRole === "player") {
-    const hash = window.location.hash.substr(1);
-    if (hash) {
-      // 使用hash作为玩家数据的标识符，这样刷新时键保持一致
-      return `${userId}_${currentRole}_${hash}_${key}`;
+    const browserWindowId = localStorage.getItem(SYSTEM_KEYS.BROWSER_WINDOW_ID);
+    if (browserWindowId) {
+      // 使用浏览器窗口ID作为玩家数据的标识符，这样刷新时键保持一致
+      return `${userId}_${currentRole}_${browserWindowId}_${key}`;
     } else {
-      // 如果没有hash，使用默认的玩家存储键
+      // 如果没有浏览器窗口ID，使用默认的玩家存储键
       return `${userId}_${currentRole}_default_${key}`;
     }
   }
@@ -414,9 +384,9 @@ class UserStorage {
     let prefix;
 
     if (this.role === "player") {
-      const hash = window.location.hash.substr(1);
-      if (hash) {
-        prefix = `${this.userId}_${this.role}_${hash}_`;
+      const browserWindowId = localStorage.getItem(SYSTEM_KEYS.BROWSER_WINDOW_ID);
+      if (browserWindowId) {
+        prefix = `${this.userId}_${this.role}_${browserWindowId}_`;
       } else {
         prefix = `${this.userId}_${this.role}_default_`;
       }
@@ -437,7 +407,6 @@ class UserStorage {
   // 更新角色（当角色发生变化时调用）
   updateRole() {
     const newRole = getUserRole();
-    console.log(`更新角色: ${this.role} -> ${newRole}`);
     this.role = newRole;
   }
 
@@ -457,8 +426,8 @@ class UserStorage {
   getUserInfo() {
     let storagePrefix;
     if (this.role === "player") {
-      const playerSessionId = getCurrentPlayerSessionId();
-      storagePrefix = `${this.userId}_${this.role}_${playerSessionId}_`;
+      const browserWindowId = localStorage.getItem(SYSTEM_KEYS.BROWSER_WINDOW_ID);
+      storagePrefix = `${this.userId}_${this.role}_${browserWindowId}_`;
     } else {
       storagePrefix = `${this.userId}_${this.role}_`;
     }
@@ -472,52 +441,6 @@ class UserStorage {
       currentPlayerId:
         this.role === "player" ? getCurrentPlayerSessionId() : null,
     };
-  }
-
-  // 迁移旧数据（兼容性）
-  migrateOldData() {
-    // 检查是否已经迁移过
-    if (localStorage.getItem("_migration_completed")) {
-      return;
-    }
-
-    const oldKeys = [
-      "background",
-      "muted",
-      "static",
-      "imageOptIn",
-      "zoom",
-      "isGrimoire",
-      "roles",
-      "edition",
-      "bluffs",
-      "fabled",
-      "players",
-      "playerId",
-      "session",
-      "gameHistory",
-    ];
-
-    let hasMigrated = false;
-    oldKeys.forEach((key) => {
-      const oldValue = localStorage.getItem(key);
-      if (oldValue !== null && !this.hasItem(key)) {
-        try {
-          const parsedValue = JSON.parse(oldValue);
-          this.setItem(key, parsedValue);
-          hasMigrated = true;
-        } catch (e) {
-          // 如果不是JSON，直接存储字符串
-          this.setItem(key, oldValue);
-          hasMigrated = true;
-        }
-      }
-    });
-
-    // 标记迁移完成
-    if (hasMigrated) {
-      localStorage.setItem("_migration_completed", "true");
-    }
   }
 }
 

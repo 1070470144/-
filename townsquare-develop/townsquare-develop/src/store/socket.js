@@ -1,3 +1,5 @@
+import { SYSTEM_KEYS } from '../utils/storageKeys.js';
+
 class LiveSession {
   constructor(store) {
     this._wss = "wss://live.clocktower.online:8080/";
@@ -242,10 +244,10 @@ class LiveSession {
         // 使用hash作为基础，添加一个固定的后缀来区分不同浏览器实例
         // 但不使用时间戳，这样刷新时ID保持一致
         const browserId =
-          localStorage.getItem("browser_instance_id") ||
+          localStorage.getItem(SYSTEM_KEYS.BROWSER_INSTANCE_ID) ||
           Math.random().toString(36).substr(2, 6);
-        if (!localStorage.getItem("browser_instance_id")) {
-          localStorage.setItem("browser_instance_id", browserId);
+        if (!localStorage.getItem(SYSTEM_KEYS.BROWSER_INSTANCE_ID)) {
+          localStorage.setItem(SYSTEM_KEYS.BROWSER_INSTANCE_ID, browserId);
         }
         playerId = hash + "_" + browserId;
       } else {
