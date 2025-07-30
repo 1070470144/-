@@ -8,8 +8,8 @@
       <span class="button" @click="toggleMenu">
         <font-awesome-icon icon="cog" /> {{ $t("intro.menuButton") }}
       </span>
-      {{ $t("intro.orPress") }} <b>[A]</b> {{ $t("intro.toAddPlayers") }}
-      <b>[J]</b> {{ $t("intro.toJoinSession") }}<br />
+      {{ $t("intro.orPress") }} <b>[Alt+A]</b> {{ $t("intro.toAddPlayers") }}
+      <b>[Alt+J]</b> {{ $t("intro.toJoinSession") }}<br />
       <div class="footer">
         {{ $t("intro.footer") }}
       </div>

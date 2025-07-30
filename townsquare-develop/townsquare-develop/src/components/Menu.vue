@@ -51,7 +51,7 @@
           <li @click="toggleGrimoire" v-if="players.length">
             <template v-if="!grimoire.isPublic">{{ $t("menu.hide") }}</template>
             <template v-if="grimoire.isPublic">{{ $t("menu.show") }}</template>
-            <em>[G]</em>
+            <em>[Alt+G]</em>
           </li>
           <li @click="toggleNight" v-if="!session.isSpectator">
             <template v-if="!grimoire.isNight">{{
@@ -60,7 +60,7 @@
             <template v-if="grimoire.isNight">{{
               $t("menu.switchToDay")
             }}</template>
-            <em>[S]</em>
+            <em>[Alt+S]</em>
           </li>
           <li @click="toggleNightOrder" v-if="players.length">
             {{ $t("menu.nightOrder") }}
@@ -117,10 +117,10 @@
           </li>
           <template v-if="!session.sessionId">
             <li @click="hostSession">
-              {{ $t("menu.hostStoryteller") }}<em>[H]</em>
+              {{ $t("menu.hostStoryteller") }}<em>[Alt+H]</em>
             </li>
             <li @click="joinSession">
-              {{ $t("menu.joinPlayer") }}<em>[J]</em>
+              {{ $t("menu.joinPlayer") }}<em>[Alt+J]</em>
             </li>
           </template>
           <template v-else>
@@ -144,10 +144,10 @@
               v-if="session.voteHistory.length || !session.isSpectator"
               @click="toggleModal('voteHistory')"
             >
-              {{ $t("menu.voteHistory") }}<em>[V]</em>
+              {{ $t("menu.voteHistory") }}<em>[Alt+V]</em>
             </li>
             <li @click="toggleHistoryPanel">
-              {{ $t("menu.gameHistory") }}<em>[H]</em>
+              {{ $t("menu.gameHistory") }}<em>[Alt+H]</em>
             </li>
             <li @click="resetGame">
               {{ $t("menu.resetGame") }}
@@ -164,7 +164,7 @@
           <!-- Users -->
           <li class="headline">{{ $t("menu.players") }}</li>
           <li @click="addPlayer" v-if="players.length < 20">
-            {{ $t("menu.addPlayer") }}<em>[A]</em>
+            {{ $t("menu.addPlayer") }}<em>[Alt+A]</em>
           </li>
           <li @click="randomizeSeatings" v-if="players.length > 2">
             {{ $t("menu.randomizeSeatings") }}
@@ -181,14 +181,14 @@
           <li class="headline">{{ $t("menu.characters") }}</li>
           <li v-if="!session.isSpectator" @click="toggleModal('edition')">
             {{ $t("menu.selectEdition") }}
-            <em>[E]</em>
+            <em>[Alt+E]</em>
           </li>
           <li
             @click="toggleModal('roles')"
             v-if="!session.isSpectator && players.length > 4"
           >
             {{ $t("menu.chooseAndAssign") }}
-            <em>[C]</em>
+            <em>[Alt+C]</em>
           </li>
           <li v-if="!session.isSpectator" @click="toggleModal('fabled')">
             {{ $t("menu.addFabled") }}
@@ -213,11 +213,11 @@
           </li>
           <li @click="toggleModal('reference')">
             {{ $t("menu.referenceSheet") }}
-            <em>[R]</em>
+            <em>[Alt+R]</em>
           </li>
           <li @click="toggleModal('nightOrder')">
             {{ $t("menu.nightOrderSheet") }}
-            <em>[N]</em>
+            <em>[Alt+N]</em>
           </li>
           <li @click="toggleModal('gameState')">
             {{ $t("menu.gameStateJSON") }}

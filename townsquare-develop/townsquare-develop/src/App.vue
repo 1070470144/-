@@ -150,9 +150,9 @@ export default {
     };
   },
   methods: {
-    keyup({ key, ctrlKey, metaKey, altKey }) {
-      // 管理员面板快捷键：Ctrl + Alt + M
-      if (ctrlKey && altKey && key.toLowerCase() === 'm') {
+    keyup({ key, altKey }) {
+      // 管理员面板快捷键：Alt + M
+      if (altKey && key.toLowerCase() === 'm') {
         this.showAdminPasswordModal = true;
         this.$nextTick(() => {
           const passwordInput = document.getElementById('admin-password-input');
@@ -163,7 +163,9 @@ export default {
         return;
       }
       
-      if (ctrlKey || metaKey) return;
+      // 所有快捷键都需要Alt键
+      if (!altKey) return;
+      
       switch (key.toLocaleLowerCase()) {
         case "g":
           this.$store.commit("toggleGrimoire");
