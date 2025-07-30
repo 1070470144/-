@@ -273,7 +273,7 @@ export default {
         font-size: 14px;
       }
       
-      input, select, textarea {
+      input, textarea {
         width: 100%;
         padding: 8px 12px;
         border: 1px solid rgba(255, 215, 0, 0.3);
@@ -284,6 +284,29 @@ export default {
         
         &::placeholder {
           color: rgba(255, 255, 255, 0.5);
+        }
+      }
+      
+      select {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid rgba(255, 215, 0, 0.3);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        border-radius: 5px;
+        font-family: 'Papyrus', serif;
+        cursor: pointer;
+        
+        option {
+          background: rgba(0, 0, 0, 0.9);
+          color: white;
+          padding: 8px 12px;
+        }
+        
+        &:focus {
+          outline: none;
+          border-color: #gold;
+          box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
         }
       }
       

@@ -140,28 +140,31 @@ export default {
   bottom: 0;
   left: 0;
   right: 0;
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: rgba(0, 0, 0, 0.6);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1100;
+  backdrop-filter: blur(5px);
 }
 
 .admin-panel {
-  background: rgba(0, 0, 0, 0.8);
-  padding: 10px 20px;
-  border-radius: 10px;
-  box-shadow: 2px 2px 20px 1px #000;
+  background: rgba(0, 0, 0, 0.95);
+  border: 2px solid #gold;
+  padding: 0;
+  border-radius: 15px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 215, 0, 0.2);
   display: flex;
   flex-direction: column;
-  max-height: 80%;
-  max-width: 80%;
+  max-height: 85%;
+  max-width: 85%;
   width: 90vw;
   max-width: 1200px;
   height: 80vh;
   color: white;
   font-family: 'Papyrus', serif;
   position: relative;
+  backdrop-filter: blur(10px);
 }
 
 .admin-header {
@@ -193,47 +196,82 @@ export default {
 
 .admin-tabs {
   display: flex;
-  background: rgba(255, 215, 0, 0.1);
+  background: rgba(0, 0, 0, 0.3);
   padding: 0 20px;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.2);
   
   .tab-btn {
     background: none;
     border: none;
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.8);
     padding: 15px 20px;
     cursor: pointer;
     font-family: 'Papyrus', serif;
     font-size: 16px;
     border-bottom: 3px solid transparent;
     transition: all 0.3s ease;
+    position: relative;
     
     &:hover {
       color: white;
-      background: rgba(255, 215, 0, 0.1);
+      background: rgba(255, 215, 0, 0.15);
     }
     
     &.active {
       color: #gold;
       border-bottom-color: #gold;
+      background: rgba(255, 215, 0, 0.1);
+      
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #gold, rgba(255, 215, 0, 0.6));
+      }
     }
   }
 }
 
 .admin-content {
   flex: 1;
-  padding: 20px;
+  padding: 25px;
   overflow-y: auto;
+  background: rgba(255, 255, 255, 0.02);
+  
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 215, 0, 0.3);
+    border-radius: 4px;
+    
+    &:hover {
+      background: rgba(255, 215, 0, 0.5);
+    }
+  }
 }
 
 .tab-content {
   h3 {
     color: #gold;
     margin-bottom: 20px;
+    font-size: 20px;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
   }
   
   p {
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.9);
     font-size: 16px;
+    line-height: 1.6;
   }
 }
 
@@ -241,32 +279,47 @@ export default {
   h3 {
     color: #gold;
     margin-bottom: 20px;
+    font-size: 20px;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
   }
   
   .setting-group {
     margin-bottom: 30px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 215, 0, 0.1);
     
     h4 {
       color: #gold;
       margin-bottom: 15px;
       font-size: 18px;
+      text-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
     }
     
     .action-btn {
-      background: rgba(255, 215, 0, 0.2);
-      border: 1px solid #gold;
+      background: rgba(255, 215, 0, 0.15);
+      border: 1px solid rgba(255, 215, 0, 0.4);
       color: #gold;
-      padding: 10px 20px;
-      margin-right: 10px;
-      margin-bottom: 10px;
-      border-radius: 5px;
+      padding: 12px 24px;
+      margin-right: 12px;
+      margin-bottom: 12px;
+      border-radius: 6px;
       cursor: pointer;
       font-family: 'Papyrus', serif;
+      font-size: 14px;
       transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
       
       &:hover {
-        background: rgba(255, 215, 0, 0.3);
+        background: rgba(255, 215, 0, 0.25);
         color: white;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      }
+      
+      &:active {
+        transform: translateY(0);
       }
     }
   }
