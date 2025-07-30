@@ -161,6 +161,13 @@ export default {
     player: {
       type: Object,
       required: true,
+      default: () => ({
+        name: "未知玩家",
+        role: {},
+        isDead: false,
+        isNominated: false,
+        reminders: []
+      })
     },
     playerIndex: {
       type: Number,

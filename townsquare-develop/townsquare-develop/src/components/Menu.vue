@@ -299,6 +299,10 @@ export default {
         Math.round(Math.random() * 10000),
       );
       if (sessionId) {
+        // 使用新的角色管理函数
+        const { createGame } = require("../utils/userStorage");
+        createGame(sessionId);
+
         this.$store.commit("session/clearVoteHistory");
         // 先清除现有会话，确保不会触发socket.js中的自动设置逻辑
         this.$store.commit("session/setSessionId", "");
@@ -514,6 +518,10 @@ export default {
         sessionId = sessionId.split("#").pop();
       }
       if (sessionId) {
+        // 使用新的角色管理函数
+        const { joinGame } = require("../utils/userStorage");
+        joinGame(sessionId);
+
         this.$store.commit("session/clearVoteHistory");
         this.$store.commit("session/setSpectator", true);
         this.$store.commit("toggleGrimoire", false);
@@ -534,6 +542,10 @@ export default {
     },
     leaveSession() {
       if (confirm(this.$t("confirm.leaveActiveGame"))) {
+        // 使用新的角色管理函数
+        const { leaveGame } = require("../utils/userStorage");
+        leaveGame();
+
         const sessionId = this.session.sessionId;
         this.$store.commit("session/setSpectator", false);
         this.$store.commit("session/setSessionId", "");

@@ -83,7 +83,7 @@
 import editionJSON from "../../editions";
 import { mapMutations, mapState } from "vuex";
 import Modal from "./Modal";
-import { SYSTEM_KEYS } from '../../utils/storageKeys.js';
+import { SYSTEM_KEYS } from "../../utils/storageKeys.js";
 import i18n from "../../i18n";
 
 export default {
@@ -204,8 +204,8 @@ export default {
       if (hasCustomImages) {
         console.log("Enabling custom images for script");
         this.$store.commit("toggleImageOptIn", true);
-        // 确保设置被保存到localStorage
-        localStorage.setItem(SYSTEM_KEYS.IMAGE_OPT_IN, "1");
+        // 保存图片选择设置
+        sessionStorage.setItem(SYSTEM_KEYS.IMAGE_OPT_IN, "1");
       }
 
       // 先设置版本，再设置自定义角色

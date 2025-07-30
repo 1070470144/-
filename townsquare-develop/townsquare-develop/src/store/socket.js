@@ -1,4 +1,17 @@
-import { SYSTEM_KEYS } from '../utils/storageKeys.js';
+import { SYSTEM_KEYS } from "../utils/storageKeys.js";
+
+// 获取或生成浏览器实例ID
+function getBrowserInstanceId() {
+  const browserId =
+    sessionStorage.getItem(SYSTEM_KEYS.BROWSER_INSTANCE_ID) ||
+    "browser_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
+
+  if (!sessionStorage.getItem(SYSTEM_KEYS.BROWSER_INSTANCE_ID)) {
+    sessionStorage.setItem(SYSTEM_KEYS.BROWSER_INSTANCE_ID, browserId);
+  }
+
+  return browserId;
+}
 
 class LiveSession {
   constructor(store) {
@@ -243,12 +256,7 @@ class LiveSession {
         const hash = window.location.hash.substr(1);
         // 使用hash作为基础，添加一个固定的后缀来区分不同浏览器实例
         // 但不使用时间戳，这样刷新时ID保持一致
-        const browserId =
-          localStorage.getItem(SYSTEM_KEYS.BROWSER_INSTANCE_ID) ||
-          Math.random().toString(36).substr(2, 6);
-        if (!localStorage.getItem(SYSTEM_KEYS.BROWSER_INSTANCE_ID)) {
-          localStorage.setItem(SYSTEM_KEYS.BROWSER_INSTANCE_ID, browserId);
-        }
+        const browserId = getBrowserInstanceId();
         playerId = hash + "_" + browserId;
       } else {
         // 生成基于会话ID的唯一玩家ID
