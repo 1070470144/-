@@ -198,6 +198,8 @@ export default {
           .map((a) => [Math.random(), a])
           .sort((a, b) => a[0] - b[0])
           .map((a) => a[1]);
+        
+        // 分配角色给玩家
         this.players.forEach((player) => {
           if (player.role.team !== "traveler" && roles.length) {
             const value = roles.pop();
@@ -209,6 +211,9 @@ export default {
           }
         });
 
+        // 自动分配恶魔伪装
+        this.assignDemonBluffs();
+
         // 检查是否为新局
         if (this.$store.state.history.events.length > 0) {
           if (confirm("检测到历史记录，是否清除上一局的记录？")) {
@@ -216,16 +221,97 @@ export default {
           }
         }
 
-        // 移除角色分配历史记录
-        // this.$store.commit("addHistoryEvent", {
-        //   action: "role_assignment",
-        //   summary: `分配了 ${this.selectedRoles} 个角色给玩家`,
-        //   details: `为 ${this.nonTravelers} 个非旅行者玩家分配了角色`,
-        //   isPublic: false,
-        // });
-
         this.$store.commit("toggleModal", "roles");
       }
+    },
+
+    // 自动分配恶魔伪装
+    assignDemonBluffs() {
+      console.log("开始自动分配恶魔伪装");
+      
+      // 获取所有未选择的角色
+      const unselectedRoles = [];
+      Object.values(this.roleSelection).forEach((teamRoles) => {
+        teamRoles.forEach((role) => {
+          // 计算未选择的数量
+          const unselectedCount = role.selected === 0 ? 1 : 
+            (role.selected > 0 ? 0 : Math.abs(role.selected));
+          
+          for (let i = 0; i < unselectedCount; i++) {
+            unselectedRoles.push(role);
+          }
+        });
+      });
+
+      console.log("未选择的角色数量:", unselectedRoles.length);
+      
+      if (unselectedRoles.length === 0) {
+        console.log("没有未选择的角色，无法分配恶魔伪装");
+        return;
+      }
+
+      // 按团队分类未选择的角色
+      const unselectedByTeam = {
+        townsfolk: unselectedRoles.filter(role => role.team === "townsfolk"),
+        outsider: unselectedRoles.filter(role => role.team === "outsider"),
+        minion: unselectedRoles.filter(role => role.team === "minion"),
+        demon: unselectedRoles.filter(role => role.team === "demon"),
+        fabled: unselectedRoles.filter(role => role.team === "fabled")
+      };
+
+      console.log("按团队分类的未选择角色:", unselectedByTeam);
+
+      // 选择恶魔伪装：两个镇民 + 一个外来者
+      const bluffs = [];
+      
+      // 选择两个镇民
+      if (unselectedByTeam.townsfolk.length >= 2) {
+        const selectedTownsfolk = this.getRandomRoles(unselectedByTeam.townsfolk, 2);
+        bluffs.push(...selectedTownsfolk);
+        console.log("选择的镇民伪装:", selectedTownsfolk.map(r => r.name));
+      } else if (unselectedByTeam.townsfolk.length === 1) {
+        bluffs.push(unselectedByTeam.townsfolk[0]);
+        console.log("选择的镇民伪装:", unselectedByTeam.townsfolk[0].name);
+      }
+
+      // 选择一个外来者
+      if (unselectedByTeam.outsider.length >= 1) {
+        const selectedOutsider = this.getRandomRoles(unselectedByTeam.outsider, 1);
+        bluffs.push(...selectedOutsider);
+        console.log("选择的外来者伪装:", selectedOutsider.map(r => r.name));
+      }
+
+      // 如果镇民和外来者不够，用其他角色补充
+      const remainingSlots = 3 - bluffs.length;
+      if (remainingSlots > 0) {
+        const remainingRoles = [
+          ...unselectedByTeam.townsfolk,
+          ...unselectedByTeam.outsider,
+          ...unselectedByTeam.minion,
+          ...unselectedByTeam.demon
+        ].filter(role => !bluffs.includes(role));
+
+        if (remainingRoles.length > 0) {
+          const additionalBluffs = this.getRandomRoles(remainingRoles, Math.min(remainingSlots, remainingRoles.length));
+          bluffs.push(...additionalBluffs);
+          console.log("补充的伪装:", additionalBluffs.map(r => r.name));
+        }
+      }
+
+      // 设置恶魔伪装
+      if (bluffs.length > 0) {
+        console.log("最终恶魔伪装:", bluffs.map(r => r.name));
+        this.$store.commit("players/setBluff", { bluffs });
+      } else {
+        console.log("无法分配恶魔伪装");
+        this.$store.commit("players/setBluff", { bluffs: [] });
+      }
+    },
+
+    // 从角色数组中随机选择指定数量的角色
+    getRandomRoles(roles, count) {
+      const shuffled = [...roles].sort(() => Math.random() - 0.5);
+      return shuffled.slice(0, count);
     },
 
     ...mapMutations(["toggleModal"]),
