@@ -21,7 +21,7 @@ class ScriptAPI {
         category = "all",
         search = "",
         sortBy = "name",
-        status = "approved",
+        status = "all",
         userId = "",
       } = params;
 
@@ -50,7 +50,19 @@ class ScriptAPI {
         throw new Error(result.error || "获取剧本失败");
       }
 
-      return result.data;
+      // 服务器返回的是 { success: true, data: { custom: [], official: [], templates: [] } }
+      // 需要将所有类型的剧本合并成一个数组
+      if (result.data && typeof result.data === 'object') {
+        const allScripts = [];
+        for (const type in result.data) {
+          if (Array.isArray(result.data[type])) {
+            allScripts.push(...result.data[type]);
+          }
+        }
+        return { success: true, data: allScripts };
+      }
+
+      return result;
     } catch (error) {
       console.error("❌ 获取剧本失败:", error);
       throw error;
@@ -282,12 +294,12 @@ class ScriptAPI {
   /**
    * 更新剧本状态（审核功能）
    */
-  async updateScriptStatus(scriptId, status) {
+  async updateScriptStatus(scriptId, status, reviewNote = '') {
     try {
-      const response = await fetch(`${API_BASE}/scripts/${scriptId}/status`, {
+      const response = await fetch(`${API_BASE}/scripts/status/${scriptId}`, {
         method: "PUT",
         headers: this.getAuthHeaders(),
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status, reviewNote }),
       });
 
       const data = await response.json();
@@ -295,6 +307,52 @@ class ScriptAPI {
     } catch (error) {
       console.error("更新剧本状态失败:", error);
       return { success: false, error: "网络错误，请重试" };
+    }
+  }
+
+  /**
+   * 获取剧本状态
+   */
+  async getScriptStatus(scriptId) {
+    try {
+      const response = await fetch(`${API_BASE}/scripts/status/${scriptId}`, {
+        method: "GET",
+        headers: this.getAuthHeaders(),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || "获取状态失败");
+      }
+
+      return result.data;
+    } catch (error) {
+      console.error("获取剧本状态失败:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取所有状态
+   */
+  async getAllStatus() {
+    try {
+      const response = await fetch(`${API_BASE}/scripts/status/all`, {
+        method: "GET",
+        headers: this.getAuthHeaders(),
+      });
+
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || "获取所有状态失败");
+      }
+
+      return result.data;
+    } catch (error) {
+      console.error("获取所有状态失败:", error);
+      throw error;
     }
   }
 

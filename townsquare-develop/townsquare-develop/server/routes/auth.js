@@ -202,6 +202,7 @@ router.post('/register', async (req, res) => {
       username,
       password: hashPassword(password),
       role: 'user', // 默认角色
+      permissions: ['script:upload'], // 默认只有上传剧本权限
       createdAt: new Date().toISOString()
     };
     

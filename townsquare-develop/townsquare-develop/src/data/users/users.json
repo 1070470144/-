@@ -3,8 +3,11 @@
     "id": "1753936585482",
     "username": "1070470144@qq.com",
     "password": "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92",
-    "role": "user",
-    "createdAt": "2025-07-31T04:36:25.483Z"
+    "role": "admin",
+    "createdAt": "2025-07-31T04:36:25.483Z",
+    "permissions": [
+      "script:upload"
+    ]
   },
   {
     "id": "1753936600000",

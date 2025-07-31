@@ -142,12 +142,23 @@ export default {
   },
   computed: {
     filteredScripts() {
+      console.log("当前剧本列表:", this.scripts);
+      console.log("当前状态筛选:", this.statusFilter);
+      
       if (!this.statusFilter) {
+        console.log("无状态筛选，返回所有剧本");
         return this.scripts;
       }
-      return this.scripts.filter(
+      
+      const filtered = this.scripts.filter(
         (script) => script.status === this.statusFilter,
       );
+      console.log(`筛选状态 ${this.statusFilter} 的剧本:`, filtered);
+      console.log("剧本状态统计:", this.scripts.reduce((acc, script) => {
+        acc[script.status] = (acc[script.status] || 0) + 1;
+        return acc;
+      }, {}));
+      return filtered;
     },
   },
   async mounted() {
@@ -158,16 +169,38 @@ export default {
       try {
         this.isLoading = true;
 
-        const result = await scriptAPI.getPendingScripts();
+        // 获取所有剧本，包括待审核、已通过、已拒绝的
+        const result = await scriptAPI.getAllScripts();
 
         if (result && result.success) {
-          this.scripts = result.data || [];
+          // 处理数据结构
+          if (result.data && Array.isArray(result.data)) {
+            this.scripts = result.data;
+          } else if (result.data && result.data.scripts) {
+            this.scripts = result.data.scripts || [];
+          } else {
+            this.scripts = result.data || [];
+          }
+          
+          // 确保每个剧本都有状态信息
+          this.scripts = this.scripts.map(script => {
+            if (!script.status) {
+              script.status = 'pending';
+            }
+            return script;
+          });
+          
+          console.log("加载的剧本数据:", this.scripts);
+          console.log("剧本状态统计:", this.scripts.reduce((acc, script) => {
+            acc[script.status] = (acc[script.status] || 0) + 1;
+            return acc;
+          }, {}));
         } else {
-          console.error("❌ 获取待审核剧本失败:", result?.error);
+          console.error("❌ 获取剧本失败:", result?.error);
           this.scripts = [];
         }
       } catch (error) {
-        console.error("❌ 加载待审核剧本错误:", error);
+        console.error("❌ 加载剧本错误:", error);
         this.scripts = [];
       } finally {
         this.isLoading = false;

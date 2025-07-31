@@ -7,11 +7,11 @@
         <div class="role-item" v-for="(role, roleKey) in roles" :key="roleKey">
           <h4>{{ role.name }}</h4>
           <div class="permissions-grid">
-            <div class="permission-group" v-for="(permissions, groupName) in permissionGroups" :key="groupName">
+            <div class="permission-group" v-for="(permissions, groupName) in filteredRolePermissionGroups(roleKey)" :key="groupName">
               <span class="group-title">{{ groupName }}</span>
               <div class="permission-badges">
                 <span 
-                  v-for="permission in getRolePermissions(role)" 
+                  v-for="permission in filteredRolePermissions(role, permissions)" 
                   :key="permission"
                   class="permission-badge"
                   :class="getPermissionClass(permission)"
@@ -40,6 +40,7 @@
               <span class="permission-count">权限数量: {{ userPermissions[user.id]?.length || 0 }}</span>
               <span class="permission-status-indicator" v-if="hasChanges(user.id)">* 已修改</span>
               <span class="current-user-indicator" v-if="isCurrentUser(user.id)">(当前用户)</span>
+              <span class="role-permission-info" v-if="!canManageUser(user.id) && !isCurrentUser(user.id)">(无管理权限)</span>
             </div>
           </div>
           <div class="user-permissions">
@@ -50,14 +51,17 @@
                   v-for="permission in permissions" 
                   :key="permission"
                   class="permission-checkbox-wrapper"
-                  :class="{ 'permission-active': hasUserPermission(user.id, permission) }"
-                  @click="toggleUserPermission(user.id, permission)"
+                  :class="{ 
+                    'permission-active': hasUserPermission(user.id, permission),
+                    'permission-disabled': isPermissionDisabled(user.id)
+                  }"
+                  @click="!isPermissionDisabled(user.id) && toggleUserPermission(user.id, permission)"
                 >
                   <input 
                     type="checkbox" 
                     :value="permission"
                     :checked="hasUserPermission(user.id, permission)"
-                    :disabled="!canManageUser(user.id)"
+                    :disabled="isPermissionDisabled(user.id)"
                     @change.stop
                   >
                   <span class="checkbox-label">{{ permissionDescriptions[permission] }}</span>
@@ -119,6 +123,34 @@ export default {
       permissionGroups: PERMISSION_GROUPS
     };
   },
+  computed: {
+    // 根据角色过滤权限组
+    filteredRolePermissionGroups() {
+      return (roleKey) => {
+        console.log('过滤角色权限组，角色:', roleKey);
+        const filtered = {};
+        Object.entries(this.permissionGroups).forEach(([groupName, permissions]) => {
+          console.log(`检查权限组: ${groupName}, 权限:`, permissions);
+          if (this.shouldShowRolePermissionGroup()) {
+            filtered[groupName] = permissions;
+            console.log(`添加权限组: ${groupName}`);
+          }
+        });
+        console.log('过滤后的权限组:', filtered);
+        return filtered;
+      };
+    },
+    
+
+    
+    // 根据权限组过滤角色权限
+    filteredRolePermissions() {
+      return (role, permissions) => {
+        const rolePerms = this.getRolePermissions(role);
+        return rolePerms.filter(permission => permissions.includes(permission));
+      };
+    }
+  },
   async mounted() {
     await this.loadUsers();
   },
@@ -143,12 +175,24 @@ export default {
     initializeUserPermissions() {
       this.users.forEach(user => {
         console.log('处理用户:', user);
-        // 初始化用户权限：如果有自定义权限则使用，否则使用角色默认权限
+        
+        // 获取角色默认权限
         const defaultPermissions = this.getDefaultPermissionsByRole(user.role);
-        const userPerms = user.permissions || defaultPermissions;
-        this.$set(this.userPermissions, user.id, [...userPerms]);
+        console.log(`用户 ${user.username} 角色 ${user.role} 的默认权限:`, defaultPermissions);
+        
+        // 如果用户有自定义权限，使用自定义权限；否则使用角色默认权限
+        let userPerms = [];
+        if (user.permissions && user.permissions.length > 0) {
+          userPerms = [...user.permissions];
+          console.log(`用户 ${user.username} 使用自定义权限:`, userPerms);
+        } else {
+          userPerms = [...defaultPermissions];
+          console.log(`用户 ${user.username} 使用角色默认权限:`, userPerms);
+        }
+        
+        this.$set(this.userPermissions, user.id, userPerms);
         this.$set(this.originalPermissions, user.id, [...userPerms]);
-        console.log(`初始化用户 ${user.username} 权限:`, userPerms);
+        console.log(`最终初始化用户 ${user.username} 权限:`, userPerms);
       });
     },
 
@@ -174,7 +218,7 @@ export default {
 
     getPermissionShortName(permission) {
       const descriptions = {
-        'user:create': '创建',
+        'user:create': '新增',
         'user:read': '查看',
         'user:update': '修改',
         'user:delete': '删除',
@@ -229,12 +273,43 @@ export default {
       return currentUser && currentUser.id === userId;
     },
 
+    // 控制权限组显示
+    shouldShowPermissionGroup() {
+      // 管理员可以管理所有权限组
+      return true;
+    },
+
+    // 控制角色权限配置中的权限组显示
+    shouldShowRolePermissionGroup() {
+      // 角色权限配置中显示所有权限组
+      return true;
+    },
+
     // 检查用户是否拥有某个权限
     hasUserPermission(userId, permission) {
       const userPerms = this.userPermissions[userId] || [];
       const hasPerm = userPerms.includes(permission);
       console.log(`检查用户 ${userId} 权限 ${permission}: ${hasPerm}`, userPerms);
       return hasPerm;
+    },
+
+    // 获取用户当前权限列表
+    getUserCurrentPermissions(userId) {
+      const userPerms = this.userPermissions[userId] || [];
+      console.log(`用户 ${userId} 当前权限:`, userPerms);
+      return userPerms;
+    },
+
+    // 检查权限是否应该显示为禁用状态
+    isPermissionDisabled(userId) {
+      const currentUser = authAPI.getCurrentUser();
+      if (!currentUser) return true;
+      
+      // 管理员不能修改自己的权限
+      if (currentUser.id === userId) return true;
+      
+      // 检查当前用户是否有权限管理此用户
+      return !this.canManageUser(userId);
     },
 
     hasChanges(userId) {
@@ -251,6 +326,12 @@ export default {
       // 检查是否可以管理此用户
       if (!this.canManageUser(userId)) {
         console.log(`无法管理用户 ${userId} 的权限`);
+        return;
+      }
+      
+      // 检查权限是否被禁用
+      if (this.isPermissionDisabled(userId)) {
+        console.log(`用户 ${userId} 的权限被禁用，无法修改`);
         return;
       }
       
@@ -540,6 +621,18 @@ export default {
   border-color: rgba(39, 174, 96, 0.3) !important;
 }
 
+.permission-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.02) !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+.permission-disabled:hover {
+  background: rgba(255, 255, 255, 0.02) !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
 .permission-status {
   color: #27ae60;
   font-weight: bold;
@@ -612,5 +705,12 @@ export default {
   font-size: 12px;
   margin-left: 8px;
   font-weight: bold;
+}
+
+.role-permission-info {
+  color: #95a5a6;
+  font-size: 12px;
+  margin-left: 8px;
+  font-style: italic;
 }
 </style> 

@@ -55,7 +55,7 @@ export function hasPermission(user, permission) {
 
 // 权限描述
 export const PERMISSION_DESCRIPTIONS = {
-  'user:create': '创建用户',
+  'user:create': '新增用户',
   'user:read': '查看用户',
   'user:update': '修改用户',
   'user:delete': '删除用户',

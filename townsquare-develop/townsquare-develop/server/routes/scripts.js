@@ -22,10 +22,11 @@ const SCRIPTS_DIR = path.join(__dirname, '../../src/data/scripts');
 const CUSTOM_DIR = path.join(SCRIPTS_DIR, 'custom');
 const OFFICIAL_DIR = path.join(SCRIPTS_DIR, 'official');
 const TEMPLATES_DIR = path.join(SCRIPTS_DIR, 'templates');
+const STATUS_FILE = path.join(SCRIPTS_DIR, 'status/script_status.json');
 
 // 确保目录存在
 async function ensureDirectories() {
-  const dirs = [SCRIPTS_DIR, CUSTOM_DIR, OFFICIAL_DIR, TEMPLATES_DIR];
+  const dirs = [SCRIPTS_DIR, CUSTOM_DIR, OFFICIAL_DIR, TEMPLATES_DIR, path.dirname(STATUS_FILE)];
   for (const dir of dirs) {
     try {
       await fs.access(dir);
@@ -61,6 +62,9 @@ async function getAllScripts() {
       templates: []
     };
 
+    // 读取状态文件
+    const statusData = await readStatusFile();
+
     // 读取各目录下的剧本文件
     const types = ['custom', 'official', 'templates'];
     
@@ -81,6 +85,16 @@ async function getAllScripts() {
             scriptData.filePath = `${type}/${file}`;
             scriptData.fileSize = content.length;
             scriptData.lastModified = (await fs.stat(filePath)).mtime;
+            
+            // 从状态文件获取状态信息
+            const scriptId = scriptData.id || path.basename(file, '.json');
+            const scriptStatus = await getScriptStatus(scriptId);
+            scriptData.status = scriptStatus.status;
+            scriptData.reviewedBy = scriptStatus.reviewedBy;
+            scriptData.reviewedAt = scriptStatus.reviewedAt;
+            scriptData.reviewNote = scriptStatus.reviewNote;
+            
+            console.log(`📄 剧本 ${scriptId} 状态: ${scriptStatus.status}`);
             
             scripts[type].push(scriptData);
           } catch (error) {
@@ -156,6 +170,83 @@ async function getScript(scriptId, type = 'custom') {
   }
 }
 
+// 读取状态文件
+async function readStatusFile() {
+  try {
+    await ensureDirectories();
+    const content = await fs.readFile(STATUS_FILE, 'utf8');
+    return JSON.parse(content);
+  } catch (error) {
+    // 如果文件不存在，返回默认结构
+    return { series: {}, standalone: {} };
+  }
+}
+
+// 保存状态文件
+async function saveStatusFile(statusData) {
+  await ensureDirectories();
+  await fs.writeFile(STATUS_FILE, JSON.stringify(statusData, null, 2), 'utf8');
+}
+
+// 获取剧本状态
+async function getScriptStatus(scriptId) {
+  const statusData = await readStatusFile();
+  
+  console.log(`🔍 查找剧本状态: ${scriptId}`);
+  console.log(`📊 状态文件内容:`, statusData);
+  
+  // 先检查独立剧本
+  if (statusData.standalone[scriptId]) {
+    console.log(`✅ 找到独立剧本状态: ${scriptId}`);
+    return statusData.standalone[scriptId];
+  }
+  
+  // 检查系列剧本
+  for (const seriesId in statusData.series) {
+    const series = statusData.series[seriesId];
+    if (series.versions && series.versions[scriptId]) {
+      console.log(`✅ 找到系列剧本状态: ${scriptId}`);
+      return series.versions[scriptId];
+    }
+  }
+  
+  // 默认状态
+  console.log(`⚠️ 未找到剧本状态，使用默认: ${scriptId}`);
+  return { status: 'pending' };
+}
+
+// 更新剧本状态
+async function updateScriptStatus(scriptId, status, reviewedBy, reviewNote = '') {
+  const statusData = await readStatusFile();
+  
+  // 检查是否是系列剧本
+  for (const seriesId in statusData.series) {
+    const series = statusData.series[seriesId];
+    if (series.versions && series.versions[scriptId]) {
+      series.versions[scriptId] = {
+        status,
+        reviewedBy,
+        reviewedAt: new Date().toISOString(),
+        reviewNote
+      };
+      await saveStatusFile(statusData);
+      return series.versions[scriptId];
+    }
+  }
+  
+  // 独立剧本
+  statusData.standalone[scriptId] = {
+    scriptId,
+    status,
+    reviewedBy,
+    reviewedAt: new Date().toISOString(),
+    reviewNote
+  };
+  
+  await saveStatusFile(statusData);
+  return statusData.standalone[scriptId];
+}
+
 // API路由
 
 // 获取所有剧本（支持分页和筛选）
@@ -169,7 +260,7 @@ router.get('/', async (req, res) => {
     const category = req.query.category || 'all';
     const search = req.query.search || '';
     const sortBy = req.query.sortBy || 'name';
-    const status = req.query.status || 'approved'; // 默认只显示已审核的
+    const status = req.query.status || 'all'; // 默认显示所有状态
     const userId = req.query.userId || ''; // 用户ID，用于"我的上传"
     
     const scripts = await getAllScripts();
@@ -264,6 +355,66 @@ router.get('/pending', async (req, res) => {
     });
   } catch (error) {
     console.error('获取待审核剧本失败:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 获取剧本状态
+router.get('/status/:scriptId', async (req, res) => {
+  try {
+    const { scriptId } = req.params;
+    const status = await getScriptStatus(scriptId);
+    
+    res.json({
+      success: true,
+      data: status
+    });
+  } catch (error) {
+    console.error('获取剧本状态失败:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 更新剧本状态（需要审核权限）
+router.put('/status/:scriptId', async (req, res) => {
+  try {
+    const { scriptId } = req.params;
+    const { status, reviewNote } = req.body;
+    
+    // 获取当前用户信息（需要从认证中间件获取）
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, error: '未提供认证Token' });
+    }
+    
+    const token = authHeader.substring(7);
+    // 这里需要验证token并获取用户信息
+    // 暂时使用默认用户，实际应该从token解析
+    const reviewedBy = 'admin@mm.com';
+    
+    const updatedStatus = await updateScriptStatus(scriptId, status, reviewedBy, reviewNote);
+    
+    res.json({
+      success: true,
+      data: updatedStatus
+    });
+  } catch (error) {
+    console.error('更新剧本状态失败:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 获取所有状态
+router.get('/status/all', async (req, res) => {
+  try {
+    const statusData = await readStatusFile();
+    
+    res.json({
+      success: true,
+      data: statusData
+    });
+  } catch (error) {
+    console.error('获取所有状态失败:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
