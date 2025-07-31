@@ -131,8 +131,8 @@ export default {
           const reader = new FileReader();
           reader.onload = (event) => {
             try {
-              const data = JSON.parse(event.target.result);
-              console.log("导入的数据:", data);
+              JSON.parse(event.target.result);
+              // 导入的数据处理
               alert("数据导入成功！");
             } catch (error) {
               alert("数据格式错误：" + error.message);
@@ -293,4 +293,4 @@ export default {
     }
   }
 }
-</style> 
+</style>

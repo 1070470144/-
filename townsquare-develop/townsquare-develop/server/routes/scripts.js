@@ -53,7 +53,6 @@ function getDirectoryByType(type) {
 // 获取所有剧本
 async function getAllScripts() {
   try {
-    console.log('🔍 开始获取所有剧本...');
     await ensureDirectories();
     
     const scripts = {
@@ -67,12 +66,10 @@ async function getAllScripts() {
     
     for (const type of types) {
       const dir = getDirectoryByType(type);
-      console.log(`📁 检查目录: ${dir}`);
       
       try {
         const files = await fs.readdir(dir);
         const jsonFiles = files.filter(file => file.endsWith('.json'));
-        console.log(`📄 ${type}目录找到 ${jsonFiles.length} 个JSON文件`);
         
         for (const file of jsonFiles) {
           try {
@@ -86,7 +83,6 @@ async function getAllScripts() {
             scriptData.lastModified = (await fs.stat(filePath)).mtime;
             
             scripts[type].push(scriptData);
-            console.log(`✅ 成功读取剧本: ${file}`);
           } catch (error) {
             console.error(`❌ 读取剧本文件失败: ${file}`, error);
           }
@@ -96,8 +92,6 @@ async function getAllScripts() {
       }
     }
 
-    const totalScripts = Object.values(scripts).flat().length;
-    console.log(`✅ 总共获取到 ${totalScripts} 个剧本`);
     return scripts;
   } catch (error) {
     console.error('❌ 获取所有剧本失败:', error);
@@ -125,7 +119,6 @@ async function saveScript(scriptData, type = 'custom') {
     // 写入文件
     await fs.writeFile(filePath, JSON.stringify(scriptToSave, null, 2), 'utf8');
     
-    console.log(`剧本已保存: ${filePath}`);
     return { success: true, filePath };
   } catch (error) {
     console.error('保存剧本失败:', error);
@@ -141,7 +134,6 @@ async function deleteScript(scriptId, type = 'custom') {
     const filePath = path.join(dir, fileName);
     
     await fs.unlink(filePath);
-    console.log(`剧本已删除: ${filePath}`);
     return { success: true };
   } catch (error) {
     console.error('删除剧本失败:', error);
@@ -179,8 +171,6 @@ router.get('/', async (req, res) => {
     const sortBy = req.query.sortBy || 'name';
     const status = req.query.status || 'approved'; // 默认只显示已审核的
     const userId = req.query.userId || ''; // 用户ID，用于"我的上传"
-    
-    console.log('📊 查询参数:', { page, limit, category, search, sortBy, status, userId });
     
     const scripts = await getAllScripts();
     
@@ -233,8 +223,6 @@ router.get('/', async (req, res) => {
     const endIndex = startIndex + limit;
     const paginatedScripts = filteredScripts.slice(startIndex, endIndex);
     
-    console.log(`✅ 成功获取剧本，总数: ${total}, 当前页: ${page}/${totalPages}, 本页数量: ${paginatedScripts.length}`);
-    
     res.json({ 
       success: true, 
       data: {
@@ -282,25 +270,14 @@ router.post('/', async (req, res) => {
     const scriptData = req.body;
     const { type = 'custom' } = req.query;
     
-    console.log('📄 剧本数据:', {
-      id: scriptData.id,
-      name: scriptData.name,
-      userId: scriptData.userId,
-      status: scriptData.status,
-      uploadedBy: scriptData.uploadedBy
-    });
-    
     if (!scriptData.id || !scriptData.name) {
-      console.error('❌ 剧本数据验证失败: 缺少ID或名称');
       return res.status(400).json({ 
         success: false, 
         error: '剧本ID和名称是必需的' 
       });
     }
     
-    console.log('✅ 剧本数据验证通过，开始保存...');
     const result = await saveScript(scriptData, type);
-    console.log('✅ 剧本保存成功:', result);
     res.json({ success: true, data: result });
   } catch (error) {
     console.error('❌ 保存剧本失败:', error);

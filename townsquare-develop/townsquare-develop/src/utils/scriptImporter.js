@@ -274,10 +274,10 @@ class ScriptImporter {
    */
   generateScriptId(name) {
     // 添加空值检查
-    if (!name || typeof name !== 'string') {
-      name = 'unnamed_script';
+    if (!name || typeof name !== "string") {
+      name = "unnamed_script";
     }
-    
+
     // 移除文件名中的特殊字符，保留中文和英文
     const cleanName = name
       .replace(/[#\s\-_]/g, "") // 移除 # 空格 - _

@@ -56,7 +56,10 @@
     <NightOrderModal />
     <VoteHistoryModal />
     <GameStateModal />
-    <ScriptBrowser v-if="showScriptBrowser" @close="showScriptBrowser = false" />
+    <ScriptBrowser
+      v-if="showScriptBrowser"
+      @close="showScriptBrowser = false"
+    />
 
     <Gradients />
     <span id="version">v{{ version }}</span>
@@ -463,6 +466,4 @@ video#background {
 #app.night > .backdrop {
   opacity: 0.5;
 }
-
-
 </style>

@@ -1,155 +1,182 @@
 <template>
   <div class="script-browser-backdrop" @click="closeBrowser">
     <div class="script-browser-modal" @click.stop>
-        <div class="script-header">
-          <h2>剧本浏览</h2>
-          <button @click="closeBrowser" class="close-btn">×</button>
-        </div>
+      <div class="script-header">
+        <h2>剧本浏览</h2>
+        <button @click="closeBrowser" class="close-btn">×</button>
+      </div>
 
-        <div class="script-tabs">
-          <button
-            @click="switchTab('all')"
-            :class="{ active: currentTab === 'all' }"
-            class="tab-btn"
-          >
-            全部剧本
-          </button>
-          <button
-            v-if="isLoggedIn"
-            @click="switchTab('my')"
-            :class="{ active: currentTab === 'my' }"
-            class="tab-btn"
-          >
-            我的上传
-          </button>
-          <button
-            v-if="isLoggedIn && isAdmin"
-            @click="switchTab('admin')"
-            :class="{ active: currentTab === 'admin' }"
-            class="tab-btn admin-tab"
-          >
-            <span class="admin-icon">⚙️</span>
-            管理员
-          </button>
-        </div>
+      <div class="script-tabs">
+        <button
+          @click="switchTab('all')"
+          :class="{ active: currentTab === 'all' }"
+          class="tab-btn"
+        >
+          全部剧本
+        </button>
+        <button
+          v-if="isLoggedIn"
+          @click="switchTab('my')"
+          :class="{ active: currentTab === 'my' }"
+          class="tab-btn"
+        >
+          我的上传
+        </button>
+        <button
+          v-if="isLoggedIn && isAdmin"
+          @click="switchTab('admin')"
+          :class="{ active: currentTab === 'admin' }"
+          class="tab-btn admin-tab"
+        >
+          <span class="admin-icon">⚙️</span>
+          管理员
+        </button>
+      </div>
 
-        <div class="script-content">
-          <div class="content-header">
-            <div class="search-filters">
-              <div class="search-box">
-                <input 
-                  v-model="searchQuery" 
-                  type="text" 
-                  placeholder="搜索剧本..."
-                  @input="debounceSearch"
-                />
-              </div>
-              
-              <div class="filter-options">
-                <select v-model="selectedCategory" @change="filterScripts">
-                  <option value="all">全部分类</option>
-                  <option value="official">官方剧本</option>
-                  <option value="custom">自制剧本</option>
-                  <option value="mixed">混合剧本</option>
-                  <option value="event">节日活动</option>
-                  <option value="overseas">海外剧本</option>
-                </select>
-                
-                <select v-model="sortBy" @change="filterScripts">
-                  <option value="name">按名称</option>
-                  <option value="likes">按点赞</option>
-                  <option value="usage">按使用</option>
-                  <option value="date">按日期</option>
-                </select>
-              </div>
+      <div class="script-content">
+        <div class="content-header">
+          <div class="search-filters">
+            <div class="search-box">
+              <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="搜索剧本..."
+                @input="debounceSearch"
+              />
             </div>
-            
-            <div class="header-actions">
-              <button @click="showRanking = true" class="action-btn ranking-btn">
-                排行榜
+
+            <div class="filter-options">
+              <select v-model="selectedCategory" @change="filterScripts">
+                <option value="all">全部分类</option>
+                <option value="official">官方剧本</option>
+                <option value="custom">自制剧本</option>
+                <option value="mixed">混合剧本</option>
+                <option value="event">节日活动</option>
+                <option value="overseas">海外剧本</option>
+              </select>
+
+              <select v-model="sortBy" @change="filterScripts">
+                <option value="name">按名称</option>
+                <option value="likes">按点赞</option>
+                <option value="usage">按使用</option>
+                <option value="date">按日期</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="header-actions">
+            <button @click="showRanking = true" class="action-btn ranking-btn">
+              排行榜
+            </button>
+            <button
+              v-if="isLoggedIn"
+              @click="showUploadModal = true"
+              class="action-btn upload-btn"
+            >
+              上传剧本
+            </button>
+            <button
+              @click="showLoginModal = true"
+              v-if="!isLoggedIn"
+              class="action-btn login-btn"
+            >
+              登录
+            </button>
+            <div v-else class="user-info">
+              <span class="username" :class="{ 'admin-user': isAdmin }">
+                {{ currentUser.username }}
+                <span v-if="isAdmin" class="admin-badge">管理员</span>
+              </span>
+              <button @click="logout" class="action-btn logout-btn">
+                登出
               </button>
-              <button v-if="isLoggedIn" @click="showUploadModal = true" class="action-btn upload-btn">
-                上传剧本
-              </button>
-              <button @click="showLoginModal = true" v-if="!isLoggedIn" class="action-btn login-btn">
-                登录
-              </button>
-              <div v-else class="user-info">
-                <span class="username" :class="{ 'admin-user': isAdmin }">
-                  {{ currentUser.username }}
-                  <span v-if="isAdmin" class="admin-badge">管理员</span>
-                </span>
-                <button @click="logout" class="action-btn logout-btn">登出</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 剧本列表 -->
+        <div class="scripts-container">
+          <div class="scripts-grid" :key="currentTab">
+            <!-- 骨架屏 - 只在首次加载时显示 -->
+            <ScriptSkeleton v-if="isLoading" :count="6" />
+
+            <!-- 标签页切换时的轻量加载指示 -->
+            <div v-if="isTabLoading" class="tab-loading">
+              <div class="loading-spinner"></div>
+              <span v-if="currentTab === 'admin'">加载管理员功能...</span>
+              <span v-else>加载中...</span>
+            </div>
+
+            <!-- 剧本卡片 -->
+            <div
+              v-for="script in scripts"
+              :key="script.id"
+              class="script-card"
+              @click="viewScript(script)"
+            >
+              <div class="script-card-header">
+                <h3>{{ script.name }}</h3>
+                <div class="script-meta">
+                  <span class="author">{{ script.author || "未知作者" }}</span>
+                  <span class="category">{{
+                    getCategoryName(script.category)
+                  }}</span>
+                  <!-- 审核状态显示 -->
+                  <span
+                    v-if="currentTab === 'my'"
+                    :class="['status', `status-${script.status}`]"
+                  >
+                    {{ getStatusText(script.status) }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="script-card-info">
+                <p class="description">
+                  {{ script.description || "暂无描述" }}
+                </p>
+                <div class="stats">
+                  <span class="roles"
+                    >{{ script.roles?.length || 0 }} 个角色</span
+                  >
+                  <span class="level">{{
+                    script.level || "Intermediate"
+                  }}</span>
+                </div>
+              </div>
+
+              <div class="script-card-actions">
+                <button
+                  @click.stop="useScript(script)"
+                  class="action-btn use-btn"
+                  :disabled="script.status !== 'approved'"
+                >
+                  {{ script.status === "approved" ? "使用剧本" : "等待审核" }}
+                </button>
+                <button
+                  v-if="isLoggedIn && script.status === 'approved'"
+                  @click.stop="toggleLike(script)"
+                  :class="['action-btn like-btn', { liked: script.isLiked }]"
+                >
+                  {{ script.isLiked ? "已点赞" : "点赞" }}
+                  <span class="like-count">{{ script.likes || 0 }}</span>
+                </button>
+                <span v-else-if="!isLoggedIn" class="login-tip"
+                  >登录后点赞</span
+                >
+                <span
+                  v-else-if="script.status !== 'approved'"
+                  class="status-tip"
+                  >审核通过后可点赞</span
+                >
               </div>
             </div>
           </div>
 
-          <!-- 剧本列表 -->
-          <div class="scripts-container">
-            <div class="scripts-grid" :key="currentTab">
-                <!-- 骨架屏 - 只在首次加载时显示 -->
-                <ScriptSkeleton v-if="isLoading" :count="6" />
-                
-                <!-- 标签页切换时的轻量加载指示 -->
-                <div v-if="isTabLoading" class="tab-loading">
-                  <div class="loading-spinner"></div>
-                  <span v-if="currentTab === 'admin'">加载管理员功能...</span>
-                  <span v-else>加载中...</span>
-                </div>
-                
-                <!-- 剧本卡片 -->
-                <div 
-                  v-for="script in scripts" 
-                  :key="script.id"
-                  class="script-card"
-                  @click="viewScript(script)"
-                >
-                <div class="script-card-header">
-                  <h3>{{ script.name }}</h3>
-                  <div class="script-meta">
-                    <span class="author">{{ script.author || '未知作者' }}</span>
-                    <span class="category">{{ getCategoryName(script.category) }}</span>
-                    <!-- 审核状态显示 -->
-                    <span v-if="currentTab === 'my'" :class="['status', `status-${script.status}`]">
-                      {{ getStatusText(script.status) }}
-                    </span>
-                  </div>
-                </div>
-                
-                <div class="script-card-info">
-                  <p class="description">{{ script.description || '暂无描述' }}</p>
-                  <div class="stats">
-                    <span class="roles">{{ script.roles?.length || 0 }} 个角色</span>
-                    <span class="level">{{ script.level || 'Intermediate' }}</span>
-                  </div>
-                </div>
-                
-                <div class="script-card-actions">
-                  <button 
-                    @click.stop="useScript(script)" 
-                    class="action-btn use-btn"
-                    :disabled="script.status !== 'approved'"
-                  >
-                    {{ script.status === 'approved' ? '使用剧本' : '等待审核' }}
-                  </button>
-                  <button 
-                    v-if="isLoggedIn && script.status === 'approved'" 
-                    @click.stop="toggleLike(script)" 
-                    :class="['action-btn like-btn', { 'liked': script.isLiked }]"
-                  >
-                    {{ script.isLiked ? '已点赞' : '点赞' }}
-                    <span class="like-count">{{ script.likes || 0 }}</span>
-                  </button>
-                  <span v-else-if="!isLoggedIn" class="login-tip">登录后点赞</span>
-                  <span v-else-if="script.status !== 'approved'" class="status-tip">审核通过后可点赞</span>
-                </div>
-              </div>
-            </div>
-
           <!-- 加载更多 -->
           <div class="load-more" v-if="hasMore && !isLoading">
-            <button 
-              @click="loadMore" 
+            <button
+              @click="loadMore"
               :disabled="isLoadingMore"
               class="load-more-btn"
             >
@@ -157,16 +184,18 @@
               <span v-else>加载中...</span>
             </button>
           </div>
-          
+
           <!-- 没有更多数据 -->
           <div class="no-more" v-if="!hasMore && scripts.length > 0">
             <span>没有更多剧本了</span>
           </div>
-          
+
           <!-- 空状态 -->
           <div class="empty-state" v-if="!isLoading && scripts.length === 0">
             <span v-if="currentTab === 'all'">暂无剧本数据</span>
-            <span v-else-if="currentTab === 'my' && !isLoggedIn">请先登录查看您的上传</span>
+            <span v-else-if="currentTab === 'my' && !isLoggedIn"
+              >请先登录查看您的上传</span
+            >
             <span v-else-if="currentTab === 'my'">您还没有上传过剧本</span>
             <span v-else-if="currentTab === 'admin'">管理员功能已加载</span>
           </div>
@@ -178,7 +207,7 @@
         </div>
 
         <!-- 登录模态框 -->
-        <LoginModal 
+        <LoginModal
           v-if="showLoginModal"
           @close="showLoginModal = false"
           @login-success="handleLoginSuccess"
@@ -186,18 +215,24 @@
         />
 
         <!-- 上传模态框 -->
-        <ScriptUploadModal 
+        <ScriptUploadModal
           v-if="showUploadModal"
           @close="showUploadModal = false"
           @upload-success="handleUploadSuccess"
         />
 
         <!-- 排行榜模态框 -->
-        <div v-if="showRanking" class="ranking-modal-backdrop" @click="showRanking = false">
+        <div
+          v-if="showRanking"
+          class="ranking-modal-backdrop"
+          @click="showRanking = false"
+        >
           <div class="ranking-modal" @click.stop>
             <div class="modal-header">
               <h3>剧本排行榜</h3>
-              <button @click="showRanking = false" class="close-btn">&times;</button>
+              <button @click="showRanking = false" class="close-btn">
+                &times;
+              </button>
             </div>
             <div class="modal-content">
               <ScriptRanking />
@@ -210,30 +245,30 @@
 </template>
 
 <script>
-import LoginModal from '@/components/auth/LoginModal';
-import ScriptUploadModal from '@/components/scripts/ScriptUploadModal';
-import ScriptRanking from '@/components/scripts/ScriptRanking';
-import ScriptSkeleton from '@/components/scripts/ScriptSkeleton';
-import EmbeddedAdminPanel from '@/components/scripts/EmbeddedAdminPanel';
-import authAPI from '@/utils/authAPI';
-import scriptAPI from '@/utils/scriptAPI';
+import LoginModal from "@/components/auth/LoginModal";
+import ScriptUploadModal from "@/components/scripts/ScriptUploadModal";
+import ScriptRanking from "@/components/scripts/ScriptRanking";
+import ScriptSkeleton from "@/components/scripts/ScriptSkeleton";
+import EmbeddedAdminPanel from "@/components/scripts/EmbeddedAdminPanel";
+import authAPI from "@/utils/authAPI";
+import scriptAPI from "@/utils/scriptAPI";
 
 export default {
-  name: 'ScriptBrowser',
+  name: "ScriptBrowser",
   components: {
     LoginModal,
     ScriptUploadModal,
     ScriptRanking,
     ScriptSkeleton,
-    EmbeddedAdminPanel
+    EmbeddedAdminPanel,
   },
   data() {
     return {
       scripts: [],
       filteredScripts: [],
-      searchQuery: '',
-      selectedCategory: 'all',
-      sortBy: 'name',
+      searchQuery: "",
+      selectedCategory: "all",
+      sortBy: "name",
       currentPage: 1,
       itemsPerPage: 20,
       showLoginModal: false,
@@ -245,15 +280,16 @@ export default {
       pagination: null,
       filters: null,
       searchTimer: null,
-      currentTab: 'all', // 当前标签页
+      currentTab: "all", // 当前标签页
       isTabLoading: false, // 标签页切换时的加载状态
-      cachedScripts: { // 缓存不同标签页的数据
+      cachedScripts: {
+        // 缓存不同标签页的数据
         all: [],
-        my: []
+        my: [],
       },
       // 添加响应式状态
       isLoggedIn: authAPI.isLoggedIn(),
-      currentUser: authAPI.getCurrentUser()
+      currentUser: authAPI.getCurrentUser(),
     };
   },
   computed: {
@@ -261,41 +297,38 @@ export default {
       return Math.ceil(this.filteredScripts.length / this.itemsPerPage);
     },
     isAdmin() {
-      return this.currentUser && this.currentUser.role === 'admin';
+      return this.currentUser && this.currentUser.role === "admin";
     },
     // 检查当前标签页是否需要管理员权限
     requiresAdminPermission() {
-      return this.currentTab === 'admin';
+      return this.currentTab === "admin";
     },
     // 检查当前标签页是否需要登录
     requiresLogin() {
-      return this.currentTab === 'my' || this.currentTab === 'admin';
-    }
+      return this.currentTab === "my" || this.currentTab === "admin";
+    },
   },
   async mounted() {
     // 初始化响应式状态
     this.isLoggedIn = authAPI.isLoggedIn();
     this.currentUser = authAPI.getCurrentUser();
-    
 
-    
     await this.loadScripts();
-    
+
     // 使用authAPI的监听机制
     this.authListener = (user, token) => {
-      console.log('🔄 AuthAPI状态变化:', { user: user?.id, token: !!token });
       this.handleAuthStateChange(user, token);
     };
-    
+
     authAPI.addListener(this.authListener);
   },
-  
+
   beforeDestroy() {
     // 清理定时器
     if (this.searchTimer) {
       clearTimeout(this.searchTimer);
     }
-    
+
     // 移除authAPI监听器
     if (this.authListener) {
       authAPI.removeListener(this.authListener);
@@ -323,25 +356,19 @@ export default {
         } else {
           this.isLoadingMore = true;
         }
-        
-        console.log('🔍 开始加载剧本...');
-        
+
         const params = {
           page: this.currentPage,
           limit: this.itemsPerPage,
           category: this.selectedCategory,
           search: this.searchQuery,
           sortBy: this.sortBy,
-          status: this.currentTab === 'all' ? 'approved' : 'all', // 全部剧本只显示已审核的
-          userId: this.currentTab === 'my' ? this.currentUser?.id : '' // 我的上传显示用户自己的
+          status: this.currentTab === "all" ? "approved" : "all", // 全部剧本只显示已审核的
+          userId: this.currentTab === "my" ? this.currentUser?.id : "", // 我的上传显示用户自己的
         };
-        
-        console.log('🔍 查询参数:', params);
-        console.log('📄 当前用户:', this.currentUser);
-        
+
         const result = await scriptAPI.getAllScripts(params);
-        console.log('📄 获取到剧本数据:', result);
-        
+
         if (result && result.scripts) {
           if (reset) {
             this.scripts = result.scripts;
@@ -352,21 +379,17 @@ export default {
             // 更新缓存
             this.cachedScripts[this.currentTab] = [...this.scripts];
           }
-          
+
           this.pagination = result.pagination;
           this.filters = result.filters;
           this.hasMore = result.pagination.hasNext;
-          
-          console.log(`✅ 成功加载 ${result.scripts.length} 个剧本，总计: ${this.scripts.length}`);
         } else {
-          console.error('❌ 剧本数据格式错误:', result);
           if (reset) {
             this.scripts = [];
             this.cachedScripts[this.currentTab] = [];
           }
         }
       } catch (error) {
-        console.error('❌ 加载剧本错误:', error);
         if (reset) {
           this.scripts = [];
           this.cachedScripts[this.currentTab] = [];
@@ -390,7 +413,7 @@ export default {
       if (this.searchTimer) {
         clearTimeout(this.searchTimer);
       }
-      
+
       // 设置新的定时器，500ms后执行搜索
       this.searchTimer = setTimeout(() => {
         this.filterScripts();
@@ -399,29 +422,26 @@ export default {
 
     async switchTab(tab) {
       if (this.currentTab === tab) return;
-      
-      console.log(`🔄 切换标签页: ${this.currentTab} -> ${tab}`);
-      
+
       // 验证访问权限
       if (!this.validateTabAccess(tab)) {
         return;
       }
-      
+
       // 管理员标签页不需要加载剧本数据
-      if (tab === 'admin') {
+      if (tab === "admin") {
         this.currentTab = tab;
         return;
       }
-      
+
       // 检查是否有缓存数据
       if (this.cachedScripts[tab] && this.cachedScripts[tab].length > 0) {
-        console.log(`📄 使用缓存数据: ${tab}`);
         this.currentTab = tab;
         this.scripts = [...this.cachedScripts[tab]];
         this.currentPage = 1;
         return;
       }
-      
+
       this.currentTab = tab;
       this.currentPage = 1;
       this.scripts = [];
@@ -430,7 +450,7 @@ export default {
 
     async loadMore() {
       if (this.isLoadingMore || !this.hasMore) return;
-      
+
       this.currentPage++;
       await this.loadScripts(false);
     },
@@ -441,9 +461,8 @@ export default {
       }
     },
 
-    viewScript(script) {
+    viewScript() {
       // 查看剧本详情
-      console.log('查看剧本:', script);
       // TODO: 实现剧本详情页面
     },
 
@@ -451,19 +470,19 @@ export default {
       try {
         // 记录使用次数
         await scriptAPI.useScript(script.id);
-        
+
         // 跳转到游戏页面
         this.$router.push({
-          name: 'game',
-          query: { script: script.id }
+          name: "game",
+          query: { script: script.id },
         });
       } catch (error) {
-        console.error('使用剧本失败:', error);
+        console.error("使用剧本失败:", error);
       }
     },
 
     async toggleLike(script) {
-      if (!this.canPerformAction('like')) {
+      if (!this.canPerformAction("like")) {
         this.showLoginModal = true;
         return;
       }
@@ -475,23 +494,21 @@ export default {
           script.likes = result.likes;
         }
       } catch (error) {
-        console.error('点赞失败:', error);
+        console.error("点赞失败:", error);
       }
     },
 
     async handleLoginSuccess(user) {
-      console.log('✅ 登录成功:', user);
-      
       // 先更新响应式数据
       this.isLoggedIn = true;
       this.currentUser = user;
-      
+
       // 等待DOM更新完成
       await this.$nextTick();
-      
+
       // 关闭模态框
       this.showLoginModal = false;
-      
+
       // 等待模态框关闭动画完成后再刷新数据
       setTimeout(() => {
         this.refreshData();
@@ -499,18 +516,16 @@ export default {
     },
 
     async handleRegisterSuccess(user) {
-      console.log('✅ 注册成功:', user);
-      
       // 先更新响应式数据
       this.isLoggedIn = true;
       this.currentUser = user;
-      
+
       // 等待DOM更新完成
       await this.$nextTick();
-      
+
       // 关闭模态框
       this.showLoginModal = false;
-      
+
       // 等待模态框关闭动画完成后再刷新数据
       setTimeout(() => {
         this.refreshData();
@@ -518,27 +533,23 @@ export default {
     },
 
     async handleUploadSuccess() {
-      console.log('✅ 剧本上传成功');
       this.showUploadModal = false;
-      
+
       // 上传成功后自动切换到"我的上传"标签
       if (this.isLoggedIn) {
-        console.log('🔄 切换到"我的上传"标签页');
-        await this.switchTab('my');
+        await this.switchTab("my");
       } else {
-        console.log('⚠️ 用户未登录，刷新当前页面');
         await this.loadScripts();
       }
     },
 
     async logout() {
-      console.log('🔄 用户退出登录');
       await authAPI.logout();
-      
+
       // 更新响应式数据
       this.isLoggedIn = false;
       this.currentUser = null;
-      
+
       // 退出后刷新数据
       this.$nextTick(() => {
         this.refreshData();
@@ -546,73 +557,62 @@ export default {
     },
 
     closeBrowser() {
-      this.$emit('close');
+      this.$emit("close");
     },
 
     getCategoryName(category) {
       const categoryNames = {
-        official: '官方剧本',
-        custom: '自制剧本',
-        mixed: '混合剧本',
-        event: '节日活动',
-        overseas: '海外剧本'
+        official: "官方剧本",
+        custom: "自制剧本",
+        mixed: "混合剧本",
+        event: "节日活动",
+        overseas: "海外剧本",
       };
-      return categoryNames[category] || '未知分类';
+      return categoryNames[category] || "未知分类";
     },
 
     getStatusText(status) {
       const statusNames = {
-        pending: '待审核',
-        approved: '已通过',
-        rejected: '已拒绝'
+        pending: "待审核",
+        approved: "已通过",
+        rejected: "已拒绝",
       };
-      return statusNames[status] || '未知状态';
+      return statusNames[status] || "未知状态";
     },
 
     handleAuthStateChange(user, token) {
-      console.log('🔄 认证状态变化:', { 
-        userId: user?.id, 
+      console.log("🔄 认证状态变化:", {
+        userId: user?.id,
         isLoggedIn: !!token,
-        role: user?.role
+        role: user?.role,
       });
-      
+
       // 保存旧的登录状态用于比较
       const wasLoggedIn = this.isLoggedIn;
       const wasAdmin = this.isAdmin;
-      
+
       // 更新响应式数据
       this.isLoggedIn = !!token;
       this.currentUser = user;
-      
+
       // 强制更新组件以确保响应式数据变化
       this.$forceUpdate();
-      
+
       // 检查登录状态是否发生变化
       const isNowLoggedIn = !!token;
       const isNowAdmin = this.isAdmin;
-      
 
-      
       if (wasLoggedIn !== isNowLoggedIn || wasAdmin !== isNowAdmin) {
-        console.log('🔄 用户状态发生变化:', { 
-          wasLoggedIn, 
-          isNowLoggedIn, 
-          wasAdmin, 
-          isNowAdmin 
-        });
-        
         // 如果用户登出且当前在需要登录的标签页，切换到全部剧本
         if (!isNowLoggedIn && this.requiresLogin) {
-          console.log('⚠️ 用户登出，切换到全部剧本标签页');
-          this.currentTab = 'all';
+          this.currentTab = "all";
         }
-        
+
         // 如果用户权限变化且当前在管理员标签页但无权限，切换到全部剧本
-        if (this.currentTab === 'admin' && !isNowAdmin) {
-          console.log('⚠️ 用户权限变化，切换到全部剧本标签页');
-          this.currentTab = 'all';
+        if (this.currentTab === "admin" && !isNowAdmin) {
+          this.currentTab = "all";
         }
-        
+
         this.refreshData();
       }
     },
@@ -620,46 +620,44 @@ export default {
     // 验证用户是否有权限访问当前标签页
     validateTabAccess(tab) {
       // 检查登录权限
-      if ((tab === 'my' || tab === 'admin') && !this.isLoggedIn) {
-        console.log('⚠️ 需要登录才能访问此标签页');
-        this.showErrorMessage('请先登录后再访问此功能');
+      if ((tab === "my" || tab === "admin") && !this.isLoggedIn) {
+        this.showErrorMessage("请先登录后再访问此功能");
         this.showLoginModal = true;
         return false;
       }
-      
+
       // 检查管理员权限
-      if (tab === 'admin' && !this.isAdmin) {
-        console.log('⚠️ 需要管理员权限才能访问此标签页');
-        this.showErrorMessage('需要管理员权限才能访问此功能');
+      if (tab === "admin" && !this.isAdmin) {
+        this.showErrorMessage("需要管理员权限才能访问此功能");
         return false;
       }
-      
+
       return true;
     },
-    
+
     // 检查当前用户是否有权限执行操作
     canPerformAction(action) {
       switch (action) {
-        case 'upload':
+        case "upload":
           return this.isLoggedIn;
-        case 'like':
+        case "like":
           return this.isLoggedIn;
-        case 'admin':
+        case "admin":
           return this.isAdmin;
         default:
           return true;
       }
     },
-    
+
     // 显示用户友好的错误消息
-    showErrorMessage(message, type = 'error') {
-      const alertClass = type === 'error' ? 'error-alert' : 'success-alert';
-      const alert = document.createElement('div');
+    showErrorMessage(message, type = "error") {
+      const alertClass = type === "error" ? "error-alert" : "success-alert";
+      const alert = document.createElement("div");
       alert.className = `user-alert ${alertClass}`;
       alert.textContent = message;
-      
+
       document.body.appendChild(alert);
-      
+
       // 3秒后自动移除
       setTimeout(() => {
         if (alert.parentNode) {
@@ -667,44 +665,38 @@ export default {
         }
       }, 3000);
     },
-    
+
     // 显示成功消息
     showSuccessMessage(message) {
-      this.showErrorMessage(message, 'success');
+      this.showErrorMessage(message, "success");
     },
 
     async refreshData() {
-      console.log('🔄 刷新剧本数据...');
-      
       // 如果当前在需要登录的标签页且用户未登录，切换到"全部剧本"
       if (this.requiresLogin && !this.isLoggedIn) {
-        console.log('⚠️ 用户未登录，切换到全部剧本标签页');
-        this.currentTab = 'all';
+        this.currentTab = "all";
       }
-      
+
       // 如果当前在管理员标签页且用户无管理员权限，切换到"全部剧本"
       if (this.requiresAdminPermission && !this.isAdmin) {
-        console.log('⚠️ 用户无管理员权限，切换到全部剧本标签页');
-        this.currentTab = 'all';
+        this.currentTab = "all";
       }
-      
+
       // 管理员标签页不需要加载剧本数据
-      if (this.currentTab === 'admin') {
-        console.log('✅ 管理员标签页，无需刷新剧本数据');
+      if (this.currentTab === "admin") {
         return;
       }
-      
+
       // 重新加载当前标签页数据
       this.currentPage = 1;
-      
+
       try {
         await this.loadScripts(true);
-        console.log('✅ 剧本数据刷新完成');
       } catch (error) {
-        console.error('❌ 刷新剧本数据失败:', error);
+        console.error("❌ 刷新剧本数据失败:", error);
       }
-    }
-  }
+    },
+  },
 };
 </script>
 
@@ -791,7 +783,7 @@ export default {
       }
     }
   }
-  
+
   .script-tabs {
     display: flex;
     background: rgba(255, 255, 255, 0.02);
@@ -966,7 +958,7 @@ export default {
             white-space: nowrap;
             max-width: 150px; // 限制最大宽度
           }
-          
+
           .logout-btn {
             flex-shrink: 0; // 防止按钮收缩
           }
@@ -990,52 +982,52 @@ export default {
       padding: 20px;
       cursor: pointer;
       transition: all 0.3s ease;
-      
+
       &:hover {
         transform: translateY(-2px);
         box-shadow: 0 4px 20px rgba(255, 215, 0, 0.1);
         border-color: rgba(255, 215, 0, 0.4);
       }
-      
+
       .script-card-header {
         margin-bottom: 15px;
-        
+
         h3 {
           margin: 0 0 8px 0;
           color: #ffd700;
           font-size: 18px;
           text-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
         }
-        
+
         .script-meta {
           display: flex;
           gap: 15px;
           font-size: 12px;
           color: rgba(255, 255, 255, 0.7);
-          
+
           .author {
             color: #4a90e2;
           }
-          
+
           .category {
             color: #ffd700;
           }
-          
+
           .status {
             font-size: 12px;
             padding: 2px 6px;
             border-radius: 3px;
-            
+
             &.status-pending {
               background: #ffa500;
               color: #000;
             }
-            
+
             &.status-approved {
               background: #4caf50;
               color: #fff;
             }
-            
+
             &.status-rejected {
               background: #f44336;
               color: #fff;
@@ -1043,82 +1035,83 @@ export default {
           }
         }
       }
-      
+
       .script-card-info {
         margin-bottom: 15px;
-        
+
         .description {
           color: rgba(255, 255, 255, 0.8);
           font-size: 14px;
           line-height: 1.4;
           margin-bottom: 10px;
         }
-        
+
         .stats {
           display: flex;
           gap: 15px;
           font-size: 12px;
           color: rgba(255, 255, 255, 0.6);
-          
+
           .roles {
             color: #4a90e2;
           }
-          
+
           .level {
             color: #ffd700;
           }
         }
       }
-      
+
       .script-card-actions {
         display: flex;
         gap: 10px;
         align-items: center;
-        
+
         .action-btn {
           padding: 8px 16px;
           border-radius: 4px;
           font-size: 12px;
           cursor: pointer;
           transition: all 0.3s ease;
-          
+
           &.use-btn {
             background: rgba(76, 175, 80, 0.2);
             border: 1px solid rgba(76, 175, 80, 0.4);
             color: #4caf50;
-            
+
             &:hover {
               background: rgba(76, 175, 80, 0.3);
             }
-            
+
             &:disabled {
               opacity: 0.5;
               cursor: not-allowed;
             }
           }
-          
+
           &.like-btn {
             background: rgba(255, 215, 0, 0.15);
             border: 1px solid rgba(255, 215, 0, 0.3);
             color: #ffd700;
-            
+
             &:hover {
               background: rgba(255, 215, 0, 0.25);
             }
-            
+
             &.liked {
               background: rgba(255, 215, 0, 0.3);
               color: white;
             }
-            
+
             .like-count {
               margin-left: 5px;
               font-weight: bold;
             }
           }
         }
-        
-        .login-tip, .status-tip {
+
+        .login-tip,
+        .status-tip {
           font-size: 12px;
           color: rgba(255, 255, 255, 0.5);
         }
@@ -1128,7 +1121,7 @@ export default {
     .load-more {
       text-align: center;
       margin-top: 30px;
-      
+
       .load-more-btn {
         background: rgba(255, 215, 0, 0.15);
         border: 1px solid rgba(255, 215, 0, 0.4);
@@ -1139,12 +1132,12 @@ export default {
         font-family: "Papyrus", serif;
         font-size: 14px;
         transition: all 0.3s ease;
-        
+
         &:hover {
           background: rgba(255, 215, 0, 0.25);
           color: white;
         }
-        
+
         &:disabled {
           opacity: 0.5;
           cursor: not-allowed;
@@ -1175,7 +1168,7 @@ export default {
     padding: 40px;
     color: rgba(255, 255, 255, 0.7);
     font-size: 14px;
-    
+
     .loading-spinner {
       width: 20px;
       height: 20px;
@@ -1189,20 +1182,27 @@ export default {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
-.fade-enter-active, .fade-leave-active {
+.fade-enter-active,
+.fade-leave-active {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.fade-enter, .fade-leave-to {
+.fade-enter,
+.fade-leave-to {
   opacity: 0;
   transform: translateY(10px);
 }
 
-.fade-enter-to, .fade-leave {
+.fade-enter-to,
+.fade-leave {
   opacity: 1;
   transform: translateY(0);
 }
@@ -1234,33 +1234,33 @@ export default {
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-  
+
   .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
-    
+
     h3 {
       margin: 0;
       color: #ffd700;
       font-size: 18px;
       text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
     }
-    
+
     .close-btn {
       background: none;
       border: none;
       color: #ffd700;
       font-size: 24px;
       cursor: pointer;
-      
+
       &:hover {
         color: white;
       }
     }
   }
-  
+
   .modal-content {
     max-height: calc(90vh - 80px);
     overflow-y: auto;
@@ -1285,12 +1285,12 @@ export default {
 
 .admin-tab {
   position: relative;
-  
+
   .admin-icon {
     margin-right: 5px;
     font-size: 12px;
   }
-  
+
   &::before {
     content: "";
     position: absolute;
@@ -1302,7 +1302,7 @@ export default {
     border-radius: 50%;
     box-shadow: 0 0 4px rgba(255, 215, 0, 0.6);
   }
-  
+
   &.active {
     background: linear-gradient(
       135deg,
@@ -1318,7 +1318,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
-  
+
   .admin-badge {
     background: #ffd700;
     color: #000;
@@ -1342,13 +1342,13 @@ export default {
   z-index: 2000;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   animation: slideIn 0.3s ease;
-  
+
   &.error-alert {
     background: rgba(220, 53, 69, 0.9);
     color: white;
     border: 1px solid rgba(220, 53, 69, 0.3);
   }
-  
+
   &.success-alert {
     background: rgba(40, 167, 69, 0.9);
     color: white;
@@ -1366,4 +1366,4 @@ export default {
     opacity: 1;
   }
 }
-</style> 
+</style>

@@ -291,9 +291,7 @@ const PORT = process.env.NODE_ENV === "production" ? 8080 : 8081;
 
 server.listen(PORT, () => {
   if (process.env.NODE_ENV === "production") {
-    console.log(`生产模式：服务器运行在端口${PORT}`);
-    console.log(`生产模式：WebSocket服务器运行在端口${PORT}`);
-    console.log(`生产模式：API服务器运行在端口${PORT}/api`);
+    // 生产模式服务器启动
     
     // 添加监控指标API
     server.on("request", (req, res) => {
@@ -303,7 +301,6 @@ server.listen(PORT, () => {
       }
     });
   } else {
-    console.log(`开发模式：WebSocket服务器运行在端口${PORT}`);
-    console.log(`开发模式：API服务器运行在端口${PORT}/api`);
+    // 开发模式服务器启动
   }
 });
