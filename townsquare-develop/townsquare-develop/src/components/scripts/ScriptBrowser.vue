@@ -261,8 +261,7 @@ export default {
       return Math.ceil(this.filteredScripts.length / this.itemsPerPage);
     },
     isAdmin() {
-      const currentUser = authAPI.getCurrentUser();
-      return currentUser && currentUser.role === 'admin';
+      return this.currentUser && this.currentUser.role === 'admin';
     },
     // 检查当前标签页是否需要管理员权限
     requiresAdminPermission() {
@@ -277,6 +276,8 @@ export default {
     // 初始化响应式状态
     this.isLoggedIn = authAPI.isLoggedIn();
     this.currentUser = authAPI.getCurrentUser();
+    
+
     
     await this.loadScripts();
     
@@ -575,20 +576,40 @@ export default {
         role: user?.role
       });
       
+      // 保存旧的登录状态用于比较
+      const wasLoggedIn = this.isLoggedIn;
+      const wasAdmin = this.isAdmin;
+      
       // 更新响应式数据
       this.isLoggedIn = !!token;
       this.currentUser = user;
       
-      // 检查登录状态是否发生变化
-      const wasLoggedIn = this.isLoggedIn;
-      const isNowLoggedIn = !!token;
+      // 强制更新组件以确保响应式数据变化
+      this.$forceUpdate();
       
-      if (wasLoggedIn !== isNowLoggedIn) {
-        console.log('🔄 登录状态发生变化:', { wasLoggedIn, isNowLoggedIn });
+      // 检查登录状态是否发生变化
+      const isNowLoggedIn = !!token;
+      const isNowAdmin = this.isAdmin;
+      
+
+      
+      if (wasLoggedIn !== isNowLoggedIn || wasAdmin !== isNowAdmin) {
+        console.log('🔄 用户状态发生变化:', { 
+          wasLoggedIn, 
+          isNowLoggedIn, 
+          wasAdmin, 
+          isNowAdmin 
+        });
         
         // 如果用户登出且当前在需要登录的标签页，切换到全部剧本
         if (!isNowLoggedIn && this.requiresLogin) {
           console.log('⚠️ 用户登出，切换到全部剧本标签页');
+          this.currentTab = 'all';
+        }
+        
+        // 如果用户权限变化且当前在管理员标签页但无权限，切换到全部剧本
+        if (this.currentTab === 'admin' && !isNowAdmin) {
+          console.log('⚠️ 用户权限变化，切换到全部剧本标签页');
           this.currentTab = 'all';
         }
         
@@ -933,11 +954,21 @@ export default {
           display: flex;
           align-items: center;
           gap: 12px;
+          min-width: 0; // 允许flex项目收缩
 
           .username {
             color: #ffd700;
             font-size: 14px;
             font-weight: bold;
+            min-width: 0; // 允许文本收缩
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 150px; // 限制最大宽度
+          }
+          
+          .logout-btn {
+            flex-shrink: 0; // 防止按钮收缩
           }
         }
       }
@@ -1284,11 +1315,11 @@ export default {
 
 .admin-user {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   
   .admin-badge {
-    position: absolute;
-    top: -8px;
-    right: -25px;
     background: #ffd700;
     color: #000;
     font-size: 10px;
@@ -1296,6 +1327,7 @@ export default {
     border-radius: 10px;
     font-weight: bold;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    white-space: nowrap;
   }
 }
 

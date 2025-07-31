@@ -597,9 +597,7 @@ export default {
     toggleHistoryPanel() {
       this.$parent.showHistoryPanel = !this.$parent.showHistoryPanel;
     },
-    openAdminPanel() {
-      this.$parent.showAdminPanel = true;
-    },
+
     openScriptBrowser() {
       this.$parent.showScriptBrowser = true;
     },
