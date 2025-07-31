@@ -219,7 +219,8 @@
   "createdAt": "2025-07-31T05:36:59.786Z",
   "updatedAt": "2025-07-31T05:37:01.356Z",
   "version": "1.0.0",
-  "status": "pending",
+  "status": "rejected",
   "uploadedBy": "1070470144@qq.com",
-  "uploadedAt": "2025-07-31T05:37:01.346Z"
+  "uploadedAt": "2025-07-31T05:37:01.346Z",
+  "reviewedAt": "2025-07-31T09:05:18.462Z"
 }

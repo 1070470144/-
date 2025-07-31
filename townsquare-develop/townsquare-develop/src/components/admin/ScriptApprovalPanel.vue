@@ -13,6 +13,19 @@
     </div>
 
     <div class="scripts-list">
+      <!-- 空状态显示 -->
+      <div v-if="!isLoading && filteredScripts.length === 0" class="empty-state">
+        <p>暂无待审核剧本</p>
+        <p v-if="scripts.length > 0">当前筛选条件下没有匹配的剧本</p>
+        <p v-else>没有找到任何待审核的剧本</p>
+      </div>
+      
+      <!-- 加载状态 -->
+      <div v-if="isLoading" class="loading-state">
+        <p>加载中...</p>
+      </div>
+      
+      <!-- 剧本列表 -->
       <div
         v-for="script in filteredScripts"
         :key="script.id"
@@ -144,22 +157,17 @@ export default {
     async loadScripts() {
       try {
         this.isLoading = true;
-        console.log("🔍 开始加载待审核剧本...");
 
-        const result = await scriptAPI.getAllScripts();
-        console.log("📄 获取到剧本数据:", result);
+        const result = await scriptAPI.getPendingScripts();
 
-        // scriptAPI.getAllScripts() 直接返回数据对象
-        if (result && result.custom) {
-          this.scripts = result.custom || [];
-          console.log(`✅ 成功加载 ${this.scripts.length} 个剧本`);
-          this.filterScripts();
+        if (result && result.success) {
+          this.scripts = result.data || [];
         } else {
-          console.error("❌ 剧本数据格式错误:", result);
+          console.error("❌ 获取待审核剧本失败:", result?.error);
           this.scripts = [];
         }
       } catch (error) {
-        console.error("❌ 加载剧本错误:", error);
+        console.error("❌ 加载待审核剧本错误:", error);
         this.scripts = [];
       } finally {
         this.isLoading = false;
@@ -492,6 +500,28 @@ export default {
         }
       }
     }
+  }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #ccc;
+  
+  p {
+    margin: 10px 0;
+    font-size: 16px;
+  }
+}
+
+.loading-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #ccc;
+  
+  p {
+    margin: 10px 0;
+    font-size: 16px;
   }
 }
 </style>

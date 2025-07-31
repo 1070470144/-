@@ -250,6 +250,24 @@ router.get('/', async (req, res) => {
   }
 });
 
+// 获取待审核剧本
+router.get('/pending', async (req, res) => {
+  try {
+    const scripts = await getAllScripts();
+    const pendingScripts = Object.values(scripts).flat().filter(script => 
+      script.status === 'pending'
+    );
+    
+    res.json({
+      success: true,
+      data: pendingScripts
+    });
+  } catch (error) {
+    console.error('获取待审核剧本失败:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // 获取单个剧本
 router.get('/:id', async (req, res) => {
   try {
@@ -469,24 +487,6 @@ router.put('/:id/status', async (req, res) => {
     });
   } catch (error) {
     console.error('更新剧本状态失败:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// 获取待审核剧本
-router.get('/pending', async (req, res) => {
-  try {
-    const scripts = await getAllScripts();
-    const pendingScripts = Object.values(scripts).flat().filter(script => 
-      script.status === 'pending'
-    );
-    
-    res.json({
-      success: true,
-      data: pendingScripts
-    });
-  } catch (error) {
-    console.error('获取待审核剧本失败:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

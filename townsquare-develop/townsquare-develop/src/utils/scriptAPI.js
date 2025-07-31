@@ -301,20 +301,20 @@ class ScriptAPI {
   /**
    * 获取待审核剧本
    */
-  async getPendingScripts() {
-    try {
-      const response = await fetch(`${API_BASE}/scripts/pending`, {
-        method: "GET",
-        headers: this.getAuthHeaders(),
-      });
+        async getPendingScripts() {
+        try {
+          const response = await fetch(`${API_BASE}/scripts/pending`, {
+            method: "GET",
+            headers: this.getAuthHeaders(),
+          });
 
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error("获取待审核剧本失败:", error);
-      return { success: false, error: "网络错误，请重试" };
-    }
-  }
+          const data = await response.json();
+          return data;
+        } catch (error) {
+          console.error("获取待审核剧本失败:", error);
+          return { success: false, error: "网络错误，请重试" };
+        }
+      }
 
   /**
    * 获取剧本系列
@@ -468,6 +468,17 @@ class ScriptAPI {
       console.error("获取点赞统计失败:", error);
       return { success: false, error: "网络错误，请重试" };
     }
+  }
+
+  /**
+   * 获取认证头
+   */
+  getAuthHeaders() {
+    const token = localStorage.getItem('auth_token');
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': token ? `Bearer ${token}` : ''
+    };
   }
 
   /**
