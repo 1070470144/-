@@ -78,12 +78,35 @@ async function initializeDefaultAdmin() {
         username: 'admin@mm.com',
         password: hashPassword('123456'),
         role: 'admin',
+        permissions: [
+          'user:create', 'user:read', 'user:update', 'user:delete',
+          'script:upload', 'script:read', 'script:update', 'script:delete',
+          'script:approve', 'script:no_approve'
+        ],
         createdAt: new Date().toISOString()
       };
       
       users.push(adminUser);
       await saveUsers(users);
       console.log('✅ 默认管理员账号已创建: admin@mm.com / 123456');
+    } else {
+      // 修复现有管理员用户的权限
+      let hasChanges = false;
+      users.forEach(user => {
+        if (user.role === 'admin' && (!user.permissions || user.permissions.length === 0)) {
+          user.permissions = [
+            'user:create', 'user:read', 'user:update', 'user:delete',
+            'script:upload', 'script:read', 'script:update', 'script:delete',
+            'script:approve', 'script:no_approve'
+          ];
+          hasChanges = true;
+          console.log(`✅ 修复管理员用户 ${user.username} 的权限`);
+        }
+      });
+      
+      if (hasChanges) {
+        await saveUsers(users);
+      }
     }
   } catch (error) {
     console.error('初始化默认管理员失败:', error);
@@ -124,6 +147,7 @@ router.post('/login', async (req, res) => {
         id: user.id,
         username: user.username,
         role: user.role,
+        permissions: user.permissions || [],
         createdAt: user.createdAt
       }
     });
@@ -193,6 +217,7 @@ router.post('/register', async (req, res) => {
         id: newUser.id,
         username: newUser.username,
         role: newUser.role,
+        permissions: newUser.permissions || [],
         createdAt: newUser.createdAt
       }
     });
@@ -252,6 +277,7 @@ router.get('/profile', async (req, res) => {
         id: user.id,
         username: user.username,
         role: user.role,
+        permissions: user.permissions || [],
         createdAt: user.createdAt
       }
     });

@@ -11,7 +11,7 @@
               <span class="group-title">{{ groupName }}</span>
               <div class="permission-badges">
                 <span 
-                  v-for="permission in permissions" 
+                  v-for="permission in getRolePermissions(role)" 
                   :key="permission"
                   class="permission-badge"
                   :class="getPermissionClass(permission)"
@@ -32,41 +32,65 @@
       <div class="user-list">
         <div class="user-item" v-for="user in users" :key="user.id">
           <div class="user-info">
-            <span class="username">{{ user.username }}</span>
-            <span class="role-badge">{{ getRoleName(user.role) }}</span>
+            <div class="user-main-info">
+              <span class="username">{{ user.username }}</span>
+              <span class="role-badge">{{ getRoleName(user.role) }}</span>
+            </div>
+            <div class="user-permission-summary">
+              <span class="permission-count">权限数量: {{ userPermissions[user.id]?.length || 0 }}</span>
+              <span class="permission-status-indicator" v-if="hasChanges(user.id)">* 已修改</span>
+              <span class="current-user-indicator" v-if="isCurrentUser(user.id)">(当前用户)</span>
+            </div>
           </div>
           <div class="user-permissions">
             <div class="permission-group" v-for="(permissions, groupName) in permissionGroups" :key="groupName">
               <span class="group-title">{{ groupName }}</span>
               <div class="permission-checkboxes">
-                <label 
+                <div 
                   v-for="permission in permissions" 
                   :key="permission"
-                  class="permission-checkbox"
+                  class="permission-checkbox-wrapper"
+                  :class="{ 'permission-active': hasUserPermission(user.id, permission) }"
+                  @click="toggleUserPermission(user.id, permission)"
                 >
                   <input 
                     type="checkbox" 
                     :value="permission"
-                    v-model="userPermissions[user.id]"
-                    @change="updateUserPermissions(user.id)"
-                    :disabled="!canManageUser()"
+                    :checked="hasUserPermission(user.id, permission)"
+                    :disabled="!canManageUser(user.id)"
+                    @change.stop
                   >
                   <span class="checkbox-label">{{ permissionDescriptions[permission] }}</span>
-                </label>
+                  <span class="permission-status" v-if="hasUserPermission(user.id, permission)">✓</span>
+                </div>
               </div>
             </div>
           </div>
           <div class="user-actions">
             <button 
+              @click="selectAllPermissions(user.id)"
+              :disabled="!canManageUser(user.id)"
+              class="select-all-btn"
+            >
+              全选
+            </button>
+            <button 
+              @click="clearAllPermissions(user.id)"
+              :disabled="!canManageUser(user.id)"
+              class="clear-all-btn"
+            >
+              清空
+            </button>
+            <button 
               @click="saveUserPermissions(user.id)"
-              :disabled="!hasChanges(user.id)"
+              :disabled="!hasChanges(user.id) || !canManageUser(user.id)"
               class="save-btn"
             >
               保存
             </button>
             <button 
               @click="resetUserPermissions(user.id)"
-              :disabled="!hasChanges(user.id)"
+              :disabled="!hasChanges(user.id) || !canManageUser(user.id)"
               class="reset-btn"
             >
               重置
@@ -79,7 +103,7 @@
 </template>
 
 <script>
-import { ROLES, PERMISSION_DESCRIPTIONS, PERMISSION_GROUPS, hasPermission } from '@/utils/permissions.js';
+import { ROLES, PERMISSION_DESCRIPTIONS, PERMISSION_GROUPS, hasPermission, getUserPermissions } from '@/utils/permissions.js';
 import authAPI from '@/utils/authAPI.js';
 
 export default {
@@ -103,8 +127,10 @@ export default {
       try {
         this.isLoading = true;
         const result = await authAPI.getAllUsers();
+        console.log('获取用户列表结果:', result);
         if (result && result.success) {
           this.users = result.data || [];
+          console.log('用户列表:', this.users);
           this.initializeUserPermissions();
         }
       } catch (error) {
@@ -116,10 +142,25 @@ export default {
 
     initializeUserPermissions() {
       this.users.forEach(user => {
-        // 初始化用户权限
-        this.userPermissions[user.id] = user.permissions || [];
-        this.originalPermissions[user.id] = [...(user.permissions || [])];
+        console.log('处理用户:', user);
+        // 初始化用户权限：如果有自定义权限则使用，否则使用角色默认权限
+        const defaultPermissions = this.getDefaultPermissionsByRole(user.role);
+        const userPerms = user.permissions || defaultPermissions;
+        this.$set(this.userPermissions, user.id, [...userPerms]);
+        this.$set(this.originalPermissions, user.id, [...userPerms]);
+        console.log(`初始化用户 ${user.username} 权限:`, userPerms);
       });
+    },
+
+    getDefaultPermissionsByRole(role) {
+      console.log('获取角色权限，角色:', role);
+      const rolePermissions = this.roles[role]?.permissions || [];
+      console.log('角色权限:', rolePermissions);
+      return [...rolePermissions];
+    },
+
+    getRolePermissions(role) {
+      return role.permissions || [];
     },
 
     getRoleName(role) {
@@ -147,16 +188,53 @@ export default {
       return descriptions[permission] || permission;
     },
 
-    canManageUser() {
+    canManageUser(userId) {
       const currentUser = authAPI.getCurrentUser();
-      if (!currentUser) return false;
+      console.log('canManageUser 检查:', { userId, currentUser });
       
-      // 管理员可以管理所有用户
-      if (hasPermission(currentUser, 'user:update')) {
+      if (!currentUser) {
+        console.log('当前用户未登录');
+        return false;
+      }
+      
+      // 管理员不能修改自己的权限
+      if (currentUser.id === userId) {
+        console.log('不能修改自己的权限');
+        return false;
+      }
+      
+      // 管理员角色直接拥有所有权限
+      if (currentUser.role === 'admin') {
+        console.log('管理员角色，有权限管理用户');
         return true;
       }
       
+      // 检查用户权限
+      const userPerms = getUserPermissions(currentUser);
+      console.log('当前用户权限:', userPerms);
+      console.log('检查 user:update 权限:', userPerms.includes('user:update'));
+      
+      // 检查是否有 user:update 权限
+      if (hasPermission(currentUser, 'user:update')) {
+        console.log('有权限管理用户');
+        return true;
+      }
+      
+      console.log('没有权限管理用户');
       return false;
+    },
+
+    isCurrentUser(userId) {
+      const currentUser = authAPI.getCurrentUser();
+      return currentUser && currentUser.id === userId;
+    },
+
+    // 检查用户是否拥有某个权限
+    hasUserPermission(userId, permission) {
+      const userPerms = this.userPermissions[userId] || [];
+      const hasPerm = userPerms.includes(permission);
+      console.log(`检查用户 ${userId} 权限 ${permission}: ${hasPerm}`, userPerms);
+      return hasPerm;
     },
 
     hasChanges(userId) {
@@ -169,9 +247,34 @@ export default {
              !original.every(perm => current.includes(perm));
     },
 
-    async updateUserPermissions(userId) {
-      // 权限变更时的处理逻辑
-      console.log(`用户 ${userId} 权限已更新:`, this.userPermissions[userId]);
+    toggleUserPermission(userId, permission) {
+      // 检查是否可以管理此用户
+      if (!this.canManageUser(userId)) {
+        console.log(`无法管理用户 ${userId} 的权限`);
+        return;
+      }
+      
+      console.log(`切换权限: 用户 ${userId}, 权限 ${permission}`);
+      const userPerms = this.userPermissions[userId] || [];
+      const hasPermission = userPerms.includes(permission);
+      
+      console.log(`当前权限:`, userPerms);
+      console.log(`是否拥有权限:`, hasPermission);
+      
+      if (hasPermission) {
+        // 移除权限
+        const newPerms = userPerms.filter(p => p !== permission);
+        this.$set(this.userPermissions, userId, newPerms);
+        console.log(`移除权限 ${permission}, 新权限列表:`, newPerms);
+      } else {
+        // 添加权限
+        const newPerms = [...userPerms, permission];
+        this.$set(this.userPermissions, userId, newPerms);
+        console.log(`添加权限 ${permission}, 新权限列表:`, newPerms);
+      }
+      
+      // 强制更新视图
+      this.$forceUpdate();
     },
 
     async saveUserPermissions(userId) {
@@ -194,7 +297,31 @@ export default {
 
     resetUserPermissions(userId) {
       const original = this.originalPermissions[userId] || [];
-      this.userPermissions[userId] = [...original];
+      this.$set(this.userPermissions, userId, [...original]);
+    },
+
+    selectAllPermissions(userId) {
+      // 检查是否可以管理此用户
+      if (!this.canManageUser(userId)) {
+        console.log(`无法管理用户 ${userId} 的权限`);
+        return;
+      }
+      
+      // 获取所有权限
+      const allPermissions = Object.values(this.permissionGroups).flat();
+      this.$set(this.userPermissions, userId, [...allPermissions]);
+      console.log(`用户 ${userId} 全选权限:`, allPermissions);
+    },
+
+    clearAllPermissions(userId) {
+      // 检查是否可以管理此用户
+      if (!this.canManageUser(userId)) {
+        console.log(`无法管理用户 ${userId} 的权限`);
+        return;
+      }
+      
+      this.$set(this.userPermissions, userId, []);
+      console.log(`用户 ${userId} 清空权限`);
     }
   }
 };
@@ -248,9 +375,12 @@ export default {
 }
 
 .group-title {
-  color: #ccc;
+  color: #fff;
   font-size: 14px;
   font-weight: bold;
+  margin-bottom: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .permission-badges {
@@ -312,8 +442,23 @@ export default {
 .user-info {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 15px;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.user-main-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-permission-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
 }
 
 .username {
@@ -329,6 +474,11 @@ export default {
   background: #666;
 }
 
+.permission-count {
+  color: #ccc;
+  font-size: 12px;
+}
+
 .user-permissions {
   display: flex;
   flex-direction: column;
@@ -339,24 +489,62 @@ export default {
 .permission-checkboxes {
   display: flex;
   flex-wrap: wrap;
-  gap: 15px;
+  gap: 12px;
 }
 
-.permission-checkbox {
+.permission-checkbox-wrapper {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   color: #ccc;
   font-size: 14px;
   cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+  user-select: none;
 }
 
-.permission-checkbox input[type="checkbox"] {
+.permission-checkbox-wrapper:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.permission-checkbox-wrapper input[type="checkbox"] {
   margin: 0;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: #4a90e2;
+}
+
+.permission-checkbox-wrapper input[type="checkbox"]:checked {
+  accent-color: #27ae60;
 }
 
 .checkbox-label {
   color: #ccc;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.permission-checkbox-wrapper:has(input:checked) {
+  background: rgba(74, 144, 226, 0.1);
+  border-color: rgba(74, 144, 226, 0.3);
+}
+
+.permission-active {
+  background: rgba(39, 174, 96, 0.1) !important;
+  border-color: rgba(39, 174, 96, 0.3) !important;
+}
+
+.permission-status {
+  color: #27ae60;
+  font-weight: bold;
+  margin-left: 4px;
+  font-size: 12px;
 }
 
 .user-actions {
@@ -364,12 +552,30 @@ export default {
   gap: 10px;
 }
 
-.save-btn, .reset-btn {
+.save-btn, .reset-btn, .select-all-btn, .clear-all-btn {
   padding: 8px 16px;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
+}
+
+.select-all-btn {
+  background: #3498db;
+  color: #fff;
+}
+
+.select-all-btn:hover {
+  background: #2980b9;
+}
+
+.clear-all-btn {
+  background: #95a5a6;
+  color: #fff;
+}
+
+.clear-all-btn:hover {
+  background: #7f8c8d;
 }
 
 .save-btn {
@@ -393,5 +599,18 @@ export default {
 .save-btn:disabled, .reset-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.permission-status-indicator {
+  color: #f39c12;
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.current-user-indicator {
+  color: #3498db;
+  font-size: 12px;
+  margin-left: 8px;
+  font-weight: bold;
 }
 </style> 
