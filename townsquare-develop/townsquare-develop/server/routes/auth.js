@@ -337,6 +337,7 @@ router.get('/users', async (req, res) => {
       id: user.id,
       username: user.username,
       role: user.role,
+      permissions: user.permissions || [],
       createdAt: user.createdAt
     }));
     
@@ -346,6 +347,81 @@ router.get('/users', async (req, res) => {
     });
   } catch (error) {
     console.error('获取用户列表失败:', error);
+    res.status(500).json({
+      success: false,
+      error: '服务器错误'
+    });
+  }
+});
+
+// 更新用户权限（管理员功能）
+router.put('/users/:userId/permissions', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { permissions } = req.body;
+    
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        error: '未提供认证Token'
+      });
+    }
+    
+    const token = authHeader.substring(7);
+    const adminId = verifyToken(token);
+    
+    if (!adminId) {
+      return res.status(401).json({
+        success: false,
+        error: 'Token无效或已过期'
+      });
+    }
+    
+    // 检查是否为管理员
+    const users = await readUsers();
+    const adminUser = users.find(u => u.id === adminId);
+    
+    if (!adminUser || adminUser.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        error: '权限不足'
+      });
+    }
+    
+    // 验证权限格式
+    if (!Array.isArray(permissions)) {
+      return res.status(400).json({
+        success: false,
+        error: '权限必须是数组格式'
+      });
+    }
+    
+    // 查找要修改的用户
+    const targetUser = users.find(u => u.id === userId);
+    if (!targetUser) {
+      return res.status(404).json({
+        success: false,
+        error: '用户不存在'
+      });
+    }
+    
+    // 更新用户权限
+    targetUser.permissions = permissions;
+    await saveUsers(users);
+    
+    res.json({
+      success: true,
+      user: {
+        id: targetUser.id,
+        username: targetUser.username,
+        role: targetUser.role,
+        permissions: targetUser.permissions,
+        createdAt: targetUser.createdAt
+      }
+    });
+  } catch (error) {
+    console.error('更新用户权限失败:', error);
     res.status(500).json({
       success: false,
       error: '服务器错误'

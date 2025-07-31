@@ -43,6 +43,13 @@
       >
         系统设置
       </button>
+      <button
+        @click="activeTab = 'permissions'"
+        :class="{ active: activeTab === 'permissions' }"
+        class="tab-btn"
+      >
+        权限管理
+      </button>
     </div>
 
     <div class="admin-content">
@@ -75,6 +82,10 @@
           <button @click="backupData" class="action-btn">备份数据</button>
         </div>
       </div>
+
+      <div v-if="activeTab === 'permissions'" class="tab-content">
+        <PermissionManagementPanel />
+      </div>
     </div>
   </div>
 </template>
@@ -85,15 +96,17 @@ import ScriptManager from "../admin/ScriptManager.vue";
 import ScriptApprovalPanel from "../admin/ScriptApprovalPanel.vue";
 import UserManagementPanel from "../admin/UserManagementPanel.vue";
 import ScriptSeriesManager from "../admin/ScriptSeriesManager.vue";
+import PermissionManagementPanel from "../admin/PermissionManagementPanel.vue";
 
 export default {
   name: "EmbeddedAdminPanel",
   components: {
     RoleManager,
     ScriptManager,
-    ScriptApprovalPanel,
-    UserManagementPanel,
-    ScriptSeriesManager,
+          ScriptApprovalPanel,
+      UserManagementPanel,
+      ScriptSeriesManager,
+      PermissionManagementPanel,
   },
   data() {
     return {
