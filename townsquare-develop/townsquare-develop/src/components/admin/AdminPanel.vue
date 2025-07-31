@@ -16,8 +16,8 @@
             角色管理
           </button>
           <button 
-            @click="activeTab = 'editions'" 
-            :class="{ active: activeTab === 'editions' }"
+            @click="activeTab = 'scripts'" 
+            :class="{ active: activeTab === 'scripts' }"
             class="tab-btn"
           >
             剧本管理
@@ -36,8 +36,8 @@
             <RoleManager />
           </div>
           
-          <div v-if="activeTab === 'editions'" class="tab-content">
-            <EditionManager />
+          <div v-if="activeTab === 'scripts'" class="tab-content">
+            <ScriptManager />
           </div>
           
           <div v-if="activeTab === 'settings'" class="settings-panel">
@@ -57,13 +57,13 @@
 
 <script>
 import RoleManager from './RoleManager.vue'
-import EditionManager from './EditionManager.vue'
+import ScriptManager from './ScriptManager.vue'
 
 export default {
   name: 'AdminPanel',
   components: {
     RoleManager,
-    EditionManager
+    ScriptManager
   },
   data() {
     return {
@@ -149,77 +149,86 @@ export default {
 }
 
 .admin-panel {
-  background: rgba(0, 0, 0, 0.95);
-  border: 2px solid #gold;
-  padding: 0;
-  border-radius: 15px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 215, 0, 0.2);
-  display: flex;
-  flex-direction: column;
-  max-height: 85%;
-  max-width: 85%;
-  width: 90vw;
+  width: 90%;
   max-width: 1200px;
   height: 80vh;
-  color: white;
+  background: linear-gradient(135deg, rgba(20, 20, 20, 0.95), rgba(40, 40, 40, 0.95));
+  border-radius: 12px;
+  border: 2px solid rgba(255, 215, 0, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   font-family: 'Papyrus', serif;
-  position: relative;
-  backdrop-filter: blur(10px);
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255, 215, 0, 0.05) 50%, transparent 70%);
+    pointer-events: none;
+  }
 }
 
 .admin-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid rgba(255, 215, 0, 0.3);
+  padding: 20px 25px;
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.1), rgba(255, 215, 0, 0.05));
+  border-bottom: 1px solid rgba(255, 215, 0, 0.2);
   
   h2 {
+    color: #ffd700;
     margin: 0;
-    color: #gold;
     font-size: 24px;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
   }
   
   .close-btn {
     background: none;
     border: none;
-    color: #gold;
+    color: #ffd700;
     font-size: 24px;
     cursor: pointer;
     padding: 5px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
     
     &:hover {
-      color: white;
+      background: rgba(255, 215, 0, 0.1);
+      transform: scale(1.1);
     }
   }
 }
 
 .admin-tabs {
   display: flex;
-  background: rgba(0, 0, 0, 0.3);
-  padding: 0 20px;
-  border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid rgba(255, 215, 0, 0.1);
   
   .tab-btn {
+    flex: 1;
     background: none;
     border: none;
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.7);
     padding: 15px 20px;
-    cursor: pointer;
     font-family: 'Papyrus', serif;
     font-size: 16px;
-    border-bottom: 3px solid transparent;
+    cursor: pointer;
     transition: all 0.3s ease;
     position: relative;
     
     &:hover {
-      color: white;
-      background: rgba(255, 215, 0, 0.15);
+      color: #ffd700;
+      background: rgba(255, 215, 0, 0.05);
     }
     
     &.active {
-      color: #gold;
-      border-bottom-color: #gold;
+      color: #ffd700;
       background: rgba(255, 215, 0, 0.1);
       
       &::after {
@@ -229,7 +238,7 @@ export default {
         left: 0;
         right: 0;
         height: 3px;
-        background: linear-gradient(90deg, #gold, rgba(255, 215, 0, 0.6));
+        background: linear-gradient(90deg, #ffd700, rgba(255, 215, 0, 0.6));
       }
     }
   }
@@ -262,7 +271,7 @@ export default {
 
 .tab-content {
   h3 {
-    color: #gold;
+    color: #ffd700;
     margin-bottom: 20px;
     font-size: 20px;
     text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
@@ -277,7 +286,7 @@ export default {
 
 .settings-panel {
   h3 {
-    color: #gold;
+    color: #ffd700;
     margin-bottom: 20px;
     font-size: 20px;
     text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
@@ -291,7 +300,7 @@ export default {
     border: 1px solid rgba(255, 215, 0, 0.1);
     
     h4 {
-      color: #gold;
+      color: #ffd700;
       margin-bottom: 15px;
       font-size: 18px;
       text-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
@@ -300,7 +309,7 @@ export default {
     .action-btn {
       background: rgba(255, 215, 0, 0.15);
       border: 1px solid rgba(255, 215, 0, 0.4);
-      color: #gold;
+      color: #ffd700;
       padding: 12px 24px;
       margin-right: 12px;
       margin-bottom: 12px;
@@ -323,5 +332,15 @@ export default {
       }
     }
   }
+}
+
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.modal-fade-enter,
+.modal-fade-leave-to {
+  opacity: 0;
 }
 </style> 
