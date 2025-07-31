@@ -50,16 +50,22 @@ class ScriptAPI {
         throw new Error(result.error || "获取剧本失败");
       }
 
-      // 服务器返回的是 { success: true, data: { custom: [], official: [], templates: [] } }
-      // 需要将所有类型的剧本合并成一个数组
+      // 服务器返回的是 { success: true, data: { scripts: [], pagination: {}, filters: {} } }
+      // 或者 { success: true, data: { custom: [], official: [], templates: [] } }
       if (result.data && typeof result.data === 'object') {
+        // 如果已经有 scripts 字段，直接返回
+        if (result.data.scripts) {
+          return result;
+        }
+        
+        // 否则合并所有类型的剧本
         const allScripts = [];
         for (const type in result.data) {
           if (Array.isArray(result.data[type])) {
             allScripts.push(...result.data[type]);
           }
         }
-        return { success: true, data: allScripts };
+        return { success: true, data: { scripts: allScripts } };
       }
 
       return result;

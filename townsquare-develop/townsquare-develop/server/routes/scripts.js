@@ -94,7 +94,8 @@ async function getAllScripts() {
             scriptData.reviewedAt = scriptStatus.reviewedAt;
             scriptData.reviewNote = scriptStatus.reviewNote;
             
-            console.log(`📄 剧本 ${scriptId} 状态: ${scriptStatus.status}`);
+            // 只在调试时显示状态信息
+            // console.log(`📄 剧本 ${scriptId} 状态: ${scriptStatus.status}`);
             
             scripts[type].push(scriptData);
           } catch (error) {
@@ -192,12 +193,8 @@ async function saveStatusFile(statusData) {
 async function getScriptStatus(scriptId) {
   const statusData = await readStatusFile();
   
-  console.log(`🔍 查找剧本状态: ${scriptId}`);
-  console.log(`📊 状态文件内容:`, statusData);
-  
   // 先检查独立剧本
   if (statusData.standalone[scriptId]) {
-    console.log(`✅ 找到独立剧本状态: ${scriptId}`);
     return statusData.standalone[scriptId];
   }
   
@@ -205,13 +202,11 @@ async function getScriptStatus(scriptId) {
   for (const seriesId in statusData.series) {
     const series = statusData.series[seriesId];
     if (series.versions && series.versions[scriptId]) {
-      console.log(`✅ 找到系列剧本状态: ${scriptId}`);
       return series.versions[scriptId];
     }
   }
   
   // 默认状态
-  console.log(`⚠️ 未找到剧本状态，使用默认: ${scriptId}`);
   return { status: 'pending' };
 }
 

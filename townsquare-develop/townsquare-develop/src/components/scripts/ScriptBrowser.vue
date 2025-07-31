@@ -369,14 +369,27 @@ export default {
 
         const result = await scriptAPI.getAllScripts(params);
 
-        if (result && result.scripts) {
+        if (result && result.data && result.data.scripts) {
+          if (reset) {
+            this.scripts = result.data.scripts;
+            // 缓存当前标签页的数据
+            this.cachedScripts[this.currentTab] = [...result.data.scripts];
+          } else {
+            this.scripts = [...this.scripts, ...result.data.scripts];
+            // 更新缓存
+            this.cachedScripts[this.currentTab] = [...this.scripts];
+          }
+
+          this.pagination = result.data.pagination;
+          this.filters = result.data.filters;
+          this.hasMore = result.data.pagination.hasNext;
+        } else if (result && result.scripts) {
+          // 兼容旧的数据结构
           if (reset) {
             this.scripts = result.scripts;
-            // 缓存当前标签页的数据
             this.cachedScripts[this.currentTab] = [...result.scripts];
           } else {
             this.scripts = [...this.scripts, ...result.scripts];
-            // 更新缓存
             this.cachedScripts[this.currentTab] = [...this.scripts];
           }
 
