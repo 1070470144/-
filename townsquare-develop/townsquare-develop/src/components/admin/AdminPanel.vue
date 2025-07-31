@@ -84,6 +84,21 @@
           </div>
         </div>
       </div>
+      
+      <div class="admin-panel" @click.stop v-else>
+        <div class="admin-header">
+          <h2>权限不足</h2>
+          <button @click="closePanel" class="close-btn">×</button>
+        </div>
+        <div class="admin-content">
+          <div class="permission-denied">
+            <h3>需要管理员权限</h3>
+            <p>您需要以管理员身份登录才能访问此功能。</p>
+            <p>默认管理员账号：admin@mm.com / 123456</p>
+            <button @click="closePanel" class="action-btn">关闭</button>
+          </div>
+        </div>
+      </div>
     </div>
   </transition>
 </template>
@@ -94,6 +109,7 @@ import ScriptManager from "./ScriptManager.vue";
 import ScriptApprovalPanel from "./ScriptApprovalPanel.vue";
 import UserManagementPanel from "./UserManagementPanel.vue";
 import ScriptSeriesManager from "./ScriptSeriesManager.vue";
+import authAPI from "@/utils/authAPI";
 
 export default {
   name: "AdminPanel",
@@ -111,10 +127,8 @@ export default {
   },
   computed: {
     isAdmin() {
-      return (
-        this.$store.state.session.isSpectator === false &&
-        this.$store.state.session.sessionId
-      );
+      const currentUser = authAPI.getCurrentUser();
+      return currentUser && currentUser.role === 'admin';
     },
   },
   methods: {
@@ -386,6 +400,55 @@ export default {
       &:active {
         transform: translateY(0);
       }
+    }
+  }
+}
+
+.permission-denied {
+  text-align: center;
+  padding: 40px 20px;
+  
+  h3 {
+    color: #ffd700;
+    margin-bottom: 20px;
+    font-size: 24px;
+    text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+  }
+  
+  p {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 16px;
+    line-height: 1.6;
+    margin-bottom: 15px;
+    
+    &:last-of-type {
+      color: #ffd700;
+      font-weight: bold;
+      margin-bottom: 30px;
+    }
+  }
+  
+  .action-btn {
+    background: rgba(255, 215, 0, 0.15);
+    border: 1px solid rgba(255, 215, 0, 0.4);
+    color: #ffd700;
+    padding: 12px 24px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-family: "Papyrus", serif;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+
+    &:hover {
+      background: rgba(255, 215, 0, 0.25);
+      color: white;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    &:active {
+      transform: translateY(0);
     }
   }
 }

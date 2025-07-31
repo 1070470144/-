@@ -22,6 +22,15 @@
           >
             我的上传
           </button>
+          <button
+            v-if="isLoggedIn && isAdmin"
+            @click="switchTab('admin')"
+            :class="{ active: currentTab === 'admin' }"
+            class="tab-btn admin-tab"
+          >
+            <span class="admin-icon">⚙️</span>
+            管理员
+          </button>
         </div>
 
         <div class="script-content">
@@ -66,7 +75,10 @@
                 登录
               </button>
               <div v-else class="user-info">
-                <span class="username">{{ currentUser.username }}</span>
+                <span class="username" :class="{ 'admin-user': isAdmin }">
+                  {{ currentUser.username }}
+                  <span v-if="isAdmin" class="admin-badge">管理员</span>
+                </span>
                 <button @click="logout" class="action-btn logout-btn">登出</button>
               </div>
             </div>
@@ -81,7 +93,8 @@
                 <!-- 标签页切换时的轻量加载指示 -->
                 <div v-if="isTabLoading" class="tab-loading">
                   <div class="loading-spinner"></div>
-                  <span>加载中...</span>
+                  <span v-if="currentTab === 'admin'">加载管理员功能...</span>
+                  <span v-else>加载中...</span>
                 </div>
                 
                 <!-- 剧本卡片 -->
@@ -155,7 +168,13 @@
             <span v-if="currentTab === 'all'">暂无剧本数据</span>
             <span v-else-if="currentTab === 'my' && !isLoggedIn">请先登录查看您的上传</span>
             <span v-else-if="currentTab === 'my'">您还没有上传过剧本</span>
+            <span v-else-if="currentTab === 'admin'">管理员功能已加载</span>
           </div>
+        </div>
+
+        <!-- 管理员内容区域 -->
+        <div v-if="currentTab === 'admin'" class="admin-content-area">
+          <EmbeddedAdminPanel />
         </div>
 
         <!-- 登录模态框 -->
@@ -195,6 +214,7 @@ import LoginModal from '@/components/auth/LoginModal';
 import ScriptUploadModal from '@/components/scripts/ScriptUploadModal';
 import ScriptRanking from '@/components/scripts/ScriptRanking';
 import ScriptSkeleton from '@/components/scripts/ScriptSkeleton';
+import EmbeddedAdminPanel from '@/components/scripts/EmbeddedAdminPanel';
 import authAPI from '@/utils/authAPI';
 import scriptAPI from '@/utils/scriptAPI';
 
@@ -204,7 +224,8 @@ export default {
     LoginModal,
     ScriptUploadModal,
     ScriptRanking,
-    ScriptSkeleton
+    ScriptSkeleton,
+    EmbeddedAdminPanel
   },
   data() {
     return {
@@ -238,6 +259,18 @@ export default {
   computed: {
     totalPages() {
       return Math.ceil(this.filteredScripts.length / this.itemsPerPage);
+    },
+    isAdmin() {
+      const currentUser = authAPI.getCurrentUser();
+      return currentUser && currentUser.role === 'admin';
+    },
+    // 检查当前标签页是否需要管理员权限
+    requiresAdminPermission() {
+      return this.currentTab === 'admin';
+    },
+    // 检查当前标签页是否需要登录
+    requiresLogin() {
+      return this.currentTab === 'my' || this.currentTab === 'admin';
     }
   },
   async mounted() {
@@ -368,10 +401,14 @@ export default {
       
       console.log(`🔄 切换标签页: ${this.currentTab} -> ${tab}`);
       
-      // 检查"我的上传"标签页的访问权限
-      if (tab === 'my' && !this.isLoggedIn) {
-        console.log('⚠️ 用户未登录，无法访问"我的上传"');
-        this.showLoginModal = true;
+      // 验证访问权限
+      if (!this.validateTabAccess(tab)) {
+        return;
+      }
+      
+      // 管理员标签页不需要加载剧本数据
+      if (tab === 'admin') {
+        this.currentTab = tab;
         return;
       }
       
@@ -425,7 +462,7 @@ export default {
     },
 
     async toggleLike(script) {
-      if (!this.isLoggedIn) {
+      if (!this.canPerformAction('like')) {
         this.showLoginModal = true;
         return;
       }
@@ -534,7 +571,8 @@ export default {
     handleAuthStateChange(user, token) {
       console.log('🔄 认证状态变化:', { 
         userId: user?.id, 
-        isLoggedIn: !!token 
+        isLoggedIn: !!token,
+        role: user?.role
       });
       
       // 更新响应式数据
@@ -547,17 +585,92 @@ export default {
       
       if (wasLoggedIn !== isNowLoggedIn) {
         console.log('🔄 登录状态发生变化:', { wasLoggedIn, isNowLoggedIn });
+        
+        // 如果用户登出且当前在需要登录的标签页，切换到全部剧本
+        if (!isNowLoggedIn && this.requiresLogin) {
+          console.log('⚠️ 用户登出，切换到全部剧本标签页');
+          this.currentTab = 'all';
+        }
+        
         this.refreshData();
       }
+    },
+
+    // 验证用户是否有权限访问当前标签页
+    validateTabAccess(tab) {
+      // 检查登录权限
+      if ((tab === 'my' || tab === 'admin') && !this.isLoggedIn) {
+        console.log('⚠️ 需要登录才能访问此标签页');
+        this.showErrorMessage('请先登录后再访问此功能');
+        this.showLoginModal = true;
+        return false;
+      }
+      
+      // 检查管理员权限
+      if (tab === 'admin' && !this.isAdmin) {
+        console.log('⚠️ 需要管理员权限才能访问此标签页');
+        this.showErrorMessage('需要管理员权限才能访问此功能');
+        return false;
+      }
+      
+      return true;
+    },
+    
+    // 检查当前用户是否有权限执行操作
+    canPerformAction(action) {
+      switch (action) {
+        case 'upload':
+          return this.isLoggedIn;
+        case 'like':
+          return this.isLoggedIn;
+        case 'admin':
+          return this.isAdmin;
+        default:
+          return true;
+      }
+    },
+    
+    // 显示用户友好的错误消息
+    showErrorMessage(message, type = 'error') {
+      const alertClass = type === 'error' ? 'error-alert' : 'success-alert';
+      const alert = document.createElement('div');
+      alert.className = `user-alert ${alertClass}`;
+      alert.textContent = message;
+      
+      document.body.appendChild(alert);
+      
+      // 3秒后自动移除
+      setTimeout(() => {
+        if (alert.parentNode) {
+          alert.parentNode.removeChild(alert);
+        }
+      }, 3000);
+    },
+    
+    // 显示成功消息
+    showSuccessMessage(message) {
+      this.showErrorMessage(message, 'success');
     },
 
     async refreshData() {
       console.log('🔄 刷新剧本数据...');
       
-      // 如果当前在"我的上传"标签页且用户未登录，切换到"全部剧本"
-      if (this.currentTab === 'my' && !this.isLoggedIn) {
+      // 如果当前在需要登录的标签页且用户未登录，切换到"全部剧本"
+      if (this.requiresLogin && !this.isLoggedIn) {
         console.log('⚠️ 用户未登录，切换到全部剧本标签页');
         this.currentTab = 'all';
+      }
+      
+      // 如果当前在管理员标签页且用户无管理员权限，切换到"全部剧本"
+      if (this.requiresAdminPermission && !this.isAdmin) {
+        console.log('⚠️ 用户无管理员权限，切换到全部剧本标签页');
+        this.currentTab = 'all';
+      }
+      
+      // 管理员标签页不需要加载剧本数据
+      if (this.currentTab === 'admin') {
+        console.log('✅ 管理员标签页，无需刷新剧本数据');
+        return;
       }
       
       // 重新加载当前标签页数据
@@ -1131,5 +1244,94 @@ export default {
 .modal-fade-enter,
 .modal-fade-leave-to {
   opacity: 0;
+}
+
+.admin-content-area {
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+}
+
+.admin-tab {
+  position: relative;
+  
+  .admin-icon {
+    margin-right: 5px;
+    font-size: 12px;
+  }
+  
+  &::before {
+    content: "";
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 6px;
+    height: 6px;
+    background: #ffd700;
+    border-radius: 50%;
+    box-shadow: 0 0 4px rgba(255, 215, 0, 0.6);
+  }
+  
+  &.active {
+    background: linear-gradient(
+      135deg,
+      rgba(255, 215, 0, 0.2),
+      rgba(255, 215, 0, 0.1)
+    );
+    border: 1px solid rgba(255, 215, 0, 0.4);
+  }
+}
+
+.admin-user {
+  position: relative;
+  
+  .admin-badge {
+    position: absolute;
+    top: -8px;
+    right: -25px;
+    background: #ffd700;
+    color: #000;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+}
+
+.user-alert {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 20px;
+  border-radius: 6px;
+  font-family: "Papyrus", serif;
+  font-size: 14px;
+  z-index: 2000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation: slideIn 0.3s ease;
+  
+  &.error-alert {
+    background: rgba(220, 53, 69, 0.9);
+    color: white;
+    border: 1px solid rgba(220, 53, 69, 0.3);
+  }
+  
+  &.success-alert {
+    background: rgba(40, 167, 69, 0.9);
+    color: white;
+    border: 1px solid rgba(40, 167, 69, 0.3);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 </style> 

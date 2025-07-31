@@ -63,6 +63,36 @@ function verifyToken(token) {
   }
 }
 
+// 初始化默认管理员账号
+async function initializeDefaultAdmin() {
+  try {
+    const users = await readUsers();
+    
+    // 检查是否已有管理员
+    const hasAdmin = users.some(user => user.role === 'admin');
+    
+    if (!hasAdmin) {
+      // 创建默认管理员
+      const adminUser = {
+        id: Date.now().toString(),
+        username: 'admin@mm.com',
+        password: hashPassword('123456'),
+        role: 'admin',
+        createdAt: new Date().toISOString()
+      };
+      
+      users.push(adminUser);
+      await saveUsers(users);
+      console.log('✅ 默认管理员账号已创建: admin@mm.com / 123456');
+    }
+  } catch (error) {
+    console.error('初始化默认管理员失败:', error);
+  }
+}
+
+// 在模块加载时初始化默认管理员
+initializeDefaultAdmin();
+
 // 用户登录
 router.post('/login', async (req, res) => {
   try {
