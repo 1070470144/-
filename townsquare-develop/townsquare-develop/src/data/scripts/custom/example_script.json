@@ -1,0 +1,16 @@
+{
+  "id": "example_script",
+  "name": "示例剧本",
+  "author": "系统",
+  "description": "这是一个示例剧本，用于演示剧本存储功能。",
+  "level": "Beginner",
+  "roles": [
+    "washerwoman",
+    "librarian",
+    "investigator"
+  ],
+  "category": "custom",
+  "createdAt": "2025-07-31T02:15:07.887Z",
+  "updatedAt": "2025-07-31T02:15:07.888Z",
+  "version": "1.0.0"
+}

@@ -1,0 +1,13 @@
+# 忽略临时文件
+*.tmp
+*.temp
+
+# 忽略备份文件
+*.bak
+*.backup
+
+# 忽略日志文件
+*.log
+
+# 保留示例文件
+!example_script.json

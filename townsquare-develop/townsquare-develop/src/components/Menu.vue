@@ -244,6 +244,10 @@
             </em>
           </li>
           <!-- 隐藏的管理员入口，通过快捷键 Ctrl+Shift+M 访问 -->
+          <li @click="openScriptBrowser">
+            剧本功能
+            <em><font-awesome-icon icon="book" /></em>
+          </li>
         </template>
       </ul>
     </div>
@@ -264,22 +268,22 @@ export default {
   components: {
     ResetGameModal,
   },
-      computed: {
-      ...mapState(["grimoire", "session", "edition", "roles", "history"]),
-      ...mapState("players", ["players"]),
-      currentLanguage() {
-        return i18n.getCurrentLanguage();
-      },
-      hasCustomImages() {
-        // 检查当前角色中是否有自定义图片
-        return Array.from(this.roles.values()).some(
-          (role) => role.image && role.image.trim() !== "",
-        );
-      },
-      isAdmin() {
-        return this.session.isSpectator === false && this.session.sessionId;
-      },
+  computed: {
+    ...mapState(["grimoire", "session", "edition", "roles", "history"]),
+    ...mapState("players", ["players"]),
+    currentLanguage() {
+      return i18n.getCurrentLanguage();
     },
+    hasCustomImages() {
+      // 检查当前角色中是否有自定义图片
+      return Array.from(this.roles.values()).some(
+        (role) => role.image && role.image.trim() !== "",
+      );
+    },
+    isAdmin() {
+      return this.session.isSpectator === false && this.session.sessionId;
+    },
+  },
   data() {
     return {
       tab: "grimoire",
@@ -595,6 +599,9 @@ export default {
     },
     openAdminPanel() {
       this.$parent.showAdminPanel = true;
+    },
+    openScriptBrowser() {
+      this.$parent.showScriptBrowser = true;
     },
     toggleNight() {
       this.$store.commit("toggleNight");

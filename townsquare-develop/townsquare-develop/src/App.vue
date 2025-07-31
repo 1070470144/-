@@ -57,7 +57,8 @@
     <VoteHistoryModal />
     <GameStateModal />
     <AdminPanel v-if="showAdminPanel" @close="showAdminPanel = false" />
-    
+    <ScriptBrowser v-if="showScriptBrowser" @close="showScriptBrowser = false" />
+
     <!-- 管理员密码输入模态框 -->
     <div v-if="showAdminPasswordModal" class="admin-password-modal">
       <div class="modal-content">
@@ -78,7 +79,7 @@
         </div>
       </div>
     </div>
-    
+
     <Gradients />
     <span id="version">v{{ version }}</span>
   </div>
@@ -106,6 +107,7 @@ import PlayerActionPanel from "@/components/PlayerActionPanel";
 import PlayerDrawer from "@/components/PlayerDrawer";
 import RoleModal from "@/components/modals/RoleModal";
 import AdminPanel from "@/components/admin/AdminPanel";
+import ScriptBrowser from "@/components/scripts/ScriptBrowser";
 
 export default {
   components: {
@@ -128,6 +130,7 @@ export default {
     PlayerDrawer,
     RoleModal,
     AdminPanel,
+    ScriptBrowser,
   },
   computed: {
     ...mapState(["grimoire", "session"]),
@@ -145,27 +148,28 @@ export default {
       adminClickSequence: [],
       adminClickTimeout: null,
       showAdminPasswordModal: false,
-      adminPassword: '',
+      adminPassword: "",
       adminPasswordAttempts: 0,
+      showScriptBrowser: false,
     };
   },
   methods: {
     keyup({ key, altKey }) {
       // 管理员面板快捷键：Alt + M
-      if (altKey && key.toLowerCase() === 'm') {
+      if (altKey && key.toLowerCase() === "m") {
         this.showAdminPasswordModal = true;
         this.$nextTick(() => {
-          const passwordInput = document.getElementById('admin-password-input');
+          const passwordInput = document.getElementById("admin-password-input");
           if (passwordInput) {
             passwordInput.focus();
           }
         });
         return;
       }
-      
+
       // 所有快捷键都需要Alt键
       if (!altKey) return;
-      
+
       switch (key.toLocaleLowerCase()) {
         case "g":
           this.$store.commit("toggleGrimoire");
@@ -219,24 +223,24 @@ export default {
       // 检查是否有管理员权限
       if (this.session.isSpectator === false && this.session.sessionId) {
         this.showAdminPanel = !this.showAdminPanel;
-        console.log('管理员面板已切换:', this.showAdminPanel);
+        console.log("管理员面板已切换:", this.showAdminPanel);
       } else {
-        console.log('无管理员权限');
+        console.log("无管理员权限");
       }
     },
     checkAdminPassword() {
-      if (this.adminPassword === 'mm666') {
+      if (this.adminPassword === "mm666") {
         this.showAdminPasswordModal = false;
-        this.adminPassword = '';
+        this.adminPassword = "";
         this.adminPasswordAttempts = 0;
         this.toggleAdminPanel();
       } else {
         this.adminPasswordAttempts++;
-        this.adminPassword = '';
+        this.adminPassword = "";
         if (this.adminPasswordAttempts >= 3) {
           this.showAdminPasswordModal = false;
           this.adminPasswordAttempts = 0;
-          alert('密码错误次数过多，请稍后再试');
+          alert("密码错误次数过多，请稍后再试");
         } else {
           alert(`密码错误，还剩 ${3 - this.adminPasswordAttempts} 次机会`);
         }
@@ -244,13 +248,13 @@ export default {
     },
     cancelAdminPassword() {
       this.showAdminPasswordModal = false;
-      this.adminPassword = '';
+      this.adminPassword = "";
       this.adminPasswordAttempts = 0;
     },
     handleRightClick(event) {
       // 隐藏的右键菜单：在空白区域右键点击
       const target = event.target;
-      if (target.id === 'app' || target.classList.contains('backdrop')) {
+      if (target.id === "app" || target.classList.contains("backdrop")) {
         event.preventDefault();
         // 移除右键菜单触发，改为更隐秘的方式
       }
@@ -545,7 +549,7 @@ video#background {
   justify-content: center;
   align-items: center;
   z-index: 1200;
-  
+
   .modal-content {
     background: rgba(0, 0, 0, 0.95);
     border: 2px solid #gold;
@@ -555,16 +559,16 @@ video#background {
     max-width: 400px;
     color: white;
     text-align: center;
-    
+
     h3 {
       color: #gold;
       margin-bottom: 20px;
       font-size: 18px;
     }
-    
+
     .password-input {
       margin-bottom: 20px;
-      
+
       input {
         width: 100%;
         padding: 12px;
@@ -572,14 +576,14 @@ video#background {
         background: rgba(255, 255, 255, 0.1);
         color: white;
         border-radius: 5px;
-        font-family: 'Papyrus', serif;
+        font-family: "Papyrus", serif;
         font-size: 16px;
         text-align: center;
-        
+
         &::placeholder {
           color: rgba(255, 255, 255, 0.5);
         }
-        
+
         &:focus {
           outline: none;
           border-color: #gold;
@@ -587,34 +591,35 @@ video#background {
         }
       }
     }
-    
+
     .modal-actions {
       display: flex;
       gap: 10px;
       justify-content: center;
-      
-      .confirm-btn, .cancel-btn {
+
+      .confirm-btn,
+      .cancel-btn {
         padding: 10px 20px;
         border: none;
         border-radius: 5px;
         cursor: pointer;
-        font-family: 'Papyrus', serif;
+        font-family: "Papyrus", serif;
         font-size: 14px;
       }
-      
+
       .confirm-btn {
         background: rgba(76, 175, 80, 0.2);
         color: #4caf50;
-        
+
         &:hover {
           background: rgba(76, 175, 80, 0.3);
         }
       }
-      
+
       .cancel-btn {
         background: rgba(255, 255, 255, 0.1);
         color: rgba(255, 255, 255, 0.8);
-        
+
         &:hover {
           background: rgba(255, 255, 255, 0.2);
         }

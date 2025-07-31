@@ -3,6 +3,8 @@ const https = require("https");
 const http = require("http");
 const WebSocket = require("ws");
 const client = require("prom-client");
+const express = require("express");
+const cors = require("cors");
 
 // Create a Registry which registers the metrics
 const register = new client.Registry();
@@ -15,8 +17,21 @@ const PING_INTERVAL = 30000; // 30 seconds
 
 let server;
 let wss;
+let app;
 
-if (process.env.NODE_ENV !== "development") {
+// 初始化Express应用
+app = express();
+app.use(cors());
+app.use(express.json());
+
+// 添加剧本API路由
+app.use('/api/scripts', require('./routes/scripts'));
+// 添加认证API路由
+app.use('/api/auth', require('./routes/auth').router);
+// 添加系统API路由
+app.use('/api/system', require('./routes/system'));
+
+if (process.env.NODE_ENV === "production") {
   // Production: HTTPS with SSL certificates
   const options = {};
   try {
@@ -31,22 +46,24 @@ if (process.env.NODE_ENV !== "development") {
           /^https?:\/\/([^.]+\.github\.io|localhost|clocktower\.online|eddbra1nprivatetownsquare\.xyz)/i
         )
     });
+    
+    // 将Express应用挂载到HTTPS服务器
+    server.on('request', app);
   } catch (error) {
     console.error("SSL证书文件缺失，请确保cert.pem和key.pem文件存在");
     process.exit(1);
   }
 } else {
   // Development: HTTP without SSL
-  server = http.createServer();
+  server = http.createServer(app); // 将Express应用作为HTTP服务器
   wss = new WebSocket.Server({
-    port: 8081,
+    server, // 使用同一个HTTP服务器
     verifyClient: info =>
       info.origin &&
       !!info.origin.match(
         /^https?:\/\/([^.]+\.github\.io|localhost|clocktower\.online|eddbra1nprivatetownsquare\.xyz)/i
       )
   });
-  console.log("开发模式：WebSocket服务器运行在端口8081");
 }
 
 function noop() {}
@@ -269,12 +286,24 @@ wss.on("close", function close() {
   clearInterval(interval);
 });
 
-// prod mode with stats API
-if (process.env.NODE_ENV !== "development") {
-  console.log("server starting");
-  server.listen(8080);
-  server.on("request", (req, res) => {
-    res.setHeader("Content-Type", register.contentType);
-    register.metrics().then(out => res.end(out));
-  });
-}
+// 统一服务器启动
+const PORT = process.env.NODE_ENV === "production" ? 8080 : 8081;
+
+server.listen(PORT, () => {
+  if (process.env.NODE_ENV === "production") {
+    console.log(`生产模式：服务器运行在端口${PORT}`);
+    console.log(`生产模式：WebSocket服务器运行在端口${PORT}`);
+    console.log(`生产模式：API服务器运行在端口${PORT}/api`);
+    
+    // 添加监控指标API
+    server.on("request", (req, res) => {
+      if (req.url === '/metrics') {
+        res.setHeader("Content-Type", register.contentType);
+        register.metrics().then(out => res.end(out));
+      }
+    });
+  } else {
+    console.log(`开发模式：WebSocket服务器运行在端口${PORT}`);
+    console.log(`开发模式：API服务器运行在端口${PORT}/api`);
+  }
+});

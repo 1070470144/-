@@ -166,8 +166,8 @@ export default {
         role: {},
         isDead: false,
         isNominated: false,
-        reminders: []
-      })
+        reminders: [],
+      }),
     },
     playerIndex: {
       type: Number,

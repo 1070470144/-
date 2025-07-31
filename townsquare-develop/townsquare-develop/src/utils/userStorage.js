@@ -17,7 +17,9 @@ function generateUserId() {
   }
 
   // 优先检查是否有现有的说书人用户ID
-  let storytellerUserId = sessionStorage.getItem(SYSTEM_KEYS.STORYTELLER_USER_ID);
+  let storytellerUserId = sessionStorage.getItem(
+    SYSTEM_KEYS.STORYTELLER_USER_ID,
+  );
   if (storytellerUserId) {
     return storytellerUserId;
   }
@@ -98,7 +100,7 @@ function setUserRole(roleType) {
   const roleKey = `${userId}_role_type`; // Directly construct storage key
   sessionStorage.setItem(roleKey, roleType);
   console.log(`设置用户角色: ${userId} -> ${roleType}`);
-  
+
   // 清除角色缓存，确保下次获取时重新检测
   clearRoleCache();
 }
@@ -130,7 +132,9 @@ function createGame(sessionId) {
   const userId = getCurrentUserId();
   const sessionKey = `${userId}_session_id`; // Directly construct storage key
   sessionStorage.setItem(sessionKey, sessionId);
-  console.log(`创建游戏: ${storytellerUserId} -> storyteller, session: ${sessionId}`);
+  console.log(
+    `创建游戏: ${storytellerUserId} -> storyteller, session: ${sessionId}`,
+  );
 }
 
 // 加入游戏
@@ -168,24 +172,24 @@ let cachedUserId = null;
 // 获取用户角色（带缓存优化）
 function getUserRole() {
   const currentUserId = getCurrentUserId();
-  
+
   // 如果用户ID没有变化，直接返回缓存的角色
   if (cachedUserId === currentUserId && cachedUserRole !== null) {
     return cachedUserRole;
   }
-  
+
   console.log("=== 开始角色检测 ===");
   console.log("当前用户ID:", currentUserId);
-  
+
   const roleType = getUserRoleType();
   console.log("角色类型:", roleType);
-  
+
   if (roleType) {
     cachedUserRole = roleType;
     cachedUserId = currentUserId;
     return roleType;
   }
-  
+
   console.log("没有找到角色类型，默认返回游客模式");
   cachedUserRole = "spectator";
   cachedUserId = currentUserId;
@@ -207,7 +211,9 @@ function getUserSpecificKey(key, role = null) {
 
   // 如果是玩家模式，使用浏览器窗口ID作为稳定的标识符
   if (currentRole === "player") {
-    const browserWindowId = sessionStorage.getItem(SYSTEM_KEYS.BROWSER_WINDOW_ID);
+    const browserWindowId = sessionStorage.getItem(
+      SYSTEM_KEYS.BROWSER_WINDOW_ID,
+    );
     if (browserWindowId) {
       // 使用浏览器窗口ID作为玩家数据的标识符，这样刷新时键保持一致
       return `${userId}_${currentRole}_${browserWindowId}_${key}`;

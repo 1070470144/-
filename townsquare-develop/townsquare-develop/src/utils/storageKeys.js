@@ -156,12 +156,12 @@ export function getAllKeys() {
 // 清理所有系统数据
 export function clearAllSystemData() {
   console.log("清理所有系统数据");
-  
+
   // 清理系统键
   Object.values(SYSTEM_KEYS).forEach((key) => {
     sessionStorage.removeItem(key);
   });
-  
+
   // 清理所有以系统前缀开头的键
   for (let i = 0; i < sessionStorage.length; i++) {
     const key = sessionStorage.key(i);
@@ -174,16 +174,21 @@ export function clearAllSystemData() {
 // 清理所有用户数据
 export function clearAllUserData() {
   console.log("清理所有用户数据");
-  
+
   // 清理用户数据键
   Object.values(USER_DATA_KEYS).forEach((key) => {
     localStorage.removeItem(key);
   });
-  
+
   // 清理所有以用户前缀开头的键
   for (let i = 0; i < localStorage.length; i++) {
     const key = localStorage.key(i);
-    if (key && (key.startsWith("user_") || key.startsWith("storyteller_") || key.startsWith("role_"))) {
+    if (
+      key &&
+      (key.startsWith("user_") ||
+        key.startsWith("storyteller_") ||
+        key.startsWith("role_"))
+    ) {
       localStorage.removeItem(key);
     }
   }

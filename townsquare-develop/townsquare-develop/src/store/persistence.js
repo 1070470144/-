@@ -205,10 +205,10 @@ module.exports = (store) => {
 // 说书人数据恢复函数
 function restoreStorytellerData(store) {
   console.log("开始恢复说书人数据...");
-  
+
   // 设置角色
   userStorage.setRole("storyteller");
-  
+
   // 恢复版本和角色数据
   if (userStorage.getItem(USER_DATA_KEYS.ROLES) !== null) {
     store.commit("setCustomRoles", userStorage.getItem(USER_DATA_KEYS.ROLES));
@@ -217,7 +217,7 @@ function restoreStorytellerData(store) {
   if (userStorage.getItem(USER_DATA_KEYS.EDITION) !== null) {
     store.commit("setEdition", userStorage.getItem(USER_DATA_KEYS.EDITION));
   }
-  
+
   // 恢复寓言数据
   if (userStorage.getItem(USER_DATA_KEYS.FABLED) !== null) {
     console.log("恢复寓言数据");
@@ -227,12 +227,12 @@ function restoreStorytellerData(store) {
         .map((fabled) => store.state.fabled.get(fabled.id) || fabled),
     });
   }
-  
+
   // 恢复玩家数据
   if (userStorage.getItem(USER_DATA_KEYS.PLAYERS) !== null) {
     console.log("恢复说书人玩家数据");
     const playersData = userStorage.getItem(USER_DATA_KEYS.PLAYERS);
-    
+
     if (playersData && Array.isArray(playersData)) {
       const restoredPlayers = playersData.map((player) => {
         const roleId =
@@ -262,7 +262,7 @@ function restoreStorytellerData(store) {
       console.log("成功恢复", restoredPlayers.length, "个玩家的数据");
     }
   }
-  
+
   // 恢复恶魔伪装
   if (userStorage.getItem(USER_DATA_KEYS.BLUFFS) !== null) {
     console.log("恢复恶魔伪装");
@@ -279,7 +279,7 @@ function restoreStorytellerData(store) {
       });
     });
   }
-  
+
   // 恢复会话数据
   const sessionResult = restoreSessionData();
   if (sessionResult) {
@@ -291,30 +291,30 @@ function restoreStorytellerData(store) {
       store.commit("session/setSessionId", sessionResult.sessionId);
     }
   }
-  
+
   console.log("说书人数据恢复完成");
 }
 
 // 玩家数据恢复函数
 function restorePlayerData(store) {
   console.log("开始恢复玩家数据...");
-  
+
   // 设置角色
   userStorage.setRole("player");
-  
+
   // 恢复玩家ID
   const playerId = userStorage.getItem(USER_DATA_KEYS.PLAYER_ID);
   if (playerId) {
     console.log("恢复玩家ID:", playerId);
     store.commit("session/setPlayerId", playerId);
   }
-  
+
   // 恢复玩家数据（只恢复自己的角色信息）
   if (userStorage.getItem(USER_DATA_KEYS.PLAYERS) !== null) {
     console.log("恢复玩家本地数据");
     const playersData = userStorage.getItem(USER_DATA_KEYS.PLAYERS);
     const currentPlayerId = userStorage.getItem(USER_DATA_KEYS.PLAYER_ID);
-    
+
     console.log("当前玩家ID:", currentPlayerId);
     console.log("玩家数据:", playersData);
 
@@ -325,7 +325,7 @@ function restorePlayerData(store) {
           // 当前玩家：恢复自己的角色信息和座位信息
           const roleId =
             typeof player.role === "string" ? player.role : player.role?.id;
-          
+
           // 确保角色ID存在且有效
           if (roleId && roleId !== "{}" && roleId !== "") {
             const role =
@@ -384,7 +384,7 @@ function restorePlayerData(store) {
       }
     }
   }
-  
+
   // 恢复会话数据
   const sessionResult = restoreSessionData();
   if (sessionResult) {
@@ -396,17 +396,17 @@ function restorePlayerData(store) {
       store.commit("session/setSessionId", sessionResult.sessionId);
     }
   }
-  
+
   console.log("玩家数据恢复完成");
 }
 
 // 游客数据清除和重置函数
 function clearAllDataAndReset(store) {
   console.log("开始清除所有数据并重置到初始状态...");
-  
+
   // 设置角色
   userStorage.setRole("spectator");
-  
+
   // 清除所有游戏相关数据
   store.commit("players/clear");
   store.commit("session/setSessionId", "");
@@ -414,7 +414,7 @@ function clearAllDataAndReset(store) {
   store.commit("session/setSpectator", false);
   store.commit("clearHistory");
   store.commit("session/clearVoteHistory");
-  
+
   // 清除存储的游戏数据
   userStorage.removeItem(USER_DATA_KEYS.PLAYERS);
   userStorage.removeItem(USER_DATA_KEYS.SESSION);
@@ -423,7 +423,7 @@ function clearAllDataAndReset(store) {
   userStorage.removeItem(USER_DATA_KEYS.FABLED);
   userStorage.removeItem(USER_DATA_KEYS.BLUFFS);
   userStorage.removeItem(USER_DATA_KEYS.ROLES);
-  
+
   console.log("游客数据清除和重置完成");
 }
 
