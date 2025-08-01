@@ -23,13 +23,6 @@
             剧本管理
           </button>
           <button
-            @click="activeTab = 'approval'"
-            :class="{ active: activeTab === 'approval' }"
-            class="tab-btn"
-          >
-            剧本审核
-          </button>
-          <button
             @click="activeTab = 'users'"
             :class="{ active: activeTab === 'users' }"
             class="tab-btn"
@@ -59,10 +52,6 @@
 
           <div v-if="activeTab === 'scripts'" class="tab-content">
             <ScriptManager />
-          </div>
-
-          <div v-if="activeTab === 'approval'" class="tab-content">
-            <ScriptApprovalPanel />
           </div>
 
           <div v-if="activeTab === 'users'" class="tab-content">
@@ -106,7 +95,6 @@
 <script>
 import RoleManager from "./RoleManager.vue";
 import ScriptManager from "./ScriptManager.vue";
-import ScriptApprovalPanel from "./ScriptApprovalPanel.vue";
 import UserManagementPanel from "./UserManagementPanel.vue";
 import ScriptSeriesManager from "./ScriptSeriesManager.vue";
 import authAPI from "@/utils/authAPI";
@@ -116,7 +104,6 @@ export default {
   components: {
     RoleManager,
     ScriptManager,
-    ScriptApprovalPanel,
     UserManagementPanel,
     ScriptSeriesManager,
   },
