@@ -1,0 +1,38 @@
+{
+  "id": "mdskvyx5w3q04bsnz8k",
+  "name": "暗流涌动",
+  "description": "暗流涌动",
+  "category": "custom",
+  "versions": [
+    {
+      "id": "暗流涌动_945367",
+      "name": "暗流涌动",
+      "version": "1.0",
+      "createdAt": "2025-08-01T08:45:45.371Z",
+      "status": "pending"
+    },
+    {
+      "id": "暗流涌动_068327",
+      "name": "暗流涌动",
+      "version": "1.1",
+      "createdAt": "2025-08-01T08:47:48.331Z",
+      "status": "pending"
+    },
+    {
+      "id": "隐舟暗渡caffeineboost_953896",
+      "name": "隐舟暗渡-CaffeineBoost",
+      "version": "2.1",
+      "createdAt": "2025-08-01T09:02:33.902Z",
+      "status": "pending"
+    },
+    {
+      "id": "暗流涌动_255008",
+      "name": "暗流涌动",
+      "version": "2.2",
+      "createdAt": "2025-08-01T09:07:35.011Z",
+      "status": "pending"
+    }
+  ],
+  "createdAt": "2025-08-01T08:45:17.321Z",
+  "updatedAt": "2025-08-01T09:07:35.011Z"
+}

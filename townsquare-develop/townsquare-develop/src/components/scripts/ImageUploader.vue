@@ -158,7 +158,7 @@ export default {
 
       try {
         const files = this.previewImages.map(item => item.file);
-        const scriptAPI = require('@/utils/scriptAPI').default;
+        const scriptAPI = (await import('@/utils/scriptAPI')).default;
         
         const result = await scriptAPI.uploadScriptImages(
           this.scriptId, 

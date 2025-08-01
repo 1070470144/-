@@ -1,3 +1,56 @@
 {
-  "images": {}
-} 
+  "images": {
+    "test-script": {
+      "images": [
+        {
+          "filename": "test-image1.jpg",
+          "title": "测试图片1",
+          "order": 1,
+          "uploadedAt": "2024-01-01T00:00:00.000Z"
+        },
+        {
+          "filename": "test-image2.png",
+          "title": "测试图片2",
+          "order": 2,
+          "uploadedAt": "2024-01-01T00:00:00.000Z"
+        }
+      ]
+    },
+    "暗流涌动_922858": {
+      "images": [
+        {
+          "filename": "image1.jpg",
+          "title": "暗流涌动",
+          "order": 1,
+          "uploadedAt": "2025-08-01T08:45:45.391Z"
+        },
+        {
+          "filename": "image2.png",
+          "title": "暗流涌动",
+          "order": 2,
+          "uploadedAt": "2025-08-01T08:45:45.392Z"
+        }
+      ]
+    },
+    "暗流涌动_047330": {
+      "images": [
+        {
+          "filename": "image1.jpg",
+          "title": "暗流涌动",
+          "order": 1,
+          "uploadedAt": "2025-08-01T08:47:48.355Z"
+        }
+      ]
+    },
+    "暗流涌动_255008": {
+      "images": [
+        {
+          "filename": "image1.jpg",
+          "title": "暗流涌动",
+          "order": 1,
+          "uploadedAt": "2025-08-01T09:07:35.036Z"
+        }
+      ]
+    }
+  }
+}

@@ -124,6 +124,7 @@
                     :scriptId="script.id"
                     :autoPlay="true"
                     :interval="4000"
+                    :enableClick="false"
                   />
                 </div>
 
@@ -273,6 +274,7 @@
         v-if="showDetailModal"
         :show="showDetailModal"
         :scriptId="selectedScript ? selectedScript.id : ''"
+        :scriptType="selectedScript ? selectedScript.type : 'custom'"
         @close="closeDetailModal"
         @switch-version="switchToVersion"
       />
@@ -428,17 +430,15 @@ export default {
         if (result && result.data && result.data.scripts) {
           let scripts = result.data.scripts;
           
-          // 加载每个剧本的图片数据
+          // 图片信息已经包含在剧本数据中，无需额外加载
           if (reset) {
-            await this.loadScriptImages(scripts);
             this.scripts = scripts;
             // 缓存当前标签页的数据
             this.cachedScripts[this.currentTab] = [...scripts];
           } else {
-            await this.loadScriptImages(result.data.scripts);
             this.scripts = [...this.scripts, ...result.data.scripts];
             // 更新缓存
-            this.cachedScripts[this.currentTab] = [...this.scripts];
+            this.cachedScripts[this.currentTab] = [...scripts];
           }
 
           this.pagination = result.data.pagination;
@@ -448,15 +448,13 @@ export default {
           // 兼容旧的数据结构
           let scripts = result.scripts;
           
-          // 加载每个剧本的图片数据
+          // 图片信息已经包含在剧本数据中，无需额外加载
           if (reset) {
-            await this.loadScriptImages(scripts);
             this.scripts = scripts;
             this.cachedScripts[this.currentTab] = [...scripts];
           } else {
-            await this.loadScriptImages(result.scripts);
             this.scripts = [...this.scripts, ...result.scripts];
-            this.cachedScripts[this.currentTab] = [...this.scripts];
+            this.cachedScripts[this.currentTab] = [...scripts];
           }
 
           this.pagination = result.pagination;
@@ -620,8 +618,11 @@ export default {
 
     viewScript(script) {
       // 查看剧本详情
+      console.log('viewScript called with script:', script)
       this.selectedScript = script;
       this.showDetailModal = true;
+      console.log('selectedScript set to:', this.selectedScript)
+      console.log('showDetailModal set to:', this.showDetailModal)
     },
 
     async useScript(script) {

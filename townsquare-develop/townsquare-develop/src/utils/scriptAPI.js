@@ -509,9 +509,9 @@ class ScriptAPI {
   /**
    * 根据ID获取剧本详情
    */
-  async getScriptById(scriptId) {
+  async getScriptById(scriptId, type = 'custom') {
     try {
-      const response = await fetch(`${API_BASE}/scripts/${scriptId}`, {
+      const response = await fetch(`${API_BASE}/scripts/${scriptId}?type=${type}`, {
         method: 'GET',
         headers: this.getAuthHeaders()
       });

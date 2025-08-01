@@ -86,6 +86,7 @@
               :scriptId="script.id"
               :autoPlay="true"
               :interval="4000"
+              :enableClick="false"
             />
           </div>
 

@@ -3,9 +3,51 @@
   "standalone": {
     "暗流涌动_216003": {
       "scriptId": "暗流涌动_216003",
+      "status": "deleted",
+      "reviewedBy": "system",
+      "reviewedAt": "2025-08-01T08:04:43.690Z",
+      "reviewNote": "剧本已删除"
+    },
+    "暗流涌动_506181": {
+      "scriptId": "暗流涌动_506181",
+      "status": "deleted",
+      "reviewedBy": "system",
+      "reviewedAt": "2025-08-01T08:14:56.756Z",
+      "reviewNote": "剧本已删除"
+    },
+    "暗流涌动_660584": {
+      "scriptId": "暗流涌动_660584",
+      "status": "deleted",
+      "reviewedBy": "system",
+      "reviewedAt": "2025-08-01T08:43:51.853Z",
+      "reviewNote": "剧本已删除"
+    },
+    "暗流涌动_945367": {
+      "scriptId": "暗流涌动_945367",
+      "status": "deleted",
+      "reviewedBy": "system",
+      "reviewedAt": "2025-08-01T08:46:48.894Z",
+      "reviewNote": "剧本已删除"
+    },
+    "暗流涌动_068327": {
+      "scriptId": "暗流涌动_068327",
+      "status": "deleted",
+      "reviewedBy": "system",
+      "reviewedAt": "2025-08-01T08:48:24.654Z",
+      "reviewNote": "剧本已删除"
+    },
+    "隐舟暗渡caffeineboost_953896": {
+      "scriptId": "隐舟暗渡caffeineboost_953896",
+      "status": "deleted",
+      "reviewedBy": "system",
+      "reviewedAt": "2025-08-01T09:07:12.022Z",
+      "reviewNote": "剧本已删除"
+    },
+    "暗流涌动_255008": {
+      "scriptId": "暗流涌动_255008",
       "status": "approved",
       "reviewedBy": "admin@mm.com",
-      "reviewedAt": "2025-08-01T07:46:35.722Z",
+      "reviewedAt": "2025-08-01T09:59:18.680Z",
       "reviewNote": ""
     }
   }

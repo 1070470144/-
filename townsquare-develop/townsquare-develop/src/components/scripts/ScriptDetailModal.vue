@@ -11,7 +11,17 @@
           :scriptId="scriptId"
           :autoPlay="true"
           :interval="4000"
+          :enableClick="true"
         />
+      </div>
+      
+      <!-- 无图片时的占位符 -->
+      <div v-else class="no-images-placeholder">
+        <div class="placeholder-content">
+          <div class="placeholder-icon">📷</div>
+          <p>此剧本暂无图片</p>
+          <small>上传剧本时可以添加图片</small>
+        </div>
       </div>
 
       <!-- 标签页导航 -->
@@ -28,8 +38,16 @@
 
       <!-- 标签页内容 -->
       <div class="tab-content">
+
+        
+        <!-- 加载状态 -->
+        <div v-if="isLoading" class="loading-state">
+          <div class="loading-spinner"></div>
+          <p>加载剧本数据中...</p>
+        </div>
+        
         <!-- 基本信息 -->
-        <div v-if="currentTab === 'basic'" class="tab-panel">
+        <div v-else-if="currentTab === 'basic'" class="tab-panel">
           <div class="basic-info">
             <div class="script-header">
               <h2 class="script-name">{{ scriptData.name }}</h2>
@@ -47,7 +65,7 @@
         </div>
 
         <!-- 角色数据 -->
-        <div v-if="currentTab === 'roles'" class="tab-panel">
+        <div v-else-if="currentTab === 'roles'" class="tab-panel">
           <div class="roles-section">
             <div v-for="team in roleTeams" :key="team.key" class="role-team">
               <h3 class="team-title">{{ team.name }}</h3>
@@ -76,7 +94,7 @@
         </div>
 
         <!-- 游戏规则 -->
-        <div v-if="currentTab === 'rules'" class="tab-panel">
+        <div v-else-if="currentTab === 'rules'" class="tab-panel">
           <div class="rules-section">
             <div class="night-order">
               <h3>夜晚行动顺序</h3>
@@ -103,7 +121,7 @@
         </div>
 
         <!-- 系列版本 -->
-        <div v-if="currentTab === 'series'" class="tab-panel">
+        <div v-else-if="currentTab === 'series'" class="tab-panel">
           <div class="series-section">
             <h3>系列版本</h3>
             <div class="series-list" v-if="seriesVersions.length > 0">
@@ -221,6 +239,10 @@ export default {
     scriptId: {
       type: String,
       default: ''
+    },
+    scriptType: {
+      type: String,
+      default: 'custom'
     }
   },
   data() {
@@ -307,6 +329,11 @@ export default {
       }
     }
   },
+  mounted() {
+    if (this.show && this.scriptId) {
+      this.loadScriptData()
+    }
+  },
   watch: {
     show(newVal) {
       if (newVal && this.scriptId) {
@@ -322,7 +349,6 @@ export default {
   methods: {
     async loadScriptData() {
       if (!this.scriptId) {
-        console.log('scriptId为空，不加载数据')
         return
       }
       try {
@@ -338,17 +364,21 @@ export default {
         
         // 并行加载剧本数据、图片、系列
         const [scriptResult, imagesResult, allSeriesResult] = await Promise.all([
-          scriptAPI.getScriptById(this.scriptId),
+          scriptAPI.getScriptById(this.scriptId, this.scriptType),
           scriptAPI.getScriptImages(this.scriptId),
           scriptAPI.getScriptSeries() // 获取所有系列
         ])
         
         if (scriptResult.success) {
           this.scriptData = scriptResult.data
+        } else {
+          console.error('剧本数据加载失败:', scriptResult.error)
         }
         
         if (imagesResult.success) {
-          this.scriptImages = imagesResult.data || []
+          this.scriptImages = imagesResult.data?.images || []
+        } else {
+          this.scriptImages = []
         }
         
         // 查找当前剧本所属系列及所有版本
@@ -472,7 +502,7 @@ export default {
           this.currentFileName = image.title || `图片 ${this.downloadedCount + 1}`
           
           // 构建图片URL
-          const imageUrl = `${window.location.origin}/api/images/${this.scriptId}/${image.filename}`
+          const imageUrl = `http://localhost:8081/api/images/${this.scriptId}/${image.filename}`
           
           const result = await scriptAPI.downloadImage(imageUrl)
           if (result.success) {
@@ -561,6 +591,39 @@ export default {
   height: 300px;
   overflow: hidden;
   border-radius: 12px 12px 0 0;
+}
+
+.no-images-placeholder {
+  width: 100%;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px 12px 0 0;
+  border-bottom: 1px solid rgba(255, 215, 0, 0.1);
+}
+
+.placeholder-content {
+  text-align: center;
+  color: #666;
+}
+
+.placeholder-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+  opacity: 0.5;
+}
+
+.placeholder-content p {
+  margin: 0 0 5px 0;
+  font-size: 16px;
+  color: #999;
+}
+
+.placeholder-content small {
+  font-size: 12px;
+  color: #666;
 }
 
 .tabs-nav {

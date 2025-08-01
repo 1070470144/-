@@ -143,7 +143,7 @@ export default {
     },
 
     getImageUrl(filename) {
-      return `/api/images/${this.script.id}/${filename}`;
+              return `http://localhost:8081/api/images/${this.script.id}/${filename}`;
     },
 
     formatDate(dateString) {
@@ -340,7 +340,7 @@ export default {
   .preview-img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     cursor: pointer;
     transition: transform 0.3s ease;
 

@@ -77,6 +77,94 @@
               <div v-if="!isLoadingCategories && !activeCategories.length" class="error-text">暂无可用分类</div>
             </div>
 
+            <!-- 系列选择 -->
+            <div class="form-group">
+              <label>剧本系列 *</label>
+              <div class="series-selection">
+                <div class="series-options">
+                  <label class="radio-option">
+                    <input 
+                      type="radio" 
+                      v-model="seriesOption" 
+                      value="existing"
+                      @change="handleSeriesOptionChange"
+                    />
+                    <span>选择已有系列</span>
+                  </label>
+                  <label class="radio-option">
+                    <input 
+                      type="radio" 
+                      v-model="seriesOption" 
+                      value="new"
+                      @change="handleSeriesOptionChange"
+                    />
+                    <span>创建新系列</span>
+                  </label>
+                </div>
+
+                <!-- 选择已有系列 -->
+                <div v-if="seriesOption === 'existing'" class="existing-series">
+                  <div class="search-box">
+                    <input 
+                      v-model="seriesSearchQuery"
+                      type="text"
+                      placeholder="搜索系列..."
+                      @input="searchSeries"
+                    />
+                  </div>
+                  <select v-model="selectedSeriesId" :disabled="isLoadingSeries">
+                    <option value="" disabled>{{ isLoadingSeries ? '加载系列中...' : '请选择系列' }}</option>
+                    <option 
+                      v-for="series in filteredSeries" 
+                      :key="series.id" 
+                      :value="series.id"
+                    >
+                      {{ series.name }} ({{ series.versions?.length || 0 }}个版本)
+                    </option>
+                  </select>
+                </div>
+
+                <!-- 创建新系列 -->
+                <div v-if="seriesOption === 'new'" class="new-series">
+                  <div class="form-group">
+                    <label>系列名称</label>
+                    <input 
+                      v-model="newSeriesName"
+                      type="text"
+                      placeholder="请输入系列名称"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label>系列描述</label>
+                    <textarea
+                      v-model="newSeriesDescription"
+                      placeholder="请输入系列描述"
+                    ></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label>版本号</label>
+                    <input 
+                      v-model="newSeriesVersion"
+                      type="text"
+                      placeholder="请输入版本号，如：1.0"
+                    />
+                  </div>
+                </div>
+
+                <!-- 版本号输入（选择已有系列时） -->
+                <div v-if="seriesOption === 'existing'" class="version-input">
+                  <div class="form-group">
+                    <label>版本号</label>
+                    <input 
+                      v-model="existingSeriesVersion"
+                      type="text"
+                      placeholder="请输入版本号，如：2.1"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div class="form-group">
               <label>描述</label>
               <textarea
@@ -94,6 +182,7 @@
             <div class="form-group">
               <label>剧本图片</label>
               <ImageUploader 
+                ref="imageUploader"
                 :scriptId="previewData.id"
                 :scriptName="previewData.name"
                 @upload-success="handleImageUploadSuccess"
@@ -142,6 +231,18 @@ export default {
       error: "",
       categories: [],
       isLoadingCategories: false,
+      
+      // 系列相关数据
+      seriesOption: 'existing', // existing, new (移除了standalone)
+      seriesSearchQuery: '',
+      selectedSeriesId: '',
+      newSeriesName: '',
+      newSeriesDescription: '',
+      newSeriesVersion: '1.0',
+      existingSeriesVersion: '',
+      allSeries: [],
+      filteredSeries: [],
+      isLoadingSeries: false,
     };
   },
   methods: {
@@ -156,6 +257,18 @@ export default {
       this.isDragOver = false;
       this.isUploading = false;
       this.error = "";
+      
+      // 重置系列相关数据
+      this.seriesOption = 'existing';
+      this.seriesSearchQuery = '';
+      this.selectedSeriesId = '';
+      this.newSeriesName = '';
+      this.newSeriesDescription = '';
+      this.newSeriesVersion = '1.0';
+      this.existingSeriesVersion = '';
+      this.allSeries = [];
+      this.filteredSeries = [];
+      
       // 重新加载分类数据
       this.loadCategories();
     },
@@ -266,6 +379,56 @@ export default {
       }
     },
 
+    // 系列相关方法
+    async loadSeries() {
+      try {
+        this.isLoadingSeries = true;
+        const result = await scriptAPI.getScriptSeries();
+        if (result.success) {
+          this.allSeries = result.data || [];
+          this.filteredSeries = [...this.allSeries];
+          console.log('加载系列成功:', this.allSeries);
+        } else {
+          console.error('加载系列失败:', result.error);
+          this.allSeries = [];
+          this.filteredSeries = [];
+        }
+      } catch (error) {
+        console.error('加载系列失败:', error);
+        this.allSeries = [];
+        this.filteredSeries = [];
+      } finally {
+        this.isLoadingSeries = false;
+      }
+    },
+
+    handleSeriesOptionChange() {
+      console.log('系列选项改变:', this.seriesOption);
+      
+      // 重置相关数据
+      this.selectedSeriesId = '';
+      this.newSeriesName = '';
+      this.newSeriesDescription = '';
+      this.existingSeriesVersion = '';
+      
+      // 如果选择已有系列，加载系列数据
+      if (this.seriesOption === 'existing') {
+        this.loadSeries();
+      }
+    },
+
+    searchSeries() {
+      if (!this.seriesSearchQuery.trim()) {
+        this.filteredSeries = [...this.allSeries];
+      } else {
+        const query = this.seriesSearchQuery.toLowerCase();
+        this.filteredSeries = this.allSeries.filter(series => 
+          series.name.toLowerCase().includes(query) ||
+          series.description?.toLowerCase().includes(query)
+        );
+      }
+    },
+
     async uploadScript() {
       try {
         this.isUploading = true;
@@ -288,8 +451,32 @@ export default {
           return;
         }
 
+        // 验证系列相关字段
+        if (this.seriesOption === 'existing') {
+          if (!this.selectedSeriesId) {
+            this.error = "请选择系列";
+            return;
+          }
+          if (!this.existingSeriesVersion.trim()) {
+            this.error = "请输入版本号";
+            return;
+          }
+        }
+
+        if (this.seriesOption === 'new') {
+          if (!this.newSeriesName.trim()) {
+            this.error = "请输入系列名称";
+            return;
+          }
+          if (!this.newSeriesVersion.trim()) {
+            this.error = "请输入版本号";
+            return;
+          }
+        }
+
         // 生成剧本ID
         const scriptId = scriptImporter.generateScriptId(this.previewData.name);
+        console.log('生成的剧本ID:', scriptId);
 
         // 准备上传数据
         const uploadData = {
@@ -299,12 +486,44 @@ export default {
           userId: this.currentUser.id, // 添加用户ID
           uploadedBy: this.currentUser.username,
           uploadedAt: new Date().toISOString(),
+          seriesInfo: {
+            option: this.seriesOption,
+            seriesId: this.selectedSeriesId,
+            newSeriesName: this.newSeriesName,
+            newSeriesDescription: this.newSeriesDescription,
+            newSeriesVersion: this.newSeriesVersion,
+            existingSeriesVersion: this.existingSeriesVersion
+          }
         };
 
         // 上传到服务器
         const result = await scriptAPI.saveScript(uploadData);
 
         if (result.success) {
+          // 剧本上传成功后，上传图片
+          const imageUploader = this.$refs.imageUploader;
+          if (imageUploader && imageUploader.previewImages.length > 0) {
+            try {
+              // 使用正确的剧本ID上传图片
+              const files = imageUploader.previewImages.map(item => item.file);
+              console.log('上传图片使用的剧本ID:', scriptId);
+              const imageResult = await scriptAPI.uploadScriptImages(
+                scriptId, // 使用正确的剧本ID
+                files,
+                this.previewData.name
+              );
+              
+              if (imageResult.success) {
+                console.log('图片上传成功:', imageResult);
+              } else {
+                console.error('图片上传失败:', imageResult.error);
+                // 图片上传失败不影响剧本上传成功
+              }
+            } catch (error) {
+              console.error('图片上传失败:', error);
+            }
+          }
+          
           this.$emit("upload-success");
           this.closeModal();
         } else {
@@ -587,5 +806,94 @@ export default {
   color: #ff6b6b;
   font-size: 14px;
   text-align: center;
+}
+
+// 系列选择样式
+.series-selection {
+  .series-options {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+
+    .radio-option {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      color: #ccc;
+      font-size: 14px;
+
+      input[type="radio"] {
+        margin: 0;
+        cursor: pointer;
+      }
+
+      span {
+        cursor: pointer;
+      }
+    }
+  }
+
+  .existing-series,
+  .new-series {
+    margin-top: 10px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+
+    .search-box {
+      margin-bottom: 10px;
+
+      input {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid #444;
+        border-radius: 4px;
+        background: #333;
+        color: #fff;
+        font-size: 14px;
+
+        &:focus {
+          outline: none;
+          border-color: #666;
+        }
+
+        &::placeholder {
+          color: #888;
+        }
+      }
+    }
+
+    select {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #444;
+      border-radius: 4px;
+      background: #333;
+      color: #fff;
+      font-size: 14px;
+      cursor: pointer;
+
+      &:focus {
+        outline: none;
+        border-color: #666;
+      }
+
+      option {
+        background: #333;
+        color: #fff;
+      }
+    }
+  }
+
+  .version-input {
+    margin-top: 10px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
 }
 </style>

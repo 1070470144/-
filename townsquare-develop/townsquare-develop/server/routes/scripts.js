@@ -7,7 +7,15 @@ const crypto = require('crypto');
 
 // 配置文件上传
 const upload = multer({
-  storage: multer.memoryStorage(),
+  storage: multer.diskStorage({
+    destination: function (req, file, cb) {
+      // 临时目录，实际文件会重新保存到正确位置
+      cb(null, require('os').tmpdir());
+    },
+    filename: function (req, file, cb) {
+      cb(null, Date.now() + '-' + file.originalname);
+    }
+  }),
   limits: {
     fileSize: 10 * 1024 * 1024 // 10MB
   }
@@ -85,24 +93,43 @@ async function getAllScripts() {
             const content = await fs.readFile(filePath, 'utf8');
             const scriptData = JSON.parse(content);
             
-            // 添加文件信息
-            scriptData.filePath = `${type}/${file}`;
-            scriptData.fileSize = content.length;
-            scriptData.lastModified = (await fs.stat(filePath)).mtime;
-            scriptData.type = type; // 添加type信息
+            // 保持原始剧本数据不变，创建新的响应对象
+            const scriptId = scriptData.id || path.basename(file, '.json');
             
             // 从状态文件获取状态信息
-            const scriptId = scriptData.id || path.basename(file, '.json');
             const scriptStatus = await getScriptStatus(scriptId);
-            scriptData.status = scriptStatus.status;
-            scriptData.reviewedBy = scriptStatus.reviewedBy;
-            scriptData.reviewedAt = scriptStatus.reviewedAt;
-            scriptData.reviewNote = scriptStatus.reviewNote;
+            
+            // 加载图片信息
+            let images = [];
+            try {
+              const imagesData = await getScriptImages(scriptId);
+              images = imagesData.images || [];
+            } catch (error) {
+              console.error(`加载剧本 ${scriptId} 的图片失败:`, error);
+            }
+            
+            // 创建响应对象，包含原始数据和系统信息
+            const responseData = {
+              // 原始剧本数据（保持不变）
+              ...scriptData,
+              // 系统添加的信息
+              filePath: `${type}/${file}`,
+              fileSize: content.length,
+              lastModified: (await fs.stat(filePath)).mtime,
+              type: type,
+              // 状态信息（来自独立的状态文件）
+              status: scriptStatus.status,
+              reviewedBy: scriptStatus.reviewedBy,
+              reviewedAt: scriptStatus.reviewedAt,
+              reviewNote: scriptStatus.reviewNote,
+              // 图片信息（来自独立的图片元数据文件）
+              images: images
+            };
             
             // 只在调试时显示状态信息
             // console.log(`📄 剧本 ${scriptId} 状态: ${scriptStatus.status}`);
             
-            scripts[type].push(scriptData);
+            scripts[type].push(responseData);
           } catch (error) {
             console.error(`❌ 读取剧本文件失败: ${file}`, error);
           }
@@ -128,20 +155,147 @@ async function saveScript(scriptData, type = 'custom') {
     const fileName = `${scriptData.id}.json`;
     const filePath = path.join(dir, fileName);
     
-    // 添加元数据
-    const scriptToSave = {
-      ...scriptData,
-      updatedAt: new Date().toISOString(),
-      createdAt: scriptData.createdAt || new Date().toISOString(),
-      version: scriptData.version || '1.0.0'
-    };
+    // 处理系列信息
+    let seriesInfo = null;
+    if (scriptData.seriesInfo) {
+      const { option, seriesId, newSeriesName, newSeriesDescription, newSeriesVersion, existingSeriesVersion } = scriptData.seriesInfo;
+      
+      if (option === 'existing' && seriesId) {
+        // 添加到现有系列
+        seriesInfo = await addScriptToExistingSeries(scriptData.id, seriesId, scriptData, existingSeriesVersion);
+      } else if (option === 'new' && newSeriesName) {
+        // 创建新系列
+        seriesInfo = await createNewSeriesWithScript(newSeriesName, newSeriesDescription, scriptData, newSeriesVersion);
+      }
+    }
     
-    // 写入文件
-    await fs.writeFile(filePath, JSON.stringify(scriptToSave, null, 2), 'utf8');
+    // 保持原始剧本数据不变，只保存用户上传的原始内容
+    await fs.writeFile(filePath, JSON.stringify(scriptData, null, 2), 'utf8');
     
-    return { success: true, filePath };
+    // 系统信息（状态、图片等）存储在独立的数据结构中
+    // 状态信息存储在 script_status.json 中
+    // 图片信息存储在 script_images.json 中
+    // 系列信息存储在 series/ 目录中
+    
+    return { success: true, filePath, seriesInfo };
   } catch (error) {
     console.error('保存剧本失败:', error);
+    throw error;
+  }
+}
+
+// 添加剧本到现有系列
+async function addScriptToExistingSeries(scriptId, seriesId, scriptData, customVersion) {
+  try {
+    const seriesDir = path.join(SCRIPTS_DIR, 'series');
+    const seriesFilePath = path.join(seriesDir, `${seriesId}.json`);
+    
+    // 读取现有系列数据
+    let seriesData;
+    try {
+      const content = await fs.readFile(seriesFilePath, 'utf8');
+      seriesData = JSON.parse(content);
+    } catch (error) {
+      throw new Error('系列不存在');
+    }
+    
+    // 验证版本号是否已存在
+    const existingVersions = seriesData.versions || [];
+    const versionExists = existingVersions.some(v => v.version === customVersion);
+    if (versionExists) {
+      throw new Error(`版本号 ${customVersion} 已存在，请使用其他版本号`);
+    }
+    
+    // 添加新版本
+    const newVersion = {
+      id: scriptId,
+      name: scriptData.name,
+      version: customVersion,
+      createdAt: new Date().toISOString(),
+      status: 'pending'
+    };
+    
+    seriesData.versions = seriesData.versions || [];
+    seriesData.versions.push(newVersion);
+    seriesData.updatedAt = new Date().toISOString();
+    
+    // 保存更新后的系列数据
+    await fs.writeFile(seriesFilePath, JSON.stringify(seriesData, null, 2), 'utf8');
+    
+    return {
+      seriesId: seriesId,
+      seriesName: seriesData.name,
+      version: customVersion,
+      isNewSeries: false
+    };
+  } catch (error) {
+    console.error('添加到现有系列失败:', error);
+    throw error;
+  }
+}
+
+// 更新系列中的版本状态
+async function updateSeriesVersionStatus(scriptId, seriesId, status) {
+  try {
+    const seriesDir = path.join(SCRIPTS_DIR, 'series');
+    const seriesFilePath = path.join(seriesDir, `${seriesId}.json`);
+    
+    // 读取系列数据
+    const content = await fs.readFile(seriesFilePath, 'utf8');
+    const seriesData = JSON.parse(content);
+    
+    // 更新对应版本的状态
+    if (seriesData.versions) {
+      const version = seriesData.versions.find(v => v.id === scriptId);
+      if (version) {
+        version.status = status;
+        version.updatedAt = new Date().toISOString();
+        
+        // 保存更新后的系列数据
+        await fs.writeFile(seriesFilePath, JSON.stringify(seriesData, null, 2), 'utf8');
+        console.log(`系列 ${seriesId} 中的版本 ${scriptId} 状态更新为: ${status}`);
+      }
+    }
+  } catch (error) {
+    console.error('更新系列版本状态失败:', error);
+    // 不抛出错误，因为这是辅助功能
+  }
+}
+
+// 创建新系列并添加剧本
+async function createNewSeriesWithScript(seriesName, seriesDescription, scriptData, customVersion) {
+  try {
+    const seriesDir = path.join(SCRIPTS_DIR, 'series');
+    await ensureDirectories();
+    
+    const seriesId = generateId();
+    const seriesData = {
+      id: seriesId,
+      name: seriesName,
+      description: seriesDescription,
+      category: scriptData.category,
+      versions: [{
+        id: scriptData.id,
+        name: scriptData.name,
+        version: customVersion,
+        createdAt: new Date().toISOString(),
+        status: 'pending'
+      }],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    const seriesFilePath = path.join(seriesDir, `${seriesId}.json`);
+    await fs.writeFile(seriesFilePath, JSON.stringify(seriesData, null, 2), 'utf8');
+    
+    return {
+      seriesId: seriesId,
+      seriesName: seriesName,
+      version: customVersion,
+      isNewSeries: true
+    };
+  } catch (error) {
+    console.error('创建新系列失败:', error);
     throw error;
   }
 }
@@ -290,6 +444,12 @@ async function updateScriptStatus(scriptId, status, reviewedBy, reviewNote = '')
       };
       await saveStatusFile(statusData);
       console.log('系列剧本状态更新成功:', series.versions[scriptId]);
+      
+      // 如果审核通过，更新系列中的版本状态
+      if (status === 'approved') {
+        await updateSeriesVersionStatus(scriptId, seriesId, status);
+      }
+      
       return series.versions[scriptId];
     }
   }
@@ -1207,6 +1367,8 @@ router.post('/:scriptId/images', upload.array('images', 3), async (req, res) => 
     const { scriptId } = req.params;
     const files = req.files;
     
+    console.log('图片上传请求:', { scriptId, filesCount: files?.length });
+    
     if (!files || files.length === 0) {
       return res.status(400).json({
         success: false,
@@ -1216,6 +1378,13 @@ router.post('/:scriptId/images', upload.array('images', 3), async (req, res) => 
     
     // 验证文件
     for (const file of files) {
+      console.log('验证文件:', { 
+        originalname: file.originalname, 
+        size: file.size, 
+        mimetype: file.mimetype,
+        path: file.path 
+      });
+      
       const ext = path.extname(file.originalname).toLowerCase();
       if (!['.jpg', '.jpeg', '.png'].includes(ext)) {
         return res.status(400).json({
@@ -1244,7 +1413,23 @@ router.post('/:scriptId/images', upload.array('images', 3), async (req, res) => 
       const filename = `image${i + 1}${ext}`;
       const filePath = path.join(scriptImagesDir, filename);
       
-      await fs.writeFile(filePath, file.buffer);
+      // 读取临时文件并复制到目标位置
+      const tempFilePath = file.path;
+      console.log('处理文件:', { tempFilePath, targetPath: filePath });
+      
+      const fileContent = await fs.readFile(tempFilePath);
+      console.log('文件内容大小:', fileContent.length, 'bytes');
+      
+      await fs.writeFile(filePath, fileContent);
+      console.log('文件保存成功:', filePath);
+      
+      // 删除临时文件
+      try {
+        await fs.unlink(tempFilePath);
+        console.log('临时文件删除成功:', tempFilePath);
+      } catch (error) {
+        console.log('删除临时文件失败:', error);
+      }
       
       images.push({
         filename: filename,
