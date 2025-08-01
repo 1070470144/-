@@ -37,85 +37,90 @@
       
       <template v-else>
         <div v-for="series in seriesList" :key="series.id" class="series-item">
-        <div class="series-header" @click="toggleSeries(series.id)">
-          <div class="series-info">
-            <div class="expand-icon" :class="{ expanded: isSeriesExpanded(series.id) }">
-              <span>▶</span>
-            </div>
-            <h4>{{ series.name }}</h4>
-            <div class="series-meta">
-              <span class="version-count"
-                >{{ series.versions.length }} 个版本</span
-              >
-              <span class="latest-version"
-                >最新: v{{ getLatestVersion(series) }}</span
-              >
-            </div>
-          </div>
-          <div class="series-actions-header">
-            <button @click.stop="editSeries(series)" class="edit-series-btn">
-              编辑系列
-            </button>
-            <button @click.stop="deleteSeries(series)" class="delete-series-btn">
-              删除系列
-            </button>
-          </div>
-        </div>
-
-        <transition name="expand">
-          <div v-if="isSeriesExpanded(series.id)" class="series-content">
-            <div class="versions-list">
-              <template v-if="series.versions.length === 0">
-                <div class="empty-versions">
-                  <p>暂无版本</p>
-                  <button @click="addVersion(series)" class="add-version-btn">
-                    添加第一个版本
-                  </button>
-                </div>
-              </template>
-              <template v-else>
-                <div
-                  v-for="version in series.versions"
-                  :key="version.id"
-                  class="version-item"
-                  :class="{ latest: version.isLatest }"
-                >
-                <div class="version-info">
-                  <span class="version-number">v{{ version.version }}</span>
-                  <span class="version-date">{{
-                    formatDate(version.createdAt)
-                  }}</span>
-                  <span class="version-status" :class="version.status">
-                    {{ getStatusText(version.status) }}
-                  </span>
-                </div>
-                <div class="version-actions">
-                  <button @click="editVersion(version)" class="edit-btn">
-                    编辑
-                  </button>
-                  <button
-                    @click="setAsLatest(version)"
-                    v-if="!version.isLatest"
-                    class="latest-btn"
-                  >
-                    设为最新
-                  </button>
-                  <button @click="deleteVersion(version)" class="delete-btn">
-                    删除
-                  </button>
-                </div>
+          <div class="series-header" @click="toggleSeries(series.id, $event)">
+            <div class="series-info">
+              <div class="expand-icon" :class="{ expanded: isSeriesExpanded(series.id) }">
+                <span>▶</span>
               </div>
-                </template>
+              <h4>{{ series.name }}</h4>
+              <div class="series-meta">
+                <span class="version-count"
+                  >{{ series.versions ? series.versions.length : 0 }} 个版本</span
+                >
+                <span class="latest-version"
+                  >最新: v{{ getLatestVersion(series) }}</span
+                >
+              </div>
             </div>
-
-            <div class="series-actions">
-              <button @click="addVersion(series)" class="add-version-btn">
-                添加版本
+            <div class="series-actions-header">
+              <button @click.stop="editSeries(series)" class="edit-series-btn">
+                编辑系列
+              </button>
+              <button @click.stop="deleteSeries(series)" class="delete-series-btn">
+                删除系列
               </button>
             </div>
           </div>
-        </transition>
-      </div>
+
+          <transition name="expand">
+            <div v-if="isSeriesExpanded(series.id)" class="series-content">
+              <div class="versions-list">
+                <!-- 调试信息 -->
+                <div style="color: red; padding: 10px; background: rgba(255,0,0,0.1);">
+                  调试: 系列ID={{ series.id }}, 版本数量={{ series.versions ? series.versions.length : 'undefined' }}
+                </div>
+                
+                <template v-if="!series.versions || series.versions.length === 0">
+                  <div class="empty-versions">
+                    <p>暂无版本</p>
+                    <button @click="addVersion(series)" class="add-version-btn">
+                      添加第一个版本
+                    </button>
+                  </div>
+                </template>
+                <template v-else>
+                  <div
+                    v-for="version in series.versions"
+                    :key="version.id"
+                    class="version-item"
+                    :class="{ latest: version.isLatest }"
+                  >
+                    <div class="version-info">
+                      <span class="version-number">v{{ version.version }}</span>
+                      <span class="version-date">{{
+                        formatDate(version.createdAt)
+                      }}</span>
+                      <span class="version-status" :class="version.status">
+                        {{ getStatusText(version.status) }}
+                      </span>
+                    </div>
+                    <div class="version-actions">
+                      <button @click="editVersion(version)" class="edit-btn">
+                        编辑
+                      </button>
+                      <button
+                        @click="setAsLatest(version)"
+                        v-if="!version.isLatest"
+                        class="latest-btn"
+                      >
+                        设为最新
+                      </button>
+                      <button @click="deleteVersion(version)" class="delete-btn">
+                        删除
+                      </button>
+                    </div>
+                  </div>
+                </template>
+              </div>
+
+              <div class="series-actions">
+                <button @click="addVersion(series)" class="add-version-btn">
+                  添加版本
+                </button>
+              </div>
+            </div>
+          </transition>
+        </div>
         </template>
     </div>
 
@@ -325,6 +330,15 @@ export default {
         if (result.success) {
           this.seriesList = result.data || [];
           console.log("加载系列成功:", this.seriesList);
+          
+          // 调试每个系列的数据
+          this.seriesList.forEach(series => {
+            console.log(`系列 ${series.name}:`, {
+              id: series.id,
+              versionsCount: series.versions ? series.versions.length : 0,
+              versions: series.versions
+            });
+          });
         } else {
           console.error("加载系列失败:", result.error);
           this.seriesList = [];
@@ -520,16 +534,32 @@ export default {
       this.loadSeries();
     },
 
-    toggleSeries(seriesId) {
-      if (this.expandedSeries.has(seriesId)) {
-        this.expandedSeries.delete(seriesId);
+    toggleSeries(seriesId, event) {
+      console.log('=== 切换系列展开状态 ===');
+      console.log('系列ID:', seriesId);
+      console.log('事件目标:', event?.target?.tagName, event?.target?.className);
+      console.log('当前展开状态:', this.expandedSeries.has(seriesId));
+      
+      // 创建新的Set来确保Vue能检测到变化
+      const newExpandedSeries = new Set(this.expandedSeries);
+      
+      if (newExpandedSeries.has(seriesId)) {
+        newExpandedSeries.delete(seriesId);
+        console.log('✅ 收起系列:', seriesId);
       } else {
-        this.expandedSeries.add(seriesId);
+        newExpandedSeries.add(seriesId);
+        console.log('✅ 展开系列:', seriesId);
       }
+      
+      this.expandedSeries = newExpandedSeries;
+      console.log('当前展开的系列:', Array.from(this.expandedSeries));
+      console.log('=== 切换完成 ===');
     },
 
     isSeriesExpanded(seriesId) {
-      return this.expandedSeries.has(seriesId);
+      const isExpanded = this.expandedSeries.has(seriesId);
+      console.log(`检查系列 ${seriesId} 是否展开:`, isExpanded);
+      return isExpanded;
     },
 
     async deleteSeries(series) {
@@ -556,8 +586,11 @@ export default {
     },
 
     getLatestVersion(series) {
+      if (!series.versions || series.versions.length === 0) {
+        return "未知";
+      }
       const latest = series.versions.find((v) => v.isLatest);
-      return latest ? latest.version : "未知";
+      return latest ? latest.version : series.versions[0].version;
     },
 
     formatDate(dateString) {
@@ -586,7 +619,6 @@ export default {
 .expand-enter-active,
 .expand-leave-active {
   transition: all 0.3s ease;
-  overflow: hidden;
 }
 
 .expand-enter-from,
@@ -725,7 +757,7 @@ export default {
 .series-item {
   background: #2a2a2a;
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible;
 
   .series-header {
     display: flex;
@@ -821,10 +853,14 @@ export default {
   .series-content {
     border-top: 1px solid rgba(255, 215, 0, 0.2);
     background: rgba(0, 0, 0, 0.2);
+    min-height: 50px;
+    overflow: visible;
   }
 
   .versions-list {
     padding: 20px;
+    min-height: 100px;
+    overflow: visible;
 
     .empty-versions {
       text-align: center;

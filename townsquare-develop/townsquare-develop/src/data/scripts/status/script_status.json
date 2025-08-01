@@ -49,6 +49,27 @@
       "reviewedBy": "admin@mm.com",
       "reviewedAt": "2025-08-01T09:59:18.680Z",
       "reviewNote": ""
+    },
+    "暗流涌动_013251": {
+      "scriptId": "暗流涌动_013251",
+      "status": "deleted",
+      "reviewedBy": "system",
+      "reviewedAt": "2025-08-01T10:27:33.896Z",
+      "reviewNote": "剧本已删除"
+    },
+    "暗流涌动_529636": {
+      "scriptId": "暗流涌动_529636",
+      "status": "deleted",
+      "reviewedBy": "system",
+      "reviewedAt": "2025-08-01T10:35:48.111Z",
+      "reviewNote": "剧本已删除"
+    },
+    "暗流涌动_727797": {
+      "scriptId": "暗流涌动_727797",
+      "status": "deleted",
+      "reviewedBy": "system",
+      "reviewedAt": "2025-08-01T10:39:40.740Z",
+      "reviewNote": "剧本已删除"
     }
   }
 }

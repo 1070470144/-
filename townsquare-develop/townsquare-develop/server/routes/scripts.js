@@ -320,6 +320,13 @@ async function deleteScript(scriptId, type = 'custom') {
     await fs.unlink(filePath);
     console.log(`成功删除剧本: ${filePath}`);
     
+    // 从所有系列中删除该剧本
+    try {
+      await removeScriptFromAllSeries(scriptId);
+    } catch (seriesError) {
+      console.log('从系列中删除剧本失败:', seriesError);
+    }
+    
     // 删除相关的状态数据
     try {
       await updateScriptStatus(scriptId, 'deleted', 'system', '剧本已删除');
@@ -582,6 +589,62 @@ async function deleteScriptImages(scriptId) {
     return { success: true };
   } catch (error) {
     console.error('删除剧本图片失败:', error);
+    throw error;
+  }
+}
+
+// 从所有系列中删除剧本
+async function removeScriptFromAllSeries(scriptId) {
+  try {
+    const seriesDir = path.join(SCRIPTS_DIR, 'series');
+    const seriesFiles = await fs.readdir(seriesDir);
+
+    for (const file of seriesFiles) {
+      if (file.endsWith('.json')) {
+        const seriesFilePath = path.join(seriesDir, file);
+        let seriesData;
+        try {
+          const content = await fs.readFile(seriesFilePath, 'utf8');
+          seriesData = JSON.parse(content);
+        } catch (error) {
+          console.error(`读取系列文件失败: ${file}`, error);
+          continue;
+        }
+
+        if (seriesData.versions) {
+          const versionIndex = seriesData.versions.findIndex(v => v.id === scriptId);
+          if (versionIndex !== -1) {
+            seriesData.versions.splice(versionIndex, 1);
+            await fs.writeFile(seriesFilePath, JSON.stringify(seriesData, null, 2), 'utf8');
+            console.log(`从系列 ${file} 中删除剧本 ${scriptId}`);
+          }
+        }
+      }
+    }
+    
+    // 从状态文件中删除系列版本信息
+    try {
+      const statusData = await readStatusFile();
+      let hasChanges = false;
+      
+      for (const seriesId in statusData.series) {
+        const series = statusData.series[seriesId];
+        if (series.versions && series.versions[scriptId]) {
+          delete series.versions[scriptId];
+          hasChanges = true;
+          console.log(`从状态文件系列 ${seriesId} 中删除剧本 ${scriptId}`);
+        }
+      }
+      
+      if (hasChanges) {
+        await saveStatusFile(statusData);
+        console.log('状态文件更新成功');
+      }
+    } catch (statusError) {
+      console.error('从状态文件删除系列版本信息失败:', statusError);
+    }
+  } catch (error) {
+    console.error('从所有系列中删除剧本失败:', error);
     throw error;
   }
 }
