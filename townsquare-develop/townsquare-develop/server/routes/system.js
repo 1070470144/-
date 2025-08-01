@@ -70,30 +70,60 @@ async function saveCategories(categoriesData) {
 async function checkCategoryUsage(categoryId) {
   try {
     const scriptsDir = path.join(__dirname, '../../src/data/scripts');
-    const customDir = path.join(scriptsDir, 'custom');
-    const officialDir = path.join(scriptsDir, 'official');
     
-    const dirs = [customDir, officialDir];
-    
-    for (const dir of dirs) {
+    // 递归检查所有子目录
+    async function checkDirectory(dirPath) {
       try {
-        const files = await fs.readdir(dir);
-        const jsonFiles = files.filter(file => file.endsWith('.json'));
+        const items = await fs.readdir(dirPath);
         
-        for (const file of jsonFiles) {
-          const filePath = path.join(dir, file);
-          const content = await fs.readFile(filePath, 'utf8');
-          const scriptData = JSON.parse(content);
+        for (const item of items) {
+          const itemPath = path.join(dirPath, item);
+          const stat = await fs.stat(itemPath);
           
-          if (scriptData.category === categoryId) {
-            return true; // 分类被使用
+          if (stat.isDirectory()) {
+            // 递归检查子目录
+            const hasUsage = await checkDirectory(itemPath);
+            if (hasUsage) return true;
+          } else if (item.endsWith('.json')) {
+            // 检查JSON文件
+            try {
+              const content = await fs.readFile(itemPath, 'utf8');
+              const scriptData = JSON.parse(content);
+              
+              if (scriptData.category === categoryId) {
+                console.log(`找到使用分类 ${categoryId} 的剧本: ${itemPath}`);
+                return true; // 分类被使用
+              }
+            } catch (parseError) {
+              console.error(`解析剧本文件失败: ${itemPath}`, parseError);
+              // 继续检查其他文件
+            }
           }
         }
+        
+        return false;
       } catch (error) {
-        // 目录不存在，继续检查下一个
+        // 目录不存在或无法访问，继续检查其他目录
+        return false;
       }
     }
     
+    // 检查所有可能的剧本目录
+    const possibleDirs = [
+      path.join(scriptsDir, 'custom'),
+      path.join(scriptsDir, 'official'),
+      path.join(scriptsDir, 'mixed'),
+      scriptsDir // 也检查根目录
+    ];
+    
+    for (const dir of possibleDirs) {
+      const hasUsage = await checkDirectory(dir);
+      if (hasUsage) {
+        return true;
+      }
+    }
+    
+    console.log(`分类 ${categoryId} 未被任何剧本使用`);
     return false; // 分类未被使用
   } catch (error) {
     console.error('检查分类使用情况失败:', error);
@@ -419,32 +449,28 @@ router.put('/categories/:id', requireAdmin, async (req, res) => {
 router.delete('/categories/:id', requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
+    console.log(`尝试删除分类: ${id}`);
     
     const categoriesData = await readCategories();
     const category = categoriesData.categories.find(cat => cat.id === id);
     
     if (!category) {
+      console.log(`分类不存在: ${id}`);
       return res.status(404).json({
         success: false,
         error: '分类不存在'
       });
     }
     
-    // 检查分类是否被使用
-    const isUsed = await checkCategoryUsage(id);
-    if (isUsed) {
-      return res.status(400).json({
-        success: false,
-        error: '该分类下还有剧本，无法删除'
-      });
-    }
-    
+    console.log(`检查分类 ${id} 的使用情况...`);
     // 检查分类是否被使用
     const isCategoryUsed = await checkCategoryUsage(id);
+    console.log(`分类 ${id} 使用情况: ${isCategoryUsed}`);
+    
     if (isCategoryUsed) {
       return res.status(400).json({
         success: false,
-        error: '该分类下还有剧本，无法删除'
+        error: '该分类下还有剧本（包括待审核、已拒绝、已通过的剧本），无法删除。请先删除或修改使用该分类的剧本，或联系管理员处理。'
       });
     }
     
@@ -452,6 +478,7 @@ router.delete('/categories/:id', requireAdmin, async (req, res) => {
     categoriesData.categories = categoriesData.categories.filter(cat => cat.id !== id);
     await saveCategories(categoriesData);
     
+    console.log(`分类 ${id} 删除成功`);
     res.json({
       success: true,
       message: '分类删除成功'

@@ -116,6 +116,16 @@
               class="script-card"
               @click="viewScript(script)"
             >
+              <!-- 图片轮播区域 -->
+              <div class="script-card-images" v-if="script.images && script.images.length > 0">
+                <ImageCarousel 
+                  :images="script.images"
+                  :scriptId="script.id"
+                  :autoPlay="true"
+                  :interval="4000"
+                />
+              </div>
+
               <div class="script-card-header">
                 <h3>{{ script.name }}</h3>
                 <div class="script-meta">
@@ -133,7 +143,7 @@
                 </div>
               </div>
 
-              <div class="script-card-info">
+              <div class="script-card-info" v-if="!script.images || script.images.length === 0">
                 <p class="description">
                   {{ script.description || "暂无描述" }}
                 </p>
@@ -171,6 +181,15 @@
                   class="status-tip"
                   >审核通过后可点赞</span
                 >
+                
+                <!-- 图片管理按钮 - 仅在"我的上传"中显示 -->
+                <button
+                  v-if="currentTab === 'my'"
+                  @click.stop="manageImages(script)"
+                  class="action-btn image-btn"
+                >
+                  📷 图片管理
+                </button>
               </div>
             </div>
           </div>
@@ -241,6 +260,14 @@
             </div>
           </div>
         </div>
+
+        <!-- 图片管理模态框 -->
+        <ImageManagementModal
+          v-if="showImageManagementModal && selectedScriptForImageManagement"
+          :script="selectedScriptForImageManagement"
+          @close="closeImageManagementModal"
+          @images-updated="handleImagesUpdated"
+        />
       </div>
     </div>
   </div>
@@ -255,6 +282,8 @@ import EmbeddedAdminPanel from "@/components/scripts/EmbeddedAdminPanel";
 import authAPI from "@/utils/authAPI";
 import scriptAPI from "@/utils/scriptAPI";
 import systemAPI from "@/utils/systemAPI";
+import ImageCarousel from "@/components/scripts/ImageCarousel";
+import ImageManagementModal from "@/components/scripts/ImageManagementModal";
 
 export default {
   name: "ScriptBrowser",
@@ -264,6 +293,8 @@ export default {
     ScriptRanking,
     ScriptSkeleton,
     EmbeddedAdminPanel,
+    ImageCarousel,
+    ImageManagementModal,
   },
   data() {
     return {
@@ -277,6 +308,8 @@ export default {
       showLoginModal: false,
       showUploadModal: false,
       showRanking: false,
+      showImageManagementModal: false,
+      selectedScriptForImageManagement: null,
       isLoading: false,
       isLoadingMore: false,
       hasMore: true,
@@ -379,11 +412,16 @@ export default {
         const result = await scriptAPI.getAllScripts(params);
 
         if (result && result.data && result.data.scripts) {
+          let scripts = result.data.scripts;
+          
+          // 加载每个剧本的图片数据
           if (reset) {
-            this.scripts = result.data.scripts;
+            await this.loadScriptImages(scripts);
+            this.scripts = scripts;
             // 缓存当前标签页的数据
-            this.cachedScripts[this.currentTab] = [...result.data.scripts];
+            this.cachedScripts[this.currentTab] = [...scripts];
           } else {
+            await this.loadScriptImages(result.data.scripts);
             this.scripts = [...this.scripts, ...result.data.scripts];
             // 更新缓存
             this.cachedScripts[this.currentTab] = [...this.scripts];
@@ -394,10 +432,15 @@ export default {
           this.hasMore = result.data.pagination.hasNext;
         } else if (result && result.scripts) {
           // 兼容旧的数据结构
+          let scripts = result.scripts;
+          
+          // 加载每个剧本的图片数据
           if (reset) {
-            this.scripts = result.scripts;
-            this.cachedScripts[this.currentTab] = [...result.scripts];
+            await this.loadScriptImages(scripts);
+            this.scripts = scripts;
+            this.cachedScripts[this.currentTab] = [...scripts];
           } else {
+            await this.loadScriptImages(result.scripts);
             this.scripts = [...this.scripts, ...result.scripts];
             this.cachedScripts[this.currentTab] = [...this.scripts];
           }
@@ -421,6 +464,41 @@ export default {
         this.isLoadingMore = false;
         this.isTabLoading = false;
       }
+    },
+
+    async loadScriptImages(scripts) {
+      // 并行加载所有剧本的图片数据
+      const imagePromises = scripts.map(async (script) => {
+        try {
+          const result = await scriptAPI.getScriptImages(script.id);
+          if (result.success && result.data && result.data.images) {
+            script.images = result.data.images;
+          } else {
+            script.images = [];
+          }
+        } catch (error) {
+          console.error(`加载剧本 ${script.id} 的图片失败:`, error);
+          script.images = [];
+        }
+      });
+
+      await Promise.all(imagePromises);
+    },
+
+    manageImages(script) {
+      // 打开图片管理模态框
+      this.selectedScriptForImageManagement = script;
+      this.showImageManagementModal = true;
+    },
+
+    closeImageManagementModal() {
+      this.showImageManagementModal = false;
+      this.selectedScriptForImageManagement = null;
+    },
+
+    handleImagesUpdated() {
+      // 图片更新后刷新当前剧本列表
+      this.loadScripts();
     },
 
     async loadCategories() {
@@ -1028,6 +1106,12 @@ export default {
         border-color: rgba(255, 215, 0, 0.4);
       }
 
+      .script-card-images {
+        margin-bottom: 15px;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
       .script-card-header {
         margin-bottom: 15px;
 
@@ -1145,6 +1229,16 @@ export default {
             .like-count {
               margin-left: 5px;
               font-weight: bold;
+            }
+          }
+
+          &.image-btn {
+            background: rgba(255, 193, 7, 0.2);
+            border: 1px solid rgba(255, 193, 7, 0.4);
+            color: #ffc107;
+
+            &:hover {
+              background: rgba(255, 193, 7, 0.3);
             }
           }
         }

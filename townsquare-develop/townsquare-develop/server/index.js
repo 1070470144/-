@@ -1,4 +1,5 @@
 const fs = require("fs");
+const path = require("path");
 const https = require("https");
 const http = require("http");
 const WebSocket = require("ws");
@@ -30,6 +31,9 @@ app.use('/api/scripts', require('./routes/scripts'));
 app.use('/api/auth', require('./routes/auth').router);
 // 添加系统API路由
 app.use('/api/system', require('./routes/system'));
+
+// 静态文件服务
+app.use('/api/images', express.static(path.join(__dirname, '../src/data/scripts/images')));
 
 if (process.env.NODE_ENV === "production") {
   // Production: HTTPS with SSL certificates
@@ -290,8 +294,15 @@ wss.on("close", function close() {
 const PORT = process.env.NODE_ENV === "production" ? 8080 : 8081;
 
 server.listen(PORT, () => {
+  console.log(`🚀 服务器启动成功！`);
+  console.log(`📱 客户端地址: http://localhost:8080`);
+  console.log(`🔌 WebSocket服务器: ws://localhost:${PORT}`);
+  console.log(`🌐 API服务器: http://localhost:${PORT}/api`);
+  console.log(`📊 监控指标: http://localhost:${PORT}/metrics`);
+  
   if (process.env.NODE_ENV === "production") {
     // 生产模式服务器启动
+    console.log(`🏭 运行模式: 生产环境`);
     
     // 添加监控指标API
     server.on("request", (req, res) => {
@@ -302,5 +313,6 @@ server.listen(PORT, () => {
     });
   } else {
     // 开发模式服务器启动
+    console.log(`🔧 运行模式: 开发环境`);
   }
 });

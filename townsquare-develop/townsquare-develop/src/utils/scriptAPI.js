@@ -365,20 +365,20 @@ class ScriptAPI {
   /**
    * 获取待审核剧本
    */
-        async getPendingScripts() {
-        try {
-          const response = await fetch(`${API_BASE}/scripts/pending`, {
-            method: "GET",
-            headers: this.getAuthHeaders(),
-          });
+  async getPendingScripts() {
+    try {
+      const response = await fetch(`${API_BASE}/scripts/pending`, {
+        method: "GET",
+        headers: this.getAuthHeaders(),
+      });
 
-          const data = await response.json();
-          return data;
-        } catch (error) {
-          console.error("获取待审核剧本失败:", error);
-          return { success: false, error: "网络错误，请重试" };
-        }
-      }
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.error("获取待审核剧本失败:", error);
+      return { success: false, error: "网络错误，请重试" };
+    }
+  }
 
   /**
    * 获取剧本系列
@@ -555,6 +555,95 @@ class ScriptAPI {
     } catch (error) {
       console.error("API连接测试失败:", error);
       return false;
+    }
+  }
+
+  /**
+   * 获取剧本图片
+   */
+  async getScriptImages(scriptId) {
+    try {
+      const response = await fetch(`${API_BASE}/scripts/${scriptId}/images`);
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('获取剧本图片失败:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * 上传剧本图片
+   */
+  async uploadScriptImages(scriptId, files, scriptName) {
+    try {
+      const formData = new FormData();
+      
+      for (let i = 0; i < files.length; i++) {
+        formData.append('images', files[i]);
+      }
+      
+      if (scriptName) {
+        formData.append('scriptName', scriptName);
+      }
+
+      const response = await fetch(`${API_BASE}/scripts/${scriptId}/images`, {
+        method: 'POST',
+        headers: {
+          ...this.getAuthHeaders()
+        },
+        body: formData
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('上传剧本图片失败:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * 删除剧本图片
+   */
+  async deleteScriptImage(scriptId, imageId) {
+    try {
+      const response = await fetch(`${API_BASE}/scripts/${scriptId}/images/${imageId}`, {
+        method: 'DELETE',
+        headers: {
+          ...this.getAuthHeaders()
+        }
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('删除剧本图片失败:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * 替换剧本图片
+   */
+  async replaceScriptImage(scriptId, imageId, file) {
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await fetch(`${API_BASE}/scripts/${scriptId}/images/${imageId}`, {
+        method: 'PUT',
+        headers: {
+          ...this.getAuthHeaders()
+        },
+        body: formData
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('替换剧本图片失败:', error);
+      return { success: false, error: error.message };
     }
   }
 }

@@ -3,6 +3,7 @@ const router = express.Router();
 const fs = require('fs').promises;
 const path = require('path');
 const multer = require('multer');
+const crypto = require('crypto');
 
 // 配置文件上传
 const upload = multer({
@@ -23,10 +24,12 @@ const CUSTOM_DIR = path.join(SCRIPTS_DIR, 'custom');
 const OFFICIAL_DIR = path.join(SCRIPTS_DIR, 'official');
 const TEMPLATES_DIR = path.join(SCRIPTS_DIR, 'templates');
 const STATUS_FILE = path.join(SCRIPTS_DIR, 'status/script_status.json');
+const IMAGES_DIR = path.join(SCRIPTS_DIR, 'images');
+const IMAGES_METADATA_FILE = path.join(SCRIPTS_DIR, 'script_images.json');
 
 // 确保目录存在
 async function ensureDirectories() {
-  const dirs = [SCRIPTS_DIR, CUSTOM_DIR, OFFICIAL_DIR, TEMPLATES_DIR, path.dirname(STATUS_FILE)];
+  const dirs = [SCRIPTS_DIR, CUSTOM_DIR, OFFICIAL_DIR, TEMPLATES_DIR, path.dirname(STATUS_FILE), IMAGES_DIR];
   for (const dir of dirs) {
     try {
       await fs.access(dir);
@@ -240,6 +243,72 @@ async function updateScriptStatus(scriptId, status, reviewedBy, reviewNote = '')
   
   await saveStatusFile(statusData);
   return statusData.standalone[scriptId];
+}
+
+// 读取图片元数据
+async function readImagesMetadata() {
+  try {
+    await ensureDirectories();
+    const data = await fs.readFile(IMAGES_METADATA_FILE, 'utf8');
+    return JSON.parse(data);
+  } catch (error) {
+    // 如果文件不存在，返回默认结构
+    return { images: {} };
+  }
+}
+
+// 保存图片元数据
+async function saveImagesMetadata(metadata) {
+  await ensureDirectories();
+  await fs.writeFile(IMAGES_METADATA_FILE, JSON.stringify(metadata, null, 2), 'utf8');
+}
+
+// 获取剧本图片
+async function getScriptImages(scriptId) {
+  try {
+    const metadata = await readImagesMetadata();
+    return metadata.images[scriptId] || { images: [] };
+  } catch (error) {
+    console.error('获取剧本图片失败:', error);
+    return { images: [] };
+  }
+}
+
+// 保存剧本图片
+async function saveScriptImages(scriptId, images) {
+  try {
+    const metadata = await readImagesMetadata();
+    metadata.images[scriptId] = {
+      images: images
+    };
+    await saveImagesMetadata(metadata);
+    return { success: true };
+  } catch (error) {
+    console.error('保存剧本图片失败:', error);
+    throw error;
+  }
+}
+
+// 删除剧本图片
+async function deleteScriptImages(scriptId) {
+  try {
+    const metadata = await readImagesMetadata();
+    delete metadata.images[scriptId];
+    await saveImagesMetadata(metadata);
+    
+    // 删除图片文件目录
+    const scriptImagesDir = path.join(IMAGES_DIR, scriptId);
+    try {
+      await fs.rmdir(scriptImagesDir, { recursive: true });
+    } catch (error) {
+      // 目录可能不存在，忽略错误
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error('删除剧本图片失败:', error);
+    throw error;
+  }
 }
 
 // API路由
@@ -951,6 +1020,188 @@ router.get('/stats/info', async (req, res) => {
     
     res.json({ success: true, data: stats });
   } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 图片管理API
+
+// 获取剧本图片
+router.get('/:scriptId/images', async (req, res) => {
+  try {
+    const { scriptId } = req.params;
+    const images = await getScriptImages(scriptId);
+    
+    res.json({
+      success: true,
+      data: images
+    });
+  } catch (error) {
+    console.error('获取剧本图片失败:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 上传剧本图片
+router.post('/:scriptId/images', upload.array('images', 3), async (req, res) => {
+  try {
+    const { scriptId } = req.params;
+    const files = req.files;
+    
+    if (!files || files.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: '请选择图片文件'
+      });
+    }
+    
+    // 验证文件
+    for (const file of files) {
+      const ext = path.extname(file.originalname).toLowerCase();
+      if (!['.jpg', '.jpeg', '.png'].includes(ext)) {
+        return res.status(400).json({
+          success: false,
+          error: '只支持 JPG 和 PNG 格式的图片'
+        });
+      }
+      
+      if (file.size < 2 * 1024 * 1024 || file.size > 5 * 1024 * 1024) {
+        return res.status(400).json({
+          success: false,
+          error: '图片大小必须在 2-5MB 之间'
+        });
+      }
+    }
+    
+    // 创建剧本图片目录
+    const scriptImagesDir = path.join(IMAGES_DIR, scriptId);
+    await fs.mkdir(scriptImagesDir, { recursive: true });
+    
+    // 保存图片文件
+    const images = [];
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const ext = path.extname(file.originalname).toLowerCase();
+      const filename = `image${i + 1}${ext}`;
+      const filePath = path.join(scriptImagesDir, filename);
+      
+      await fs.writeFile(filePath, file.buffer);
+      
+      images.push({
+        filename: filename,
+        title: req.body.scriptName || '剧本图片',
+        order: i + 1,
+        uploadedAt: new Date().toISOString()
+      });
+    }
+    
+    // 保存图片元数据
+    await saveScriptImages(scriptId, images);
+    
+    res.json({
+      success: true,
+      data: { images },
+      message: '图片上传成功'
+    });
+  } catch (error) {
+    console.error('上传剧本图片失败:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 删除剧本图片
+router.delete('/:scriptId/images/:imageId', async (req, res) => {
+  try {
+    const { scriptId, imageId } = req.params;
+    
+    // 获取当前图片列表
+    const currentImages = await getScriptImages(scriptId);
+    
+    // 找到要删除的图片
+    const imageIndex = currentImages.images.findIndex(img => img.filename === imageId);
+    if (imageIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        error: '图片不存在'
+      });
+    }
+    
+    // 删除文件
+    const imagePath = path.join(IMAGES_DIR, scriptId, imageId);
+    try {
+      await fs.unlink(imagePath);
+    } catch (error) {
+      console.error('删除图片文件失败:', error);
+    }
+    
+    // 更新元数据
+    currentImages.images.splice(imageIndex, 1);
+    await saveScriptImages(scriptId, currentImages.images);
+    
+    res.json({
+      success: true,
+      message: '图片删除成功'
+    });
+  } catch (error) {
+    console.error('删除剧本图片失败:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// 替换剧本图片
+router.put('/:scriptId/images/:imageId', upload.single('image'), async (req, res) => {
+  try {
+    const { scriptId, imageId } = req.params;
+    const file = req.file;
+    
+    if (!file) {
+      return res.status(400).json({
+        success: false,
+        error: '请选择图片文件'
+      });
+    }
+    
+    // 验证文件
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (!['.jpg', '.jpeg', '.png'].includes(ext)) {
+      return res.status(400).json({
+        success: false,
+        error: '只支持 JPG 和 PNG 格式的图片'
+      });
+    }
+    
+    if (file.size < 2 * 1024 * 1024 || file.size > 5 * 1024 * 1024) {
+      return res.status(400).json({
+        success: false,
+        error: '图片大小必须在 2-5MB 之间'
+      });
+    }
+    
+    // 获取当前图片列表
+    const currentImages = await getScriptImages(scriptId);
+    const imageIndex = currentImages.images.findIndex(img => img.filename === imageId);
+    
+    if (imageIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        error: '图片不存在'
+      });
+    }
+    
+    // 替换文件
+    const imagePath = path.join(IMAGES_DIR, scriptId, imageId);
+    await fs.writeFile(imagePath, file.buffer);
+    
+    // 更新元数据
+    currentImages.images[imageIndex].uploadedAt = new Date().toISOString();
+    await saveScriptImages(scriptId, currentImages.images);
+    
+    res.json({
+      success: true,
+      message: '图片替换成功'
+    });
+  } catch (error) {
+    console.error('替换剧本图片失败:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

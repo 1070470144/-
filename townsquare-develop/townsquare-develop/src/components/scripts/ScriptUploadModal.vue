@@ -88,6 +88,16 @@
               <span>角色数量: {{ previewData.roles?.length || 0 }}</span>
               <span>难度: {{ previewData.level || "Intermediate" }}</span>
             </div>
+
+            <!-- 图片上传区域 -->
+            <div class="form-group">
+              <label>剧本图片</label>
+              <ImageUploader 
+                :scriptId="previewData.id"
+                :scriptName="previewData.name"
+                @upload-success="handleImageUploadSuccess"
+              />
+            </div>
           </div>
         </div>
 
@@ -115,9 +125,13 @@
 import scriptImporter from "@/utils/scriptImporter";
 import scriptAPI from "@/utils/scriptAPI";
 import systemAPI from "@/utils/systemAPI";
+import ImageUploader from "@/components/scripts/ImageUploader";
 
 export default {
   name: "ScriptUploadModal",
+  components: {
+    ImageUploader
+  },
   data() {
     return {
       selectedFile: null,
@@ -193,6 +207,11 @@ export default {
         console.error("处理文件失败:", error);
         this.error = "文件解析失败，请检查文件格式";
       }
+    },
+
+    handleImageUploadSuccess(imageData) {
+      console.log('图片上传成功:', imageData);
+      // 可以在这里添加成功提示或其他处理
     },
 
     readFileAsText(file) {
