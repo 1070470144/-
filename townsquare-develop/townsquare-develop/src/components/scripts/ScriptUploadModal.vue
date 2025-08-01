@@ -63,8 +63,8 @@
 
             <div class="form-group">
               <label>分类</label>
-              <select v-model="previewData.category" :disabled="isLoadingCategories">
-                <option value="" disabled>请选择分类</option>
+              <select v-model="previewData.category" :disabled="isLoadingCategories || !activeCategories.length">
+                <option value="" disabled>{{ isLoadingCategories ? '加载分类中...' : '请选择分类' }}</option>
                 <option 
                   v-for="category in activeCategories" 
                   :key="category.id" 
@@ -74,6 +74,7 @@
                 </option>
               </select>
               <div v-if="isLoadingCategories" class="loading-text">加载分类中...</div>
+              <div v-if="!isLoadingCategories && !activeCategories.length" class="error-text">暂无可用分类</div>
             </div>
 
             <div class="form-group">
@@ -203,6 +204,11 @@ export default {
           description: scriptData.description || "",
           category: scriptData.category || (this.activeCategories.length > 0 ? this.activeCategories[0].id : ""),
         };
+        
+        // 确保分类已加载
+        if (!this.categories.length) {
+          await this.loadCategories();
+        }
       } catch (error) {
         console.error("处理文件失败:", error);
         this.error = "文件解析失败，请检查文件格式";
@@ -233,13 +239,28 @@ export default {
       try {
         this.isLoadingCategories = true;
         const result = await systemAPI.getCategories();
-        if (result.success) {
-          this.categories = result.data.categories || [];
+        console.log('分类API返回结果:', result);
+        
+        if (result.success && result.data && result.data.categories) {
+          this.categories = result.data.categories;
+          console.log('加载分类成功:', this.categories);
         } else {
           console.error('加载分类失败:', result.error);
+          // 使用默认分类
+          this.categories = [
+            { id: 'custom', name: '自制剧本', isActive: true },
+            { id: 'official', name: '官方剧本', isActive: true },
+            { id: 'mixed', name: '混合剧本', isActive: true }
+          ];
         }
       } catch (error) {
         console.error('加载分类失败:', error);
+        // 如果API调用失败，使用默认分类
+        this.categories = [
+          { id: 'custom', name: '自制剧本', isActive: true },
+          { id: 'official', name: '官方剧本', isActive: true },
+          { id: 'mixed', name: '混合剧本', isActive: true }
+        ];
       } finally {
         this.isLoadingCategories = false;
       }
@@ -369,6 +390,12 @@ export default {
   .loading-text {
     font-size: 12px;
     color: #888;
+    margin-top: 5px;
+  }
+
+  .error-text {
+    font-size: 12px;
+    color: #ff6b6b;
     margin-top: 5px;
   }
 }

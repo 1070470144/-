@@ -18,10 +18,11 @@
 
       <div v-else class="categories-grid">
         <div
-          v-for="category in categories"
+          v-for="category in validCategories"
           :key="category.id"
           class="category-item"
           :class="{ 'inactive': !category.isActive }"
+          @click="console.log('分类项点击:', category)"
         >
           <div class="category-header">
             <div class="category-color" :style="{ backgroundColor: category.color }"></div>
@@ -53,6 +54,7 @@
             <button
               @click="deleteCategory(category)"
               class="delete-btn"
+              @mouseenter="console.log('删除按钮悬停，分类:', category)"
             >
               删除
             </button>
@@ -172,21 +174,54 @@ export default {
       }
     };
   },
+  
+  computed: {
+    // 添加计算属性来验证分类数据
+    validCategories() {
+      return this.categories.filter(category => 
+        category && category.id && category.name
+      );
+    }
+  },
   async mounted() {
+    console.log('CategoryManagementPanel 组件已挂载');
     await this.loadCategories();
   },
   methods: {
     async loadCategories() {
       try {
         this.isLoading = true;
-        this.categories = await systemAPI.getCategories();
+        console.log('开始加载分类...');
+        const result = await systemAPI.getCategories();
+        console.log('分类管理面板 - 分类API返回结果:', result);
+        
+        if (result.success && result.data && result.data.categories) {
+          // 验证每个分类对象都有必需的字段
+          const validCategories = result.data.categories.filter(category => {
+            if (!category || !category.id || !category.name) {
+              console.warn('跳过无效分类:', category);
+              return false;
+            }
+            return true;
+          });
+          
+          console.log('有效分类数量:', validCategories.length);
+          console.log('有效分类列表:', validCategories);
+          
+          this.categories = validCategories;
+          console.log('分类管理面板 - 加载分类成功:', this.categories);
+        } else {
+          console.error('加载分类失败:', result.error || 'API响应格式错误');
+          this.categories = [];
+        }
       } catch (error) {
         console.error('加载分类失败:', error);
         alert('加载分类失败: ' + error.message);
+        this.categories = [];
       } finally {
         this.isLoading = false;
       }
-          },
+    },
 
       editCategory(category) {
         this.formData = {
@@ -211,13 +246,48 @@ export default {
       },
 
       deleteCategory(category) {
-        this.categoryToDelete = category;
+        console.log('点击删除分类:', category);
+        if (!category) {
+          console.error('分类对象为空');
+          alert('分类数据无效，请重试');
+          return;
+        }
+        if (!category.id) {
+          console.error('分类ID缺失:', category);
+          alert('分类ID缺失，请重试');
+          return;
+        }
+        console.log('设置要删除的分类:', category);
+        // 创建深拷贝避免引用问题
+        this.categoryToDelete = JSON.parse(JSON.stringify(category));
+        console.log('categoryToDelete 设置后:', this.categoryToDelete);
         this.showDeleteModal = true;
       },
 
       async confirmDelete() {
         try {
-          await systemAPI.deleteCategory(this.categoryToDelete.id);
+          console.log('confirmDelete - categoryToDelete:', this.categoryToDelete);
+          console.log('confirmDelete - categoryToDelete.id:', this.categoryToDelete?.id);
+          
+          if (!this.categoryToDelete) {
+            console.error('categoryToDelete 为空');
+            alert('分类数据无效，请重试');
+            return;
+          }
+          
+          if (!this.categoryToDelete.id) {
+            console.error('categoryToDelete.id 缺失:', this.categoryToDelete);
+            alert('分类ID缺失，请重试');
+            return;
+          }
+          
+          const categoryId = this.categoryToDelete.id;
+          console.log('准备删除分类ID:', categoryId);
+          console.log('准备删除分类对象:', this.categoryToDelete);
+          
+          const result = await systemAPI.deleteCategory(categoryId);
+          console.log('删除分类API返回结果:', result);
+          
           this.showDeleteModal = false;
           this.categoryToDelete = null;
           await this.loadCategories();

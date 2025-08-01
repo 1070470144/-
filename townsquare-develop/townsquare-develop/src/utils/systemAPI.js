@@ -20,11 +20,14 @@ class SystemAPI {
   // 获取所有分类
   async getCategories() {
     try {
+      console.log('systemAPI.getCategories - 开始获取分类');
       const response = await fetch(`${this.baseURL}/system/categories`, {
         method: 'GET',
         headers: this.getAuthHeaders()
       });
 
+      console.log('systemAPI.getCategories - 响应状态:', response.status);
+      
       // 检查响应类型
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
@@ -34,12 +37,13 @@ class SystemAPI {
       }
 
       const result = await response.json();
+      console.log('systemAPI.getCategories - API返回结果:', result);
       
       if (!result.success) {
         throw new Error(result.error || '获取分类失败');
       }
 
-      return result.data;
+      return result;
     } catch (error) {
       console.error('❌ 获取分类失败:', error);
       throw error;
@@ -91,12 +95,28 @@ class SystemAPI {
   // 删除分类
   async deleteCategory(categoryId) {
     try {
+      console.log('systemAPI.deleteCategory - 开始删除分类:', categoryId);
+      
+      if (!categoryId) {
+        throw new Error('分类ID不能为空');
+      }
+      
       const response = await fetch(`${this.baseURL}/system/categories/${categoryId}`, {
         method: 'DELETE',
         headers: this.getAuthHeaders()
       });
 
+      console.log('systemAPI.deleteCategory - 响应状态:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('systemAPI.deleteCategory - 响应错误:', errorText);
+        throw new Error(`删除分类失败 (${response.status}): ${errorText}`);
+      }
+
       const result = await response.json();
+      console.log('systemAPI.deleteCategory - API返回结果:', result);
+      
       if (!result.success) {
         throw new Error(result.error || '删除分类失败');
       }

@@ -14,7 +14,7 @@
         <div class="upload-content">
           <div class="upload-icon">📷</div>
           <p>拖拽图片到这里，或点击选择图片</p>
-          <p class="upload-hint">支持 JPG、PNG 格式，单张 2-5MB，最多 3 张</p>
+          <p class="upload-hint">支持 JPG、PNG 格式，单张 0-10MB，最多 3 张</p>
           <input
             ref="fileInput"
             type="file"
@@ -115,8 +115,8 @@ export default {
         }
 
         // 检查文件大小
-        if (file.size < 2 * 1024 * 1024 || file.size > 5 * 1024 * 1024) {
-          this.error = '图片大小必须在 2-5MB 之间';
+        if (file.size > 10 * 1024 * 1024) {
+          this.error = '图片大小不能超过 10MB';
           return;
         }
 

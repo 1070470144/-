@@ -347,11 +347,19 @@ router.get('/stats', requireAdmin, async (req, res) => {
 // 获取所有分类
 router.get('/categories', async (req, res) => {
   try {
+    console.log('获取分类请求 - 开始处理');
     const categoriesData = await readCategories();
-    res.json({
+    console.log('获取分类请求 - 读取到的数据:', categoriesData);
+    
+    const response = {
       success: true,
-      data: categoriesData.categories
-    });
+      data: {
+        categories: categoriesData.categories
+      }
+    };
+    
+    console.log('获取分类请求 - 返回响应:', response);
+    res.json(response);
   } catch (error) {
     console.error('获取分类失败:', error);
     res.status(500).json({

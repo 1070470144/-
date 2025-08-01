@@ -1065,10 +1065,10 @@ router.post('/:scriptId/images', upload.array('images', 3), async (req, res) => 
         });
       }
       
-      if (file.size < 2 * 1024 * 1024 || file.size > 5 * 1024 * 1024) {
+      if (file.size > 10 * 1024 * 1024) {
         return res.status(400).json({
           success: false,
-          error: '图片大小必须在 2-5MB 之间'
+          error: '图片大小不能超过 10MB'
         });
       }
     }
@@ -1170,10 +1170,10 @@ router.put('/:scriptId/images/:imageId', upload.single('image'), async (req, res
       });
     }
     
-    if (file.size < 2 * 1024 * 1024 || file.size > 5 * 1024 * 1024) {
+    if (file.size > 10 * 1024 * 1024) {
       return res.status(400).json({
         success: false,
-        error: '图片大小必须在 2-5MB 之间'
+        error: '图片大小不能超过 10MB'
       });
     }
     
