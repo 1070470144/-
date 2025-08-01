@@ -65,7 +65,7 @@
       </div>
 
       <div v-if="activeTab === 'scripts'" class="tab-content">
-        <ScriptManager />
+        <ScriptManagementPanel />
       </div>
 
       <div v-if="activeTab === 'approval'" class="tab-content">
@@ -103,18 +103,18 @@
 
 <script>
 import RoleManager from "../admin/RoleManager.vue";
-import ScriptManager from "../admin/ScriptManager.vue";
 import ScriptApprovalPanel from "../admin/ScriptApprovalPanel.vue";
 import UserManagementPanel from "../admin/UserManagementPanel.vue";
 import ScriptSeriesManager from "../admin/ScriptSeriesManager.vue";
 import PermissionManagementPanel from "../admin/PermissionManagementPanel.vue";
 import CategoryManagementPanel from "../admin/CategoryManagementPanel.vue";
+import ScriptManagementPanel from "./ScriptManagementPanel.vue";
 
 export default {
   name: "EmbeddedAdminPanel",
     components: {
     RoleManager,
-    ScriptManager,
+    ScriptManagementPanel,
     ScriptApprovalPanel,
     UserManagementPanel,
     ScriptSeriesManager,
