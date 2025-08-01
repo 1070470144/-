@@ -166,15 +166,35 @@ async function deleteScript(scriptId, type = 'custom') {
     await fs.unlink(filePath);
     console.log(`成功删除剧本: ${filePath}`);
     
-    // 同时删除相关的状态数据
+    // 删除相关的状态数据
     try {
       await updateScriptStatus(scriptId, 'deleted', 'system', '剧本已删除');
     } catch (statusError) {
       console.log('删除状态数据失败:', statusError);
-      // 不影响主删除操作
     }
     
-    return { success: true, message: '剧本删除成功' };
+    // 删除使用记录
+    try {
+      await deleteScriptUsage(scriptId);
+    } catch (usageError) {
+      console.log('删除使用记录失败:', usageError);
+    }
+    
+    // 删除点赞记录
+    try {
+      await deleteScriptLikes(scriptId);
+    } catch (likesError) {
+      console.log('删除点赞记录失败:', likesError);
+    }
+    
+    // 删除图片记录
+    try {
+      await deleteScriptImages(scriptId);
+    } catch (imagesError) {
+      console.log('删除图片记录失败:', imagesError);
+    }
+    
+    return { success: true, message: '剧本及相关数据删除成功' };
   } catch (error) {
     console.error('删除剧本失败:', error);
     throw error;
@@ -307,6 +327,58 @@ async function saveScriptImages(scriptId, images) {
     return { success: true };
   } catch (error) {
     console.error('保存剧本图片失败:', error);
+    throw error;
+  }
+}
+
+// 删除剧本使用记录
+async function deleteScriptUsage(scriptId) {
+  try {
+    const usageFile = path.join(SCRIPTS_DIR, 'usage.json');
+    let usageData = {};
+    
+    try {
+      const usageContent = await fs.readFile(usageFile, 'utf8');
+      usageData = JSON.parse(usageContent);
+    } catch (error) {
+      // 文件不存在，无需删除
+      return;
+    }
+    
+    // 删除使用记录
+    if (usageData[scriptId]) {
+      delete usageData[scriptId];
+      await fs.writeFile(usageFile, JSON.stringify(usageData, null, 2), 'utf8');
+      console.log(`删除使用记录: ${scriptId}`);
+    }
+  } catch (error) {
+    console.error('删除使用记录失败:', error);
+    throw error;
+  }
+}
+
+// 删除剧本点赞记录
+async function deleteScriptLikes(scriptId) {
+  try {
+    const likesFile = path.join(SCRIPTS_DIR, 'likes.json');
+    let likesData = {};
+    
+    try {
+      const likesContent = await fs.readFile(likesFile, 'utf8');
+      likesData = JSON.parse(likesContent);
+    } catch (error) {
+      // 文件不存在，无需删除
+      return;
+    }
+    
+    // 删除点赞记录
+    if (likesData[scriptId]) {
+      delete likesData[scriptId];
+      await fs.writeFile(likesFile, JSON.stringify(likesData, null, 2), 'utf8');
+      console.log(`删除点赞记录: ${scriptId}`);
+    }
+  } catch (error) {
+    console.error('删除点赞记录失败:', error);
     throw error;
   }
 }

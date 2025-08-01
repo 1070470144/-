@@ -410,6 +410,21 @@ export default {
       }
     },
     
+    clearCache() {
+      try {
+        // 清除所有剧本详情缓存
+        const keys = Object.keys(localStorage)
+        keys.forEach(key => {
+          if (key.startsWith('script_detail_')) {
+            localStorage.removeItem(key)
+          }
+        })
+        console.log('已清除剧本详情缓存')
+      } catch (error) {
+        console.error('清除缓存失败:', error)
+      }
+    },
+    
     switchToVersion(version) {
       if (version.id === this.scriptId) return
       this.$emit('switch-version', version.id)

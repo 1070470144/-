@@ -234,9 +234,12 @@ export default {
         ])
         
         if (scriptsResult.success) {
-          // 服务器返回的是按类型分组的对象，需要扁平化
-          const scriptsData = scriptsResult.data.scripts || {}
-          this.scripts = Object.values(scriptsData).flat()
+          // 服务器返回的是扁平化的剧本数组，剧本管理显示所有用户上传的剧本
+          const scripts = scriptsResult.data.scripts || []
+          // 只显示用户上传的剧本（custom和official类型）
+          this.scripts = scripts.filter(script => 
+            script.type === 'custom' || script.type === 'official'
+          )
         }
         
         if (categoriesResult.success) {

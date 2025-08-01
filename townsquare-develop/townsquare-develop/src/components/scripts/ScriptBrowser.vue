@@ -356,6 +356,9 @@ export default {
     },
   },
   async mounted() {
+    // 清除缓存
+    this.clearCache();
+    
     // 初始化响应式状态
     this.isLoggedIn = authAPI.isLoggedIn();
     this.currentUser = authAPI.getCurrentUser();
@@ -567,18 +570,34 @@ export default {
         return;
       }
 
-      // 检查是否有缓存数据
-      if (this.cachedScripts[tab] && this.cachedScripts[tab].length > 0) {
-        this.currentTab = tab;
-        this.scripts = [...this.cachedScripts[tab]];
-        this.currentPage = 1;
-        return;
-      }
-
+      // 强制清除缓存，重新加载数据
+      this.cachedScripts[tab] = [];
+      
       this.currentTab = tab;
       this.currentPage = 1;
       this.scripts = [];
       await this.loadScripts(true);
+    },
+    
+    clearCache() {
+      this.cachedScripts = {
+        all: [],
+        my: [],
+        admin: []
+      };
+      
+      // 清除本地存储缓存
+      try {
+        const keys = Object.keys(localStorage)
+        keys.forEach(key => {
+          if (key.startsWith('script_detail_')) {
+            localStorage.removeItem(key)
+          }
+        })
+        console.log('已清除所有缓存')
+      } catch (error) {
+        console.error('清除缓存失败:', error)
+      }
     },
 
     async loadMore() {
