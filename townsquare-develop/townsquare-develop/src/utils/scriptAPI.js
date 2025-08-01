@@ -6,7 +6,7 @@
 // API基础URL
 const API_BASE =
   process.env.NODE_ENV === "production"
-    ? "https://localhost:8080/api"
+    ? "https://your-domain.com/api"
     : "http://localhost:8081/api";
 
 class ScriptAPI {

@@ -50,6 +50,13 @@
       >
         权限管理
       </button>
+      <button
+        @click="activeTab = 'categories'"
+        :class="{ active: activeTab === 'categories' }"
+        class="tab-btn"
+      >
+        分类管理
+      </button>
     </div>
 
     <div class="admin-content">
@@ -86,6 +93,10 @@
       <div v-if="activeTab === 'permissions'" class="tab-content">
         <PermissionManagementPanel />
       </div>
+
+      <div v-if="activeTab === 'categories'" class="tab-content">
+        <CategoryManagementPanel />
+      </div>
     </div>
   </div>
 </template>
@@ -97,16 +108,18 @@ import ScriptApprovalPanel from "../admin/ScriptApprovalPanel.vue";
 import UserManagementPanel from "../admin/UserManagementPanel.vue";
 import ScriptSeriesManager from "../admin/ScriptSeriesManager.vue";
 import PermissionManagementPanel from "../admin/PermissionManagementPanel.vue";
+import CategoryManagementPanel from "../admin/CategoryManagementPanel.vue";
 
 export default {
   name: "EmbeddedAdminPanel",
-  components: {
+    components: {
     RoleManager,
     ScriptManager,
-          ScriptApprovalPanel,
-      UserManagementPanel,
-      ScriptSeriesManager,
-      PermissionManagementPanel,
+    ScriptApprovalPanel,
+    UserManagementPanel,
+    ScriptSeriesManager,
+    PermissionManagementPanel,
+    CategoryManagementPanel,
   },
   data() {
     return {

@@ -46,13 +46,15 @@
             </div>
 
             <div class="filter-options">
-              <select v-model="selectedCategory" @change="filterScripts">
+              <select v-model="selectedCategory" @change="filterScripts" :disabled="isLoadingCategories">
                 <option value="all">全部分类</option>
-                <option value="official">官方剧本</option>
-                <option value="custom">自制剧本</option>
-                <option value="mixed">混合剧本</option>
-                <option value="event">节日活动</option>
-                <option value="overseas">海外剧本</option>
+                <option 
+                  v-for="category in activeCategories" 
+                  :key="category.id" 
+                  :value="category.id"
+                >
+                  {{ category.name }}
+                </option>
               </select>
 
               <select v-model="sortBy" @change="filterScripts">
@@ -252,6 +254,7 @@ import ScriptSkeleton from "@/components/scripts/ScriptSkeleton";
 import EmbeddedAdminPanel from "@/components/scripts/EmbeddedAdminPanel";
 import authAPI from "@/utils/authAPI";
 import scriptAPI from "@/utils/scriptAPI";
+import systemAPI from "@/utils/systemAPI";
 
 export default {
   name: "ScriptBrowser",
@@ -290,6 +293,8 @@ export default {
       // 添加响应式状态
       isLoggedIn: authAPI.isLoggedIn(),
       currentUser: authAPI.getCurrentUser(),
+      categories: [],
+      isLoadingCategories: false,
     };
   },
   computed: {
@@ -307,12 +312,16 @@ export default {
     requiresLogin() {
       return this.currentTab === "my" || this.currentTab === "admin";
     },
+    activeCategories() {
+      return this.categories.filter(category => category.isActive);
+    },
   },
   async mounted() {
     // 初始化响应式状态
     this.isLoggedIn = authAPI.isLoggedIn();
     this.currentUser = authAPI.getCurrentUser();
 
+    await this.loadCategories();
     await this.loadScripts();
 
     // 使用authAPI的监听机制
@@ -411,6 +420,22 @@ export default {
         this.isLoading = false;
         this.isLoadingMore = false;
         this.isTabLoading = false;
+      }
+    },
+
+    async loadCategories() {
+      try {
+        this.isLoadingCategories = true;
+        const result = await systemAPI.getCategories();
+        if (result.success) {
+          this.categories = result.data.categories || [];
+        } else {
+          console.error('加载分类失败:', result.error);
+        }
+      } catch (error) {
+        console.error('加载分类失败:', error);
+      } finally {
+        this.isLoadingCategories = false;
       }
     },
 
@@ -700,10 +725,11 @@ export default {
         return;
       }
 
-      // 重新加载当前标签页数据
+      // 重新加载分类和当前标签页数据
       this.currentPage = 1;
 
       try {
+        await this.loadCategories();
         await this.loadScripts(true);
       } catch (error) {
         console.error("❌ 刷新剧本数据失败:", error);

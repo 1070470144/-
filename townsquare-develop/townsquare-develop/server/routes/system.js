@@ -6,6 +6,7 @@ const path = require('path');
 // 系统设置文件路径
 const SYSTEM_DIR = path.join(__dirname, '../../src/data/system');
 const SETTINGS_FILE = path.join(SYSTEM_DIR, 'settings.json');
+const CATEGORIES_FILE = path.join(SYSTEM_DIR, 'categories.json');
 
 // 确保系统目录存在
 async function ensureSystemDirectory() {
@@ -14,6 +15,89 @@ async function ensureSystemDirectory() {
   } catch (error) {
     await fs.mkdir(SYSTEM_DIR, { recursive: true });
     console.log(`创建系统目录: ${SYSTEM_DIR}`);
+  }
+}
+
+// 读取分类数据
+async function readCategories() {
+  try {
+    await ensureSystemDirectory();
+    const content = await fs.readFile(CATEGORIES_FILE, 'utf8');
+    return JSON.parse(content);
+  } catch (error) {
+    // 如果文件不存在，返回默认分类
+    return {
+      categories: [
+        {
+          id: "custom",
+          name: "自制剧本",
+          description: "用户自制的剧本",
+          color: "#4CAF50",
+          createdAt: new Date().toISOString(),
+          createdBy: "admin@mm.com",
+          isActive: true
+        },
+        {
+          id: "official",
+          name: "官方剧本",
+          description: "官方发布的剧本",
+          color: "#2196F3",
+          createdAt: new Date().toISOString(),
+          createdBy: "admin@mm.com",
+          isActive: true
+        },
+        {
+          id: "mixed",
+          name: "混合剧本",
+          description: "官方与自制混合的剧本",
+          color: "#FF9800",
+          createdAt: new Date().toISOString(),
+          createdBy: "admin@mm.com",
+          isActive: true
+        }
+      ]
+    };
+  }
+}
+
+// 保存分类数据
+async function saveCategories(categoriesData) {
+  await ensureSystemDirectory();
+  await fs.writeFile(CATEGORIES_FILE, JSON.stringify(categoriesData, null, 2), 'utf8');
+}
+
+// 检查分类是否被使用
+async function checkCategoryUsage(categoryId) {
+  try {
+    const scriptsDir = path.join(__dirname, '../../src/data/scripts');
+    const customDir = path.join(scriptsDir, 'custom');
+    const officialDir = path.join(scriptsDir, 'official');
+    
+    const dirs = [customDir, officialDir];
+    
+    for (const dir of dirs) {
+      try {
+        const files = await fs.readdir(dir);
+        const jsonFiles = files.filter(file => file.endsWith('.json'));
+        
+        for (const file of jsonFiles) {
+          const filePath = path.join(dir, file);
+          const content = await fs.readFile(filePath, 'utf8');
+          const scriptData = JSON.parse(content);
+          
+          if (scriptData.category === categoryId) {
+            return true; // 分类被使用
+          }
+        }
+      } catch (error) {
+        // 目录不存在，继续检查下一个
+      }
+    }
+    
+    return false; // 分类未被使用
+  } catch (error) {
+    console.error('检查分类使用情况失败:', error);
+    return true; // 出错时保守处理，不允许删除
   }
 }
 
@@ -79,6 +163,8 @@ async function requireAdmin(req, res, next) {
       });
     }
     
+    // 将用户信息添加到请求对象中
+    req.user = currentUser;
     next();
   } catch (error) {
     console.error('权限验证失败:', error);
@@ -224,6 +310,157 @@ router.get('/stats', requireAdmin, async (req, res) => {
     res.status(500).json({
       success: false,
       error: '服务器错误'
+    });
+  }
+});
+
+// 获取所有分类
+router.get('/categories', async (req, res) => {
+  try {
+    const categoriesData = await readCategories();
+    res.json({
+      success: true,
+      data: categoriesData.categories
+    });
+  } catch (error) {
+    console.error('获取分类失败:', error);
+    res.status(500).json({
+      success: false,
+      error: '获取分类失败'
+    });
+  }
+});
+
+// 添加新分类
+router.post('/categories', requireAdmin, async (req, res) => {
+  try {
+    const { name, description, color } = req.body;
+    
+    if (!name || !description) {
+      return res.status(400).json({
+        success: false,
+        error: '分类名称和描述不能为空'
+      });
+    }
+    
+    const categoriesData = await readCategories();
+    
+    // 生成唯一ID
+    const id = name.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now();
+    
+    const newCategory = {
+      id,
+      name,
+      description,
+      color: color || '#4CAF50',
+      createdAt: new Date().toISOString(),
+      createdBy: req.user?.username || 'admin@mm.com',
+      isActive: true
+    };
+    
+    categoriesData.categories.push(newCategory);
+    await saveCategories(categoriesData);
+    
+    res.json({
+      success: true,
+      data: newCategory,
+      message: '分类添加成功'
+    });
+  } catch (error) {
+    console.error('添加分类失败:', error);
+    res.status(500).json({
+      success: false,
+      error: '添加分类失败'
+    });
+  }
+});
+
+// 更新分类
+router.put('/categories/:id', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, description, color, isActive } = req.body;
+    
+    const categoriesData = await readCategories();
+    const categoryIndex = categoriesData.categories.findIndex(cat => cat.id === id);
+    
+    if (categoryIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        error: '分类不存在'
+      });
+    }
+    
+    const category = categoriesData.categories[categoryIndex];
+    
+    // 更新分类信息
+    if (name) categoriesData.categories[categoryIndex].name = name;
+    if (description) categoriesData.categories[categoryIndex].description = description;
+    if (color) categoriesData.categories[categoryIndex].color = color;
+    if (typeof isActive === 'boolean') categoriesData.categories[categoryIndex].isActive = isActive;
+    
+    await saveCategories(categoriesData);
+    
+    res.json({
+      success: true,
+      data: categoriesData.categories[categoryIndex],
+      message: '分类更新成功'
+    });
+  } catch (error) {
+    console.error('更新分类失败:', error);
+    res.status(500).json({
+      success: false,
+      error: '更新分类失败'
+    });
+  }
+});
+
+// 删除分类
+router.delete('/categories/:id', requireAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const categoriesData = await readCategories();
+    const category = categoriesData.categories.find(cat => cat.id === id);
+    
+    if (!category) {
+      return res.status(404).json({
+        success: false,
+        error: '分类不存在'
+      });
+    }
+    
+    // 检查分类是否被使用
+    const isUsed = await checkCategoryUsage(id);
+    if (isUsed) {
+      return res.status(400).json({
+        success: false,
+        error: '该分类下还有剧本，无法删除'
+      });
+    }
+    
+    // 检查分类是否被使用
+    const isCategoryUsed = await checkCategoryUsage(id);
+    if (isCategoryUsed) {
+      return res.status(400).json({
+        success: false,
+        error: '该分类下还有剧本，无法删除'
+      });
+    }
+    
+    // 删除分类
+    categoriesData.categories = categoriesData.categories.filter(cat => cat.id !== id);
+    await saveCategories(categoriesData);
+    
+    res.json({
+      success: true,
+      message: '分类删除成功'
+    });
+  } catch (error) {
+    console.error('删除分类失败:', error);
+    res.status(500).json({
+      success: false,
+      error: '删除分类失败'
     });
   }
 });

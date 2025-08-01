@@ -1,0 +1,31 @@
+{
+  "categories": [
+    {
+      "id": "custom",
+      "name": "自制剧本",
+      "description": "用户自制的剧本",
+      "color": "#4CAF50",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "createdBy": "admin@mm.com",
+      "isActive": true
+    },
+    {
+      "id": "official",
+      "name": "官方剧本",
+      "description": "官方发布的剧本",
+      "color": "#2196F3",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "createdBy": "admin@mm.com",
+      "isActive": true
+    },
+    {
+      "id": "mixed",
+      "name": "混合剧本",
+      "description": "官方与自制混合的剧本",
+      "color": "#FF9800",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "createdBy": "admin@mm.com",
+      "isActive": true
+    }
+  ]
+}

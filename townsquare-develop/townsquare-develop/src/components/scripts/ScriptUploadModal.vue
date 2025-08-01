@@ -63,12 +63,17 @@
 
             <div class="form-group">
               <label>分类</label>
-              <select v-model="previewData.category">
-                <option value="custom">自制剧本</option>
-                <option value="mixed">混合剧本</option>
-                <option value="event">节日活动</option>
-                <option value="overseas">海外剧本</option>
+              <select v-model="previewData.category" :disabled="isLoadingCategories">
+                <option value="" disabled>请选择分类</option>
+                <option 
+                  v-for="category in activeCategories" 
+                  :key="category.id" 
+                  :value="category.id"
+                >
+                  {{ category.name }}
+                </option>
               </select>
+              <div v-if="isLoadingCategories" class="loading-text">加载分类中...</div>
             </div>
 
             <div class="form-group">
@@ -109,6 +114,7 @@
 <script>
 import scriptImporter from "@/utils/scriptImporter";
 import scriptAPI from "@/utils/scriptAPI";
+import systemAPI from "@/utils/systemAPI";
 
 export default {
   name: "ScriptUploadModal",
@@ -119,6 +125,8 @@ export default {
       isDragOver: false,
       isUploading: false,
       error: "",
+      categories: [],
+      isLoadingCategories: false,
     };
   },
   methods: {
@@ -133,6 +141,8 @@ export default {
       this.isDragOver = false;
       this.isUploading = false;
       this.error = "";
+      // 重新加载分类数据
+      this.loadCategories();
     },
 
     handleFileDrop(event) {
@@ -177,7 +187,7 @@ export default {
           ...scriptData,
           author: scriptData.author || "",
           description: scriptData.description || "",
-          category: scriptData.category || "custom",
+          category: scriptData.category || (this.activeCategories.length > 0 ? this.activeCategories[0].id : ""),
         };
       } catch (error) {
         console.error("处理文件失败:", error);
@@ -200,6 +210,22 @@ export default {
       this.error = "";
     },
 
+    async loadCategories() {
+      try {
+        this.isLoadingCategories = true;
+        const result = await systemAPI.getCategories();
+        if (result.success) {
+          this.categories = result.data.categories || [];
+        } else {
+          console.error('加载分类失败:', result.error);
+        }
+      } catch (error) {
+        console.error('加载分类失败:', error);
+      } finally {
+        this.isLoadingCategories = false;
+      }
+    },
+
     async uploadScript() {
       try {
         this.isUploading = true;
@@ -214,6 +240,11 @@ export default {
         // 验证必填字段
         if (!this.previewData.name.trim()) {
           this.error = "剧本名称不能为空";
+          return;
+        }
+        
+        if (!this.previewData.category) {
+          this.error = "请选择剧本分类";
           return;
         }
 
@@ -255,6 +286,14 @@ export default {
       const authAPI = require("@/utils/authAPI").default;
       return authAPI.getCurrentUser();
     },
+    
+    activeCategories() {
+      return this.categories.filter(category => category.isActive);
+    },
+  },
+  
+  async mounted() {
+    await this.loadCategories();
   },
 };
 </script>
@@ -306,6 +345,12 @@ export default {
     &:hover {
       color: #fff;
     }
+  }
+
+  .loading-text {
+    font-size: 12px;
+    color: #888;
+    margin-top: 5px;
   }
 }
 
