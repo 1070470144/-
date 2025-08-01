@@ -3,13 +3,40 @@
     <div class="manager-header">
       <h3>剧本系列管理</h3>
       <div class="header-actions">
+        <input
+          v-model="searchQuery"
+          @input="debounceSearch"
+          type="text"
+          placeholder="搜索系列名称..."
+          class="search-input"
+        />
+        <select v-model="categoryFilter" @change="filterSeries" class="filter-select">
+          <option value="">全部分类</option>
+          <option
+            v-for="category in categories"
+            :key="category.id"
+            :value="category.id"
+          >
+            {{ category.name }}
+          </option>
+        </select>
         <button @click="createSeries" class="create-btn">创建系列</button>
         <button @click="refreshSeries" class="refresh-btn">刷新</button>
       </div>
     </div>
 
     <div class="series-list">
-      <div v-for="series in seriesList" :key="series.id" class="series-item">
+      <div v-if="isLoading" class="loading-state">
+        <p>加载中...</p>
+      </div>
+      
+      <div v-else-if="seriesList.length === 0" class="empty-state">
+        <p>暂无系列数据</p>
+        <button @click="createSeries" class="create-btn">创建第一个系列</button>
+      </div>
+      
+      <template v-else>
+        <div v-for="series in seriesList" :key="series.id" class="series-item">
         <div class="series-header">
           <h4>{{ series.name }}</h4>
           <div class="series-meta">
@@ -68,6 +95,7 @@
           </button>
         </div>
       </div>
+        </template>
     </div>
 
     <!-- 创建系列模态框 -->
@@ -101,11 +129,14 @@
           <div class="form-group">
             <label>分类</label>
             <select v-model="newSeries.category">
-              <option value="custom">自制剧本</option>
-              <option value="official">官方剧本</option>
-              <option value="mixed">混合剧本</option>
-              <option value="event">节日活动</option>
-              <option value="overseas">海外剧本</option>
+              <option value="">请选择分类</option>
+              <option
+                v-for="category in categories"
+                :key="category.id"
+                :value="category.id"
+              >
+                {{ category.name }}
+              </option>
             </select>
           </div>
         </div>
@@ -157,67 +188,152 @@
         </div>
       </div>
     </div>
+
+    <!-- 编辑系列模态框 -->
+    <div
+      v-if="showEditModal"
+      class="modal-backdrop"
+      @click="closeEditModal"
+    >
+      <div class="modal" @click.stop>
+        <div class="modal-header">
+          <h3>编辑剧本系列</h3>
+          <button @click="closeEditModal" class="close-btn">&times;</button>
+        </div>
+
+        <div class="modal-content">
+          <div class="form-group">
+            <label>系列名称</label>
+            <input
+              v-model="editSeriesData.name"
+              type="text"
+              placeholder="例如：暗流涌动"
+            />
+          </div>
+          <div class="form-group">
+            <label>描述</label>
+            <textarea
+              v-model="editSeriesData.description"
+              placeholder="系列描述"
+            ></textarea>
+          </div>
+          <div class="form-group">
+            <label>分类</label>
+            <select v-model="editSeriesData.category">
+              <option value="">请选择分类</option>
+              <option
+                v-for="category in categories"
+                :key="category.id"
+                :value="category.id"
+              >
+                {{ category.name }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button @click="closeEditModal" class="cancel-btn">取消</button>
+          <button @click="confirmEditSeries" class="confirm-btn">保存</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
 import scriptAPI from "@/utils/scriptAPI";
+import systemAPI from "@/utils/systemAPI";
 
 export default {
   name: "ScriptSeriesManager",
   data() {
     return {
       seriesList: [],
+      categories: [],
       showCreateModal: false,
+      showEditModal: false,
       showVersionModal: false,
       selectedSeries: null,
       newSeries: {
         name: "",
         description: "",
-        category: "custom",
+        category: "",
+      },
+      editSeriesData: {
+        id: "",
+        name: "",
+        description: "",
+        category: "",
       },
       newVersion: {
         version: "",
         description: "",
         file: null,
       },
+      searchQuery: "",
+      categoryFilter: "",
+      searchTimer: null,
       isLoading: false,
     };
   },
   async mounted() {
-    await this.loadSeries();
+    await Promise.all([this.loadSeries(), this.loadCategories()]);
   },
   methods: {
+    async loadCategories() {
+      try {
+        const result = await systemAPI.getCategories();
+        if (result.success) {
+          this.categories = result.data.categories || [];
+          console.log("加载分类成功:", this.categories);
+        } else {
+          console.error("加载分类失败:", result.error);
+        }
+      } catch (error) {
+        console.error("加载分类错误:", error);
+      }
+    },
+
     async loadSeries() {
       try {
         this.isLoading = true;
         const result = await scriptAPI.getScriptSeries();
 
         if (result.success) {
-          this.seriesList = result.data;
+          this.seriesList = result.data || [];
+          console.log("加载系列成功:", this.seriesList);
         } else {
           console.error("加载系列失败:", result.error);
+          this.seriesList = [];
         }
       } catch (error) {
         console.error("加载系列错误:", error);
+        this.seriesList = [];
       } finally {
         this.isLoading = false;
       }
     },
 
-    createSeries() {
+    async createSeries() {
+      // 重新加载分类数据以确保同步
+      await this.loadCategories();
+      
+      // 重置表单数据
       this.newSeries = {
         name: "",
         description: "",
-        category: "custom",
+        category: "",
       };
       this.showCreateModal = true;
+      console.log("打开创建系列模态框");
     },
 
     async confirmCreateSeries() {
       try {
         const result = await scriptAPI.createScriptSeries(this.newSeries);
         if (result.success) {
+          console.log("创建系列成功:", result.data);
           await this.loadSeries();
           this.closeCreateModal();
           alert("系列创建成功");
@@ -232,6 +348,11 @@ export default {
 
     closeCreateModal() {
       this.showCreateModal = false;
+      this.newSeries = {
+        name: "",
+        description: "",
+        category: "",
+      };
     },
 
     addVersion(series) {
@@ -322,9 +443,59 @@ export default {
       }
     },
 
-    async editSeries(series) {
-      // TODO: 实现系列编辑功能
-      console.log("编辑系列:", series);
+    editSeries(series) {
+      this.editSeriesData = {
+        id: series.id,
+        name: series.name,
+        description: series.description,
+        category: series.category || "",
+      };
+      this.showEditModal = true;
+    },
+
+    async confirmEditSeries() {
+      try {
+        const result = await scriptAPI.updateScriptSeries(this.editSeriesData);
+        if (result.success) {
+          await this.loadSeries();
+          this.closeEditModal();
+          alert("系列更新成功");
+        } else {
+          alert("更新失败: " + result.error);
+        }
+      } catch (error) {
+        console.error("更新系列失败:", error);
+        alert("更新失败，请重试");
+      }
+    },
+
+    closeEditModal() {
+      this.showEditModal = false;
+      this.editSeriesData = {
+        id: "",
+        name: "",
+        description: "",
+        category: "",
+      };
+    },
+
+    debounceSearch() {
+      if (this.searchTimer) {
+        clearTimeout(this.searchTimer);
+      }
+      this.searchTimer = setTimeout(() => {
+        this.filterSeries();
+      }, 300);
+    },
+
+    filterSeries() {
+      // 这里可以实现客户端筛选，或者重新加载数据
+      // 目前先重新加载数据
+      console.log("筛选系列:", {
+        searchQuery: this.searchQuery,
+        categoryFilter: this.categoryFilter
+      });
+      this.loadSeries();
     },
 
     async deleteSeries(series) {
@@ -377,6 +548,33 @@ export default {
   padding: 20px;
 }
 
+.loading-state,
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #fff;
+
+  p {
+    margin: 0 0 20px 0;
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .create-btn {
+    padding: 10px 20px;
+    background: #27ae60;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+
+    &:hover {
+      background: #229954;
+    }
+  }
+}
+
 .manager-header {
   display: flex;
   justify-content: space-between;
@@ -392,6 +590,48 @@ export default {
   .header-actions {
     display: flex;
     gap: 10px;
+    align-items: center;
+
+    .search-input {
+      padding: 8px 12px;
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      font-size: 14px;
+      min-width: 200px;
+
+      &:focus {
+        outline: none;
+        border-color: rgba(255, 215, 0, 0.6);
+        background: rgba(0, 0, 0, 0.9);
+      }
+
+      &::placeholder {
+        color: rgba(255, 255, 255, 0.5);
+      }
+    }
+
+    .filter-select {
+      padding: 8px 12px;
+      border: 1px solid rgba(255, 215, 0, 0.3);
+      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      font-size: 14px;
+      min-width: 120px;
+
+      &:focus {
+        outline: none;
+        border-color: rgba(255, 215, 0, 0.6);
+        background: rgba(0, 0, 0, 0.9);
+      }
+
+      option {
+        background: #1a1a1a;
+        color: #fff;
+      }
+    }
 
     button {
       padding: 8px 16px;

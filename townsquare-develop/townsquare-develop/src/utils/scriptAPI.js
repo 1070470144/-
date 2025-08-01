@@ -327,6 +327,28 @@ class ScriptAPI {
   }
 
   /**
+   * 更新剧本系列
+   */
+  async updateScriptSeries(seriesData) {
+    try {
+      const response = await fetch(`${API_BASE}/scripts/series/${seriesData.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
+        },
+        body: JSON.stringify(seriesData)
+      });
+
+      const result = await response.json();
+      return result;
+    } catch (error) {
+      console.error('更新剧本系列失败:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
    * 添加剧本版本
    */
   async addScriptVersion(formData) {
