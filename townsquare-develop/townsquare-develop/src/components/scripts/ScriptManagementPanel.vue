@@ -493,10 +493,34 @@ export default {
   padding: 8px 12px;
   border: 1px solid rgba(255, 215, 0, 0.3);
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.6);
   color: #fff;
   font-size: 14px;
   min-width: 120px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.filter-options select:hover {
+  border-color: rgba(255, 215, 0, 0.5);
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.filter-options select:focus {
+  outline: none;
+  border-color: rgba(255, 215, 0, 0.8);
+  background: rgba(0, 0, 0, 0.8);
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
+}
+
+.filter-options select option {
+  background: rgba(0, 0, 0, 0.9);
+  color: #fff;
+  padding: 8px 12px;
+}
+
+.filter-options select option:hover {
+  background: rgba(255, 215, 0, 0.2);
 }
 
 .scripts-container {

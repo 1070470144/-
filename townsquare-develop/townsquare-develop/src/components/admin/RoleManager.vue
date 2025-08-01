@@ -289,11 +289,24 @@ export default {
       .search-input {
         padding: 8px 12px;
         border: 1px solid rgba(255, 215, 0, 0.3);
-        background: rgba(255, 255, 255, 0.1);
+        background: rgba(0, 0, 0, 0.6);
         color: white;
         border-radius: 5px;
         font-family: "Papyrus", serif;
         width: 200px;
+        transition: all 0.3s;
+
+        &:hover {
+          border-color: rgba(255, 215, 0, 0.5);
+          background: rgba(0, 0, 0, 0.7);
+        }
+
+        &:focus {
+          outline: none;
+          border-color: rgba(255, 215, 0, 0.8);
+          background: rgba(0, 0, 0, 0.8);
+          box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
+        }
 
         &::placeholder {
           color: rgba(255, 255, 255, 0.5);
@@ -317,7 +330,7 @@ export default {
 
         &:focus {
           outline: none;
-          border-color: #gold;
+          border-color: #ffd700;
           box-shadow: 0 0 8px rgba(255, 215, 0, 0.3);
         }
       }
@@ -325,8 +338,8 @@ export default {
 
     .add-btn {
       background: rgba(255, 215, 0, 0.2);
-      border: 1px solid #gold;
-      color: #gold;
+      border: 1px solid #ffd700;
+      color: #ffd700;
       padding: 8px 16px;
       border-radius: 5px;
       cursor: pointer;

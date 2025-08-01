@@ -1047,21 +1047,30 @@ export default {
 
           select {
             padding: 8px 12px;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(0, 0, 0, 0.6);
             border: 1px solid rgba(255, 215, 0, 0.3);
             border-radius: 4px;
             color: #fff;
             font-size: 14px;
             cursor: pointer;
+            transition: all 0.3s;
+
+            &:hover {
+              border-color: rgba(255, 215, 0, 0.5);
+              background: rgba(0, 0, 0, 0.7);
+            }
 
             &:focus {
               outline: none;
               border-color: #ffd700;
+              background: rgba(0, 0, 0, 0.8);
+              box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
             }
 
             option {
-              background: #2a2a2a;
+              background: rgba(0, 0, 0, 0.9);
               color: #fff;
+              padding: 8px 12px;
             }
           }
         }

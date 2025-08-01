@@ -581,8 +581,23 @@ export default {
   border: 1px solid rgba(255, 215, 0, 0.3);
   border-radius: 4px;
   font-size: 14px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.6);
   color: #fff;
+  transition: all 0.3s;
+}
+
+.form-group input:hover,
+.form-group textarea:hover {
+  border-color: rgba(255, 215, 0, 0.5);
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: rgba(255, 215, 0, 0.8);
+  background: rgba(0, 0, 0, 0.8);
+  box-shadow: 0 0 0 2px rgba(255, 215, 0, 0.2);
 }
 
 .form-group input:focus,
