@@ -4,10 +4,9 @@
  */
 
 // API基础URL
-const API_BASE =
-  process.env.NODE_ENV === "production"
-    ? "https://your-domain.com/api"
-    : "http://localhost:8081/api";
+const API_BASE = process.env.NODE_ENV === 'production' 
+  ? 'https://your-domain.com/api' 
+  : 'http://localhost:8081/api';
 
 class ScriptAPI {
   /**
@@ -15,63 +14,25 @@ class ScriptAPI {
    */
   async getAllScripts(params = {}) {
     try {
-      const {
-        page = 1,
-        limit = 20,
-        category = "all",
-        search = "",
-        sortBy = "name",
-        status = "all",
-        userId = "",
-      } = params;
-
-      const queryParams = new URLSearchParams({
-        page: page.toString(),
-        limit: limit.toString(),
-        category,
-        search,
-        sortBy,
-        status,
-        userId,
+      const queryParams = new URLSearchParams();
+      
+      if (params.page) queryParams.append('page', params.page);
+      if (params.limit) queryParams.append('limit', params.limit);
+      if (params.search) queryParams.append('search', params.search);
+      if (params.category) queryParams.append('category', params.category);
+      if (params.sortBy) queryParams.append('sortBy', params.sortBy);
+      if (params.status) queryParams.append('status', params.status);
+      
+      const response = await fetch(`${API_BASE}/scripts?${queryParams}`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
       });
 
-      const response = await fetch(`${API_BASE}/scripts?${queryParams}`);
-
-      // 检查响应类型
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        await response.text(); // 读取响应内容但不使用
-        throw new Error(`服务器错误 (${response.status}): 返回了非JSON响应`);
-      }
-
       const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || "获取剧本失败");
-      }
-
-      // 服务器返回的是 { success: true, data: { scripts: [], pagination: {}, filters: {} } }
-      // 或者 { success: true, data: { custom: [], official: [], templates: [] } }
-      if (result.data && typeof result.data === 'object') {
-        // 如果已经有 scripts 字段，直接返回
-        if (result.data.scripts) {
-          return result;
-        }
-        
-        // 否则合并所有类型的剧本
-        const allScripts = [];
-        for (const type in result.data) {
-          if (Array.isArray(result.data[type])) {
-            allScripts.push(...result.data[type]);
-          }
-        }
-        return { success: true, data: { scripts: allScripts } };
-      }
-
       return result;
     } catch (error) {
-      console.error("❌ 获取剧本失败:", error);
-      throw error;
+      console.error('获取剧本列表失败:', error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -80,19 +41,16 @@ class ScriptAPI {
    */
   async getScript(scriptId, type = "custom") {
     try {
-      const response = await fetch(
-        `${API_BASE}/scripts/${scriptId}?type=${type}`,
-      );
+      const response = await fetch(`${API_BASE}/scripts/${scriptId}?type=${type}`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
+
       const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || "获取剧本失败");
-      }
-
-      return result.data;
+      return result;
     } catch (error) {
-      console.error("获取剧本失败:", error);
-      throw error;
+      console.error('获取剧本失败:', error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -101,34 +59,20 @@ class ScriptAPI {
    */
   async saveScript(scriptData, type = "custom") {
     try {
-      const response = await fetch(`${API_BASE}/scripts?type=${type}`, {
-        method: "POST",
+      const response = await fetch(`${API_BASE}/scripts`, {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
         },
-        body: JSON.stringify(scriptData),
+        body: JSON.stringify({ ...scriptData, type })
       });
-
-      console.log("📊 响应状态:", response.status);
 
       const result = await response.json();
-      console.log("📄 服务器响应:", result);
-
-      if (!result.success) {
-        console.error("❌ 保存剧本失败:", result.error);
-        throw new Error(result.error || "保存剧本失败");
-      }
-
-      console.log("✅ 剧本保存成功");
-      return result.data;
+      return result;
     } catch (error) {
-      console.error("❌ 保存剧本请求异常:", error);
-      console.error("🔍 错误详情:", {
-        message: error.message,
-        stack: error.stack,
-        API_BASE: API_BASE,
-      });
-      throw error;
+      console.error('保存剧本失败:', error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -137,27 +81,20 @@ class ScriptAPI {
    */
   async updateScript(scriptId, scriptData, type = "custom") {
     try {
-      const response = await fetch(
-        `${API_BASE}/scripts/${scriptId}?type=${type}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(scriptData),
+      const response = await fetch(`${API_BASE}/scripts/${scriptId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
         },
-      );
+        body: JSON.stringify({ ...scriptData, type })
+      });
 
       const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || "更新剧本失败");
-      }
-
-      return result.data;
+      return result;
     } catch (error) {
-      console.error("更新剧本失败:", error);
-      throw error;
+      console.error('更新剧本失败:', error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -166,49 +103,38 @@ class ScriptAPI {
    */
   async deleteScript(scriptId, type = "custom") {
     try {
-      const response = await fetch(
-        `${API_BASE}/scripts/${scriptId}?type=${type}`,
-        {
-          method: "DELETE",
-        },
-      );
+      const response = await fetch(`${API_BASE}/scripts/${scriptId}?type=${type}`, {
+        method: 'DELETE',
+        headers: this.getAuthHeaders()
+      });
 
       const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || "删除剧本失败");
-      }
-
-      return result.data;
+      return result;
     } catch (error) {
-      console.error("删除剧本失败:", error);
-      throw error;
+      console.error('删除剧本失败:', error);
+      return { success: false, error: error.message };
     }
   }
 
   /**
-   * 批量导入剧本
+   * 导入剧本
    */
   async importScripts(scripts, type = "custom") {
     try {
-      const response = await fetch(`${API_BASE}/scripts/import?type=${type}`, {
-        method: "POST",
+      const response = await fetch(`${API_BASE}/scripts/import`, {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
         },
-        body: JSON.stringify({ scripts, type }),
+        body: JSON.stringify({ scripts, type })
       });
 
       const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || "批量导入失败");
-      }
-
-      return result.data;
+      return result;
     } catch (error) {
-      console.error("批量导入失败:", error);
-      throw error;
+      console.error('导入剧本失败:', error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -217,65 +143,52 @@ class ScriptAPI {
    */
   async exportAllScripts() {
     try {
-      const response = await fetch(`${API_BASE}/scripts/export/all`);
+      const response = await fetch(`${API_BASE}/scripts/export`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
 
-      if (!response.ok) {
-        throw new Error("导出失败");
-      }
-
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `scripts_export_${
-        new Date().toISOString().split("T")[0]
-      }.json`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
-
-      return { success: true };
+      const result = await response.json();
+      return result;
     } catch (error) {
-      console.error("导出失败:", error);
-      throw error;
+      console.error('导出剧本失败:', error);
+      return { success: false, error: error.message };
     }
   }
 
   /**
-   * 获取存储统计信息
+   * 获取存储统计
    */
   async getStorageStats() {
     try {
-      const response = await fetch(`${API_BASE}/scripts/stats/info`);
+      const response = await fetch(`${API_BASE}/scripts/stats`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
+
       const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || "获取统计信息失败");
-      }
-
-      return result.data;
+      return result;
     } catch (error) {
-      console.error("获取统计信息失败:", error);
-      throw error;
+      console.error('获取存储统计失败:', error);
+      return { success: false, error: error.message };
     }
   }
 
   /**
-   * 点赞剧本
+   * 点赞/取消点赞剧本
    */
   async toggleLike(scriptId) {
     try {
       const response = await fetch(`${API_BASE}/scripts/${scriptId}/like`, {
-        method: "POST",
-        headers: this.getAuthHeaders(),
+        method: 'POST',
+        headers: this.getAuthHeaders()
       });
 
-      const data = await response.json();
-      return data;
+      const result = await response.json();
+      return result;
     } catch (error) {
-      console.error("点赞失败:", error);
-      return { success: false, error: "网络错误，请重试" };
+      console.error('点赞失败:', error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -285,34 +198,37 @@ class ScriptAPI {
   async useScript(scriptId) {
     try {
       const response = await fetch(`${API_BASE}/scripts/${scriptId}/use`, {
-        method: "POST",
-        headers: this.getAuthHeaders(),
+        method: 'POST',
+        headers: this.getAuthHeaders()
       });
 
-      const data = await response.json();
-      return data;
+      const result = await response.json();
+      return result;
     } catch (error) {
-      console.error("使用剧本失败:", error);
-      return { success: false, error: "网络错误，请重试" };
+      console.error('使用剧本失败:', error);
+      return { success: false, error: error.message };
     }
   }
 
   /**
-   * 更新剧本状态（审核功能）
+   * 更新剧本状态
    */
   async updateScriptStatus(scriptId, status, reviewNote = '') {
     try {
-      const response = await fetch(`${API_BASE}/scripts/status/${scriptId}`, {
-        method: "PUT",
-        headers: this.getAuthHeaders(),
-        body: JSON.stringify({ status, reviewNote }),
+      const response = await fetch(`${API_BASE}/scripts/${scriptId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
+        },
+        body: JSON.stringify({ status, reviewNote })
       });
 
-      const data = await response.json();
-      return data;
+      const result = await response.json();
+      return result;
     } catch (error) {
-      console.error("更新剧本状态失败:", error);
-      return { success: false, error: "网络错误，请重试" };
+      console.error('更新剧本状态失败:', error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -321,21 +237,16 @@ class ScriptAPI {
    */
   async getScriptStatus(scriptId) {
     try {
-      const response = await fetch(`${API_BASE}/scripts/status/${scriptId}`, {
-        method: "GET",
-        headers: this.getAuthHeaders(),
+      const response = await fetch(`${API_BASE}/scripts/${scriptId}/status`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
       });
 
       const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || "获取状态失败");
-      }
-
-      return result.data;
+      return result;
     } catch (error) {
-      console.error("获取剧本状态失败:", error);
-      throw error;
+      console.error('获取剧本状态失败:', error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -344,21 +255,16 @@ class ScriptAPI {
    */
   async getAllStatus() {
     try {
-      const response = await fetch(`${API_BASE}/scripts/status/all`, {
-        method: "GET",
-        headers: this.getAuthHeaders(),
+      const response = await fetch(`${API_BASE}/scripts/status`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
       });
 
       const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || "获取所有状态失败");
-      }
-
-      return result.data;
+      return result;
     } catch (error) {
-      console.error("获取所有状态失败:", error);
-      throw error;
+      console.error('获取所有状态失败:', error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -368,15 +274,15 @@ class ScriptAPI {
   async getPendingScripts() {
     try {
       const response = await fetch(`${API_BASE}/scripts/pending`, {
-        method: "GET",
-        headers: this.getAuthHeaders(),
+        method: 'GET',
+        headers: this.getAuthHeaders()
       });
 
-      const data = await response.json();
-      return data;
+      const result = await response.json();
+      return result;
     } catch (error) {
-      console.error("获取待审核剧本失败:", error);
-      return { success: false, error: "网络错误，请重试" };
+      console.error('获取待审核剧本失败:', error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -386,15 +292,15 @@ class ScriptAPI {
   async getScriptSeries() {
     try {
       const response = await fetch(`${API_BASE}/scripts/series`, {
-        method: "GET",
-        headers: this.getAuthHeaders(),
+        method: 'GET',
+        headers: this.getAuthHeaders()
       });
 
-      const data = await response.json();
-      return data;
+      const result = await response.json();
+      return result;
     } catch (error) {
-      console.error("获取剧本系列失败:", error);
-      return { success: false, error: "网络错误，请重试" };
+      console.error('获取剧本系列失败:', error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -404,16 +310,19 @@ class ScriptAPI {
   async createScriptSeries(seriesData) {
     try {
       const response = await fetch(`${API_BASE}/scripts/series`, {
-        method: "POST",
-        headers: this.getAuthHeaders(),
-        body: JSON.stringify(seriesData),
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...this.getAuthHeaders()
+        },
+        body: JSON.stringify(seriesData)
       });
 
-      const data = await response.json();
-      return data;
+      const result = await response.json();
+      return result;
     } catch (error) {
-      console.error("创建剧本系列失败:", error);
-      return { success: false, error: "网络错误，请重试" };
+      console.error('创建剧本系列失败:', error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -423,18 +332,18 @@ class ScriptAPI {
   async addScriptVersion(formData) {
     try {
       const response = await fetch(`${API_BASE}/scripts/series/version`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          Authorization: this.getAuthHeaders().Authorization,
+          ...this.getAuthHeaders()
         },
-        body: formData,
+        body: formData
       });
 
-      const data = await response.json();
-      return data;
+      const result = await response.json();
+      return result;
     } catch (error) {
-      console.error("添加剧本版本失败:", error);
-      return { success: false, error: "网络错误，请重试" };
+      console.error('添加剧本版本失败:', error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -443,19 +352,16 @@ class ScriptAPI {
    */
   async setLatestVersion(versionId) {
     try {
-      const response = await fetch(
-        `${API_BASE}/scripts/series/version/${versionId}/latest`,
-        {
-          method: "PUT",
-          headers: this.getAuthHeaders(),
-        },
-      );
+      const response = await fetch(`${API_BASE}/scripts/series/version/${versionId}/latest`, {
+        method: 'PUT',
+        headers: this.getAuthHeaders()
+      });
 
-      const data = await response.json();
-      return data;
+      const result = await response.json();
+      return result;
     } catch (error) {
-      console.error("设置最新版本失败:", error);
-      return { success: false, error: "网络错误，请重试" };
+      console.error('设置最新版本失败:', error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -464,19 +370,16 @@ class ScriptAPI {
    */
   async deleteScriptVersion(versionId) {
     try {
-      const response = await fetch(
-        `${API_BASE}/scripts/series/version/${versionId}`,
-        {
-          method: "DELETE",
-          headers: this.getAuthHeaders(),
-        },
-      );
+      const response = await fetch(`${API_BASE}/scripts/series/version/${versionId}`, {
+        method: 'DELETE',
+        headers: this.getAuthHeaders()
+      });
 
-      const data = await response.json();
-      return data;
+      const result = await response.json();
+      return result;
     } catch (error) {
-      console.error("删除剧本版本失败:", error);
-      return { success: false, error: "网络错误，请重试" };
+      console.error('删除剧本版本失败:', error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -486,15 +389,15 @@ class ScriptAPI {
   async deleteScriptSeries(seriesId) {
     try {
       const response = await fetch(`${API_BASE}/scripts/series/${seriesId}`, {
-        method: "DELETE",
-        headers: this.getAuthHeaders(),
+        method: 'DELETE',
+        headers: this.getAuthHeaders()
       });
 
-      const data = await response.json();
-      return data;
+      const result = await response.json();
+      return result;
     } catch (error) {
-      console.error("删除剧本系列失败:", error);
-      return { success: false, error: "网络错误，请重试" };
+      console.error('删除剧本系列失败:', error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -504,15 +407,15 @@ class ScriptAPI {
   async getScriptUsage(scriptId) {
     try {
       const response = await fetch(`${API_BASE}/scripts/${scriptId}/usage`, {
-        method: "GET",
-        headers: this.getAuthHeaders(),
+        method: 'GET',
+        headers: this.getAuthHeaders()
       });
 
-      const data = await response.json();
-      return data;
+      const result = await response.json();
+      return result;
     } catch (error) {
-      console.error("获取使用统计失败:", error);
-      return { success: false, error: "网络错误，请重试" };
+      console.error('获取剧本使用统计失败:', error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -522,15 +425,15 @@ class ScriptAPI {
   async getScriptLikes(scriptId) {
     try {
       const response = await fetch(`${API_BASE}/scripts/${scriptId}/likes`, {
-        method: "GET",
-        headers: this.getAuthHeaders(),
+        method: 'GET',
+        headers: this.getAuthHeaders()
       });
 
-      const data = await response.json();
-      return data;
+      const result = await response.json();
+      return result;
     } catch (error) {
-      console.error("获取点赞统计失败:", error);
-      return { success: false, error: "网络错误，请重试" };
+      console.error('获取剧本点赞统计失败:', error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -539,22 +442,24 @@ class ScriptAPI {
    */
   getAuthHeaders() {
     const token = localStorage.getItem('auth_token');
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': token ? `Bearer ${token}` : ''
-    };
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
   }
 
   /**
-   * 测试API连接
+   * 测试连接
    */
   async testConnection() {
     try {
-      const response = await fetch(`${API_BASE}/scripts/stats/info`);
-      return response.ok;
+      const response = await fetch(`${API_BASE}/scripts/test`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
+
+      const result = await response.json();
+      return result;
     } catch (error) {
-      console.error("API连接测试失败:", error);
-      return false;
+      console.error('API连接测试失败:', error);
+      return { success: false, error: error.message };
     }
   }
 
@@ -568,6 +473,55 @@ class ScriptAPI {
       return result;
     } catch (error) {
       console.error('获取剧本图片失败:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * 根据ID获取剧本详情
+   */
+  async getScriptById(scriptId) {
+    try {
+      const response = await fetch(`${API_BASE}/scripts/${scriptId}`, {
+        method: 'GET',
+        headers: this.getAuthHeaders()
+      });
+
+      const result = await response.json();
+      if (!result.success) {
+        throw new Error(result.error || '获取剧本详情失败');
+      }
+
+      return result;
+    } catch (error) {
+      console.error('获取剧本详情失败:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * 下载图片
+   */
+  async downloadImage(imageUrl) {
+    try {
+      const response = await fetch(imageUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = imageUrl.split('/').pop() || 'image.jpg';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      return { success: true };
+    } catch (error) {
+      console.error('下载图片失败:', error);
       return { success: false, error: error.message };
     }
   }

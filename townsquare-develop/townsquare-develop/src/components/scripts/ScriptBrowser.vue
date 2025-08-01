@@ -268,6 +268,15 @@
           @close="closeImageManagementModal"
           @images-updated="handleImagesUpdated"
         />
+
+        <!-- 剧本详情模态框 -->
+        <ScriptDetailModal
+          v-if="showDetailModal"
+          :show="showDetailModal"
+          :scriptId="selectedScript ? selectedScript.id : ''"
+          @close="closeDetailModal"
+          @switch-version="switchToVersion"
+        />
       </div>
     </div>
   </div>
@@ -279,6 +288,7 @@ import ScriptUploadModal from "@/components/scripts/ScriptUploadModal";
 import ScriptRanking from "@/components/scripts/ScriptRanking";
 import ScriptSkeleton from "@/components/scripts/ScriptSkeleton";
 import EmbeddedAdminPanel from "@/components/scripts/EmbeddedAdminPanel";
+import ScriptDetailModal from "@/components/scripts/ScriptDetailModal";
 import authAPI from "@/utils/authAPI";
 import scriptAPI from "@/utils/scriptAPI";
 import systemAPI from "@/utils/systemAPI";
@@ -293,6 +303,7 @@ export default {
     ScriptRanking,
     ScriptSkeleton,
     EmbeddedAdminPanel,
+    ScriptDetailModal,
     ImageCarousel,
     ImageManagementModal,
   },
@@ -310,6 +321,8 @@ export default {
       showRanking: false,
       showImageManagementModal: false,
       selectedScriptForImageManagement: null,
+      showDetailModal: false,
+      selectedScript: null,
       isLoading: false,
       isLoadingMore: false,
       hasMore: true,
@@ -501,6 +514,17 @@ export default {
       this.loadScripts();
     },
 
+    closeDetailModal() {
+      this.showDetailModal = false;
+      this.selectedScript = null;
+    },
+
+    switchToVersion(scriptId) {
+      // 切换到新版本的剧本
+      this.selectedScript = { id: scriptId };
+      this.refreshData();
+    },
+
     async loadCategories() {
       try {
         this.isLoadingCategories = true;
@@ -577,9 +601,10 @@ export default {
       }
     },
 
-    viewScript() {
+    viewScript(script) {
       // 查看剧本详情
-      // TODO: 实现剧本详情页面
+      this.selectedScript = script;
+      this.showDetailModal = true;
     },
 
     async useScript(script) {
