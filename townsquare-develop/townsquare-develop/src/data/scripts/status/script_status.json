@@ -73,16 +73,30 @@
     },
     "暗流涌动_902988": {
       "scriptId": "暗流涌动_902988",
-      "status": "approved",
-      "reviewedBy": "admin@mm.com",
-      "reviewedAt": "2025-08-01T10:41:48.559Z",
-      "reviewNote": ""
+      "status": "deleted",
+      "reviewedBy": "system",
+      "reviewedAt": "2025-08-01T11:02:45.362Z",
+      "reviewNote": "剧本已删除"
     },
     "黯月初升_956308": {
       "scriptId": "黯月初升_956308",
+      "status": "deleted",
+      "reviewedBy": "system",
+      "reviewedAt": "2025-08-01T11:02:47.961Z",
+      "reviewNote": "剧本已删除"
+    },
+    "暗流涌动_192485": {
+      "scriptId": "暗流涌动_192485",
       "status": "approved",
       "reviewedBy": "admin@mm.com",
-      "reviewedAt": "2025-08-01T10:42:40.985Z",
+      "reviewedAt": "2025-08-01T11:03:39.354Z",
+      "reviewNote": ""
+    },
+    "隐舟暗渡caffeineboost_211541": {
+      "scriptId": "隐舟暗渡caffeineboost_211541",
+      "status": "approved",
+      "reviewedBy": "admin@mm.com",
+      "reviewedAt": "2025-08-01T11:03:44.008Z",
       "reviewNote": ""
     }
   }

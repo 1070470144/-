@@ -552,7 +552,7 @@ export default {
   },
   
   async mounted() {
-    await this.loadCategories();
+    await Promise.all([this.loadCategories(), this.loadSeries()]);
   },
 };
 </script>

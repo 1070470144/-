@@ -3,6 +3,8 @@
  * 用于与后端剧本管理API交互
  */
 
+import authAPI from './authAPI.js';
+
 // API基础URL
 const API_BASE = process.env.NODE_ENV === 'production' 
   ? 'https://your-domain.com/api' 
@@ -59,13 +61,18 @@ class ScriptAPI {
    */
   async saveScript(scriptData, type = "custom") {
     try {
+      // 获取当前用户信息
+      const currentUser = authAPI.getCurrentUser();
+      const userId = currentUser ? currentUser.id : null;
+      
       const response = await fetch(`${API_BASE}/scripts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'user-id': userId, // 在请求头中传递用户ID
           ...this.getAuthHeaders()
         },
-        body: JSON.stringify({ ...scriptData, type })
+        body: JSON.stringify({ ...scriptData, type, userId }) // 也在请求体中传递用户ID
       });
 
       const result = await response.json();

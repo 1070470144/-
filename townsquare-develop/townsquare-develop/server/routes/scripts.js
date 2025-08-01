@@ -31,9 +31,12 @@ const SCRIPTS_DIR = path.join(__dirname, '../../src/data/scripts');
 const CUSTOM_DIR = path.join(SCRIPTS_DIR, 'custom');
 const OFFICIAL_DIR = path.join(SCRIPTS_DIR, 'official');
 const TEMPLATES_DIR = path.join(SCRIPTS_DIR, 'templates');
-const STATUS_FILE = path.join(SCRIPTS_DIR, 'status/script_status.json');
-const IMAGES_DIR = path.join(SCRIPTS_DIR, 'images');
+const STATUS_FILE = path.join(SCRIPTS_DIR, 'status', 'script_status.json');
+const USAGE_FILE = path.join(SCRIPTS_DIR, 'usage.json');
+const LIKES_FILE = path.join(SCRIPTS_DIR, 'likes.json');
 const IMAGES_METADATA_FILE = path.join(SCRIPTS_DIR, 'script_images.json');
+const USER_INFO_FILE = path.join(SCRIPTS_DIR, 'user_info.json');
+const IMAGES_DIR = path.join(SCRIPTS_DIR, 'images');
 
 // 确保目录存在
 async function ensureDirectories() {
@@ -108,6 +111,14 @@ async function getAllScripts() {
               console.error(`加载剧本 ${scriptId} 的图片失败:`, error);
             }
             
+            // 加载用户信息
+            let userInfo = null;
+            try {
+              userInfo = await getScriptUserInfo(scriptId);
+            } catch (error) {
+              console.error(`加载剧本 ${scriptId} 的用户信息失败:`, error);
+            }
+            
             // 创建响应对象，包含原始数据和系统信息
             const responseData = {
               // 原始剧本数据（保持不变）
@@ -123,7 +134,10 @@ async function getAllScripts() {
               reviewedAt: scriptStatus.reviewedAt,
               reviewNote: scriptStatus.reviewNote,
               // 图片信息（来自独立的图片元数据文件）
-              images: images
+              images: images,
+              // 用户信息（来自独立的用户信息文件）
+              userId: userInfo ? userInfo.userId : null,
+              userCreatedAt: userInfo ? userInfo.createdAt : null
             };
             
             // 只在调试时显示状态信息
@@ -147,7 +161,7 @@ async function getAllScripts() {
 }
 
 // 保存剧本
-async function saveScript(scriptData, type = 'custom') {
+async function saveScript(scriptData, type = 'custom', userId = null) {
   try {
     await ensureDirectories();
     
@@ -172,10 +186,20 @@ async function saveScript(scriptData, type = 'custom') {
     // 保持原始剧本数据不变，只保存用户上传的原始内容
     await fs.writeFile(filePath, JSON.stringify(scriptData, null, 2), 'utf8');
     
+    // 保存用户信息（如果提供了用户ID）
+    if (userId) {
+      try {
+        await saveScriptUserInfo(scriptData.id, userId);
+      } catch (userError) {
+        console.error('保存用户信息失败:', userError);
+      }
+    }
+    
     // 系统信息（状态、图片等）存储在独立的数据结构中
     // 状态信息存储在 script_status.json 中
     // 图片信息存储在 script_images.json 中
     // 系列信息存储在 series/ 目录中
+    // 用户信息存储在 user_info.json 中
     
     return { success: true, filePath, seriesInfo };
   } catch (error) {
@@ -353,6 +377,13 @@ async function deleteScript(scriptId, type = 'custom') {
       await deleteScriptImages(scriptId);
     } catch (imagesError) {
       console.log('删除图片记录失败:', imagesError);
+    }
+    
+    // 删除用户信息
+    try {
+      await deleteScriptUserInfo(scriptId);
+    } catch (userError) {
+      console.log('删除用户信息失败:', userError);
     }
     
     return { success: true, message: '剧本及相关数据删除成功' };
@@ -646,6 +677,70 @@ async function removeScriptFromAllSeries(scriptId) {
   } catch (error) {
     console.error('从所有系列中删除剧本失败:', error);
     throw error;
+  }
+}
+
+// 读取用户信息文件
+async function readUserInfoFile() {
+  try {
+    await ensureDirectories();
+    const content = await fs.readFile(USER_INFO_FILE, 'utf8');
+    return JSON.parse(content);
+  } catch (error) {
+    // 如果文件不存在，返回默认结构
+    return { scripts: {} };
+  }
+}
+
+// 保存用户信息文件
+async function saveUserInfoFile(userInfoData) {
+  try {
+    await ensureDirectories();
+    await fs.writeFile(USER_INFO_FILE, JSON.stringify(userInfoData, null, 2), 'utf8');
+  } catch (error) {
+    console.error('保存用户信息文件失败:', error);
+    throw error;
+  }
+}
+
+// 保存剧本用户信息
+async function saveScriptUserInfo(scriptId, userId) {
+  try {
+    const userInfoData = await readUserInfoFile();
+    userInfoData.scripts[scriptId] = {
+      userId,
+      createdAt: new Date().toISOString()
+    };
+    await saveUserInfoFile(userInfoData);
+    console.log(`保存剧本用户信息: ${scriptId} -> ${userId}`);
+  } catch (error) {
+    console.error('保存剧本用户信息失败:', error);
+    throw error;
+  }
+}
+
+// 获取剧本用户信息
+async function getScriptUserInfo(scriptId) {
+  try {
+    const userInfoData = await readUserInfoFile();
+    return userInfoData.scripts[scriptId] || null;
+  } catch (error) {
+    console.error('获取剧本用户信息失败:', error);
+    return null;
+  }
+}
+
+// 删除剧本用户信息
+async function deleteScriptUserInfo(scriptId) {
+  try {
+    const userInfoData = await readUserInfoFile();
+    if (userInfoData.scripts[scriptId]) {
+      delete userInfoData.scripts[scriptId];
+      await saveUserInfoFile(userInfoData);
+      console.log(`删除剧本用户信息: ${scriptId}`);
+    }
+  } catch (error) {
+    console.error('删除剧本用户信息失败:', error);
   }
 }
 
@@ -1165,7 +1260,11 @@ router.post('/', async (req, res) => {
       });
     }
     
-    const result = await saveScript(scriptData, type);
+    // 从请求头或请求体中获取用户信息
+    const userId = req.headers['user-id'] || req.body.userId || null;
+    console.log('用户ID:', userId);
+    
+    const result = await saveScript(scriptData, type, userId);
     res.json({ success: true, data: result });
   } catch (error) {
     console.error('❌ 保存剧本失败:', error);
