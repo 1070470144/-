@@ -3,7 +3,22 @@
   "name": "暗流涌动",
   "description": "暗流涌动",
   "category": "custom",
-  "versions": [],
+  "versions": [
+    {
+      "id": "暗流涌动_902988",
+      "name": "暗流涌动",
+      "version": "1.0",
+      "createdAt": "2025-08-01T10:41:42.995Z",
+      "status": "pending"
+    },
+    {
+      "id": "黯月初升_956308",
+      "name": "黯月初升",
+      "version": "2.0",
+      "createdAt": "2025-08-01T10:42:36.314Z",
+      "status": "pending"
+    }
+  ],
   "createdAt": "2025-08-01T08:45:17.321Z",
-  "updatedAt": "2025-08-01T10:38:47.802Z"
+  "updatedAt": "2025-08-01T10:42:36.314Z"
 }
