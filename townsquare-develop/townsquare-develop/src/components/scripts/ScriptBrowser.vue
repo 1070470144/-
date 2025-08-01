@@ -34,250 +34,243 @@
       </div>
 
       <div class="script-content">
-        <div class="content-header">
-          <div class="search-filters">
-            <div class="search-box">
-              <input
-                v-model="searchQuery"
-                type="text"
-                placeholder="搜索剧本..."
-                @input="debounceSearch"
-              />
-            </div>
-
-            <div class="filter-options">
-              <select v-model="selectedCategory" @change="filterScripts" :disabled="isLoadingCategories">
-                <option value="all">全部分类</option>
-                <option 
-                  v-for="category in activeCategories" 
-                  :key="category.id" 
-                  :value="category.id"
-                >
-                  {{ category.name }}
-                </option>
-              </select>
-
-              <select v-model="sortBy" @change="filterScripts">
-                <option value="name">按名称</option>
-                <option value="likes">按点赞</option>
-                <option value="usage">按使用</option>
-                <option value="date">按日期</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="header-actions">
-            <button @click="showRanking = true" class="action-btn ranking-btn">
-              排行榜
-            </button>
-            <button
-              v-if="isLoggedIn"
-              @click="showUploadModal = true"
-              class="action-btn upload-btn"
-            >
-              上传剧本
-            </button>
-            <button
-              @click="showLoginModal = true"
-              v-if="!isLoggedIn"
-              class="action-btn login-btn"
-            >
-              登录
-            </button>
-            <div v-else class="user-info">
-              <span class="username" :class="{ 'admin-user': isAdmin }">
-                {{ currentUser.username }}
-                <span v-if="isAdmin" class="admin-badge">管理员</span>
-              </span>
-              <button @click="logout" class="action-btn logout-btn">
-                登出
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 剧本列表 -->
-        <div class="scripts-container">
-          <div class="scripts-grid" :key="currentTab">
-            <!-- 骨架屏 - 只在首次加载时显示 -->
-            <ScriptSkeleton v-if="isLoading" :count="6" />
-
-            <!-- 标签页切换时的轻量加载指示 -->
-            <div v-if="isTabLoading" class="tab-loading">
-              <div class="loading-spinner"></div>
-              <span v-if="currentTab === 'admin'">加载管理员功能...</span>
-              <span v-else>加载中...</span>
-            </div>
-
-            <!-- 剧本卡片 -->
-            <div
-              v-for="script in scripts"
-              :key="script.id"
-              class="script-card"
-              @click="viewScript(script)"
-            >
-              <!-- 图片轮播区域 -->
-              <div class="script-card-images" v-if="script.images && script.images.length > 0">
-                <ImageCarousel 
-                  :images="script.images"
-                  :scriptId="script.id"
-                  :autoPlay="true"
-                  :interval="4000"
+        <!-- 非管理员标签页显示搜索过滤器和剧本列表 -->
+        <div v-if="currentTab !== 'admin'">
+          <div class="content-header">
+            <div class="search-filters">
+              <div class="search-box">
+                <input
+                  v-model="searchQuery"
+                  type="text"
+                  placeholder="搜索剧本..."
+                  @input="debounceSearch"
                 />
               </div>
 
-              <div class="script-card-header">
-                <h3>{{ script.name }}</h3>
-                <div class="script-meta">
-                  <span class="author">{{ script.author || "未知作者" }}</span>
-                  <span class="category">{{
-                    getCategoryName(script.category)
-                  }}</span>
-                  <!-- 审核状态显示 -->
-                  <span
-                    v-if="currentTab === 'my'"
-                    :class="['status', `status-${script.status}`]"
+              <div class="filter-options">
+                <select v-model="selectedCategory" @change="filterScripts" :disabled="isLoadingCategories">
+                  <option value="all">全部分类</option>
+                  <option 
+                    v-for="category in activeCategories" 
+                    :key="category.id" 
+                    :value="category.id"
                   >
-                    {{ getStatusText(script.status) }}
-                  </span>
-                </div>
-              </div>
+                    {{ category.name }}
+                  </option>
+                </select>
 
-              <div class="script-card-info" v-if="!script.images || script.images.length === 0">
-                <p class="description">
-                  {{ script.description || "暂无描述" }}
-                </p>
-                <div class="stats">
-                  <span class="roles"
-                    >{{ script.roles?.length || 0 }} 个角色</span
-                  >
-                  <span class="level">{{
-                    script.level || "Intermediate"
-                  }}</span>
-                </div>
+                <select v-model="sortBy" @change="filterScripts">
+                  <option value="name">按名称</option>
+                  <option value="likes">按点赞</option>
+                  <option value="usage">按使用</option>
+                  <option value="date">按日期</option>
+                </select>
               </div>
+            </div>
 
-              <div class="script-card-actions">
-                <button
-                  @click.stop="useScript(script)"
-                  class="action-btn use-btn"
-                  :disabled="script.status !== 'approved'"
-                >
-                  {{ script.status === "approved" ? "使用剧本" : "等待审核" }}
-                </button>
-                <button
-                  v-if="isLoggedIn && script.status === 'approved'"
-                  @click.stop="toggleLike(script)"
-                  :class="['action-btn like-btn', { liked: script.isLiked }]"
-                >
-                  {{ script.isLiked ? "已点赞" : "点赞" }}
-                  <span class="like-count">{{ script.likes || 0 }}</span>
-                </button>
-                <span v-else-if="!isLoggedIn" class="login-tip"
-                  >登录后点赞</span
-                >
-                <span
-                  v-else-if="script.status !== 'approved'"
-                  class="status-tip"
-                  >审核通过后可点赞</span
-                >
-                
-                <!-- 图片管理按钮 - 仅在"我的上传"中显示 -->
-                <button
-                  v-if="currentTab === 'my'"
-                  @click.stop="manageImages(script)"
-                  class="action-btn image-btn"
-                >
-                  📷 图片管理
+            <div class="header-actions">
+              <button @click="showRanking = true" class="action-btn ranking-btn">
+                排行榜
+              </button>
+              <button
+                v-if="isLoggedIn"
+                @click="showUploadModal = true"
+                class="action-btn upload-btn"
+              >
+                上传剧本
+              </button>
+              <button
+                @click="showLoginModal = true"
+                v-if="!isLoggedIn"
+                class="action-btn login-btn"
+              >
+                登录
+              </button>
+              <div v-else class="user-info">
+                <span class="username" :class="{ 'admin-user': isAdmin }">
+                  {{ currentUser.username }}
+                  <span v-if="isAdmin" class="admin-badge">管理员</span>
+                </span>
+                <button @click="logout" class="action-btn logout-btn">
+                  登出
                 </button>
               </div>
             </div>
           </div>
 
-          <!-- 加载更多 -->
-          <div class="load-more" v-if="hasMore && !isLoading">
-            <button
-              @click="loadMore"
-              :disabled="isLoadingMore"
-              class="load-more-btn"
-            >
-              <span v-if="!isLoadingMore">加载更多</span>
-              <span v-else>加载中...</span>
-            </button>
-          </div>
+          <!-- 剧本列表 -->
+          <div class="scripts-container">
+            <div class="scripts-grid" :key="currentTab">
+              <!-- 骨架屏 - 只在首次加载时显示 -->
+              <ScriptSkeleton v-if="isLoading" :count="6" />
 
-          <!-- 没有更多数据 -->
-          <div class="no-more" v-if="!hasMore && scripts.length > 0">
-            <span>没有更多剧本了</span>
-          </div>
+              <!-- 标签页切换时的轻量加载指示 -->
+              <div v-if="isTabLoading" class="tab-loading">
+                <div class="loading-spinner"></div>
+                <span>加载中...</span>
+              </div>
 
-          <!-- 空状态 -->
-          <div class="empty-state" v-if="!isLoading && scripts.length === 0">
-            <span v-if="currentTab === 'all'">暂无剧本数据</span>
-            <span v-else-if="currentTab === 'my' && !isLoggedIn"
-              >请先登录查看您的上传</span
-            >
-            <span v-else-if="currentTab === 'my'">您还没有上传过剧本</span>
-            <span v-else-if="currentTab === 'admin'">管理员功能已加载</span>
+              <!-- 剧本卡片 -->
+              <div
+                v-for="script in scripts"
+                :key="script.id"
+                class="script-card"
+                @click="viewScript(script)"
+              >
+                <!-- 图片轮播区域 -->
+                <div class="script-card-images" v-if="script.images && script.images.length > 0">
+                  <ImageCarousel 
+                    :images="script.images"
+                    :scriptId="script.id"
+                    :autoPlay="true"
+                    :interval="4000"
+                  />
+                </div>
+
+                <div class="script-card-header">
+                  <h3>{{ script.name }}</h3>
+                  <div class="script-meta">
+                    <span class="author">{{ script.author || "未知作者" }}</span>
+                    <span class="category">{{
+                      getCategoryName(script.category)
+                    }}</span>
+                    <!-- 审核状态显示 -->
+                    <span
+                      v-if="currentTab === 'my'"
+                      :class="['status', `status-${script.status}`]"
+                    >
+                      {{ getStatusText(script.status) }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="script-card-info" v-if="!script.images || script.images.length === 0">
+                  <p class="description">
+                    {{ script.description || "暂无描述" }}
+                  </p>
+                  <div class="stats">
+                    <span class="roles"
+                      >{{ script.roles?.length || 0 }} 个角色</span
+                    >
+                    <span class="level">{{
+                      script.level || "Intermediate"
+                    }}</span>
+                  </div>
+                </div>
+
+                <div class="script-card-actions">
+                  <button
+                    @click.stop="useScript(script)"
+                    class="action-btn use-btn"
+                    :disabled="script.status !== 'approved'"
+                  >
+                    {{ script.status === "approved" ? "使用剧本" : "等待审核" }}
+                  </button>
+                  <button
+                    v-if="isLoggedIn && script.status === 'approved'"
+                    @click.stop="toggleLike(script)"
+                    class="action-btn like-btn"
+                    :class="{ liked: script.isLiked }"
+                  >
+                    ❤️ {{ script.likes || 0 }}
+                  </button>
+                  <!-- 我的上传标签页显示图片管理按钮 -->
+                  <button
+                    v-if="currentTab === 'my'"
+                    @click.stop="manageImages(script)"
+                    class="action-btn image-btn"
+                  >
+                    图片管理
+                  </button>
+                </div>
+              </div>
+
+              <!-- 加载更多按钮 -->
+              <div v-if="hasMore && !isLoadingMore" class="load-more">
+                <button @click="loadMore" class="load-more-btn">
+                  加载更多
+                </button>
+              </div>
+
+              <!-- 没有更多数据提示 -->
+              <div v-if="!hasMore && scripts.length > 0" class="no-more">
+                没有更多剧本了
+              </div>
+
+              <!-- 空状态 -->
+              <div v-if="scripts.length === 0 && !isLoading && !isTabLoading" class="empty-state">
+                <div class="empty-icon">📚</div>
+                <h3>暂无剧本</h3>
+                <p v-if="currentTab === 'all'">还没有剧本，快来上传第一个吧！</p>
+                <p v-else-if="currentTab === 'my'">您还没有上传过剧本</p>
+                <button
+                  v-if="currentTab === 'all' && isLoggedIn"
+                  @click="showUploadModal = true"
+                  class="upload-btn"
+                >
+                  上传剧本
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- 管理员内容区域 -->
-        <div v-if="currentTab === 'admin'" class="admin-content-area">
+        <!-- 管理员标签页显示管理员面板 -->
+        <div v-if="currentTab === 'admin'">
           <EmbeddedAdminPanel />
         </div>
+      </div>
 
-        <!-- 登录模态框 -->
-        <LoginModal
-          v-if="showLoginModal"
-          @close="showLoginModal = false"
-          @login-success="handleLoginSuccess"
-          @register-success="handleRegisterSuccess"
-        />
+      <!-- 登录模态框 -->
+      <LoginModal
+        v-if="showLoginModal"
+        @close="showLoginModal = false"
+        @login-success="handleLoginSuccess"
+        @register-success="handleRegisterSuccess"
+      />
 
-        <!-- 上传模态框 -->
-        <ScriptUploadModal
-          v-if="showUploadModal"
-          @close="showUploadModal = false"
-          @upload-success="handleUploadSuccess"
-        />
+      <!-- 上传模态框 -->
+      <ScriptUploadModal
+        v-if="showUploadModal"
+        @close="showUploadModal = false"
+        @upload-success="handleUploadSuccess"
+      />
 
-        <!-- 排行榜模态框 -->
-        <div
-          v-if="showRanking"
-          class="ranking-modal-backdrop"
-          @click="showRanking = false"
-        >
-          <div class="ranking-modal" @click.stop>
-            <div class="modal-header">
-              <h3>剧本排行榜</h3>
-              <button @click="showRanking = false" class="close-btn">
-                &times;
-              </button>
-            </div>
-            <div class="modal-content">
-              <ScriptRanking />
-            </div>
+      <!-- 排行榜模态框 -->
+      <div
+        v-if="showRanking"
+        class="ranking-modal-backdrop"
+        @click="showRanking = false"
+      >
+        <div class="ranking-modal" @click.stop>
+          <div class="modal-header">
+            <h3>剧本排行榜</h3>
+            <button @click="showRanking = false" class="close-btn">
+              &times;
+            </button>
+          </div>
+          <div class="modal-content">
+            <ScriptRanking />
           </div>
         </div>
-
-        <!-- 图片管理模态框 -->
-        <ImageManagementModal
-          v-if="showImageManagementModal && selectedScriptForImageManagement"
-          :script="selectedScriptForImageManagement"
-          @close="closeImageManagementModal"
-          @images-updated="handleImagesUpdated"
-        />
-
-        <!-- 剧本详情模态框 -->
-        <ScriptDetailModal
-          v-if="showDetailModal"
-          :show="showDetailModal"
-          :scriptId="selectedScript ? selectedScript.id : ''"
-          @close="closeDetailModal"
-          @switch-version="switchToVersion"
-        />
       </div>
+
+      <!-- 图片管理模态框 -->
+      <ImageManagementModal
+        v-if="showImageManagementModal && selectedScriptForImageManagement"
+        :script="selectedScriptForImageManagement"
+        @close="closeImageManagementModal"
+        @images-updated="handleImagesUpdated"
+      />
+
+      <!-- 剧本详情模态框 -->
+      <ScriptDetailModal
+        v-if="showDetailModal"
+        :show="showDetailModal"
+        :scriptId="selectedScript ? selectedScript.id : ''"
+        @close="closeDetailModal"
+        @switch-version="switchToVersion"
+      />
     </div>
   </div>
 </template>
