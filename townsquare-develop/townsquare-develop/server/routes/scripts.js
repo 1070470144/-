@@ -89,6 +89,7 @@ async function getAllScripts() {
             scriptData.filePath = `${type}/${file}`;
             scriptData.fileSize = content.length;
             scriptData.lastModified = (await fs.stat(filePath)).mtime;
+            scriptData.type = type; // 添加type信息
             
             // 从状态文件获取状态信息
             const scriptId = scriptData.id || path.basename(file, '.json');
@@ -152,8 +153,28 @@ async function deleteScript(scriptId, type = 'custom') {
     const fileName = `${scriptId}.json`;
     const filePath = path.join(dir, fileName);
     
+    // 检查文件是否存在
+    try {
+      await fs.access(filePath);
+    } catch (error) {
+      // 文件不存在，返回成功（因为目标已经达成）
+      console.log(`剧本文件不存在: ${filePath}`);
+      return { success: true, message: '剧本不存在或已被删除' };
+    }
+    
+    // 删除文件
     await fs.unlink(filePath);
-    return { success: true };
+    console.log(`成功删除剧本: ${filePath}`);
+    
+    // 同时删除相关的状态数据
+    try {
+      await updateScriptStatus(scriptId, 'deleted', 'system', '剧本已删除');
+    } catch (statusError) {
+      console.log('删除状态数据失败:', statusError);
+      // 不影响主删除操作
+    }
+    
+    return { success: true, message: '剧本删除成功' };
   } catch (error) {
     console.error('删除剧本失败:', error);
     throw error;
@@ -846,10 +867,17 @@ router.delete('/:id', async (req, res) => {
     const { id } = req.params;
     const { type = 'custom' } = req.query;
     
+    console.log(`删除剧本请求: id=${id}, type=${type}`);
+    
     const result = await deleteScript(id, type);
     res.json({ success: true, data: result });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    console.error('删除剧本API失败:', error);
+    res.status(500).json({ 
+      success: false, 
+      error: error.message,
+      details: '删除剧本时发生服务器错误'
+    });
   }
 });
 

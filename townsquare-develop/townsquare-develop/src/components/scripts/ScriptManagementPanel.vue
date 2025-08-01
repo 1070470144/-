@@ -234,7 +234,9 @@ export default {
         ])
         
         if (scriptsResult.success) {
-          this.scripts = scriptsResult.data.scripts || []
+          // 服务器返回的是按类型分组的对象，需要扁平化
+          const scriptsData = scriptsResult.data.scripts || {}
+          this.scripts = Object.values(scriptsData).flat()
         }
         
         if (categoriesResult.success) {
@@ -356,7 +358,11 @@ export default {
       }
       
       try {
-        const result = await scriptAPI.deleteScript(script.id)
+        // 从剧本数据中获取type，默认为custom
+        const scriptType = script.type || 'custom'
+        console.log(`删除剧本: id=${script.id}, type=${scriptType}`)
+        
+        const result = await scriptAPI.deleteScript(script.id, scriptType)
         if (result.success) {
           this.scripts = this.scripts.filter(s => s.id !== script.id)
           this.filterScripts()

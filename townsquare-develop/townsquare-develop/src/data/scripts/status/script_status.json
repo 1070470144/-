@@ -94,10 +94,10 @@
     },
     "beginner-template": {
       "scriptId": "beginner-template",
-      "status": "rejected",
-      "reviewedBy": "admin@mm.com",
-      "reviewedAt": "2025-07-31T12:11:55.086Z",
-      "reviewNote": ""
+      "status": "deleted",
+      "reviewedBy": "system",
+      "reviewedAt": "2025-08-01T06:42:53.051Z",
+      "reviewNote": "剧本已删除"
     },
     "bmr": {
       "scriptId": "bmr",

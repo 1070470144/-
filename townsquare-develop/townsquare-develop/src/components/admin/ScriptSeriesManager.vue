@@ -37,63 +37,84 @@
       
       <template v-else>
         <div v-for="series in seriesList" :key="series.id" class="series-item">
-        <div class="series-header">
-          <h4>{{ series.name }}</h4>
-          <div class="series-meta">
-            <span class="version-count"
-              >{{ series.versions.length }} 个版本</span
-            >
-            <span class="latest-version"
-              >最新: v{{ getLatestVersion(series) }}</span
-            >
-          </div>
-        </div>
-
-        <div class="versions-list">
-          <div
-            v-for="version in series.versions"
-            :key="version.id"
-            class="version-item"
-            :class="{ latest: version.isLatest }"
-          >
-            <div class="version-info">
-              <span class="version-number">v{{ version.version }}</span>
-              <span class="version-date">{{
-                formatDate(version.createdAt)
-              }}</span>
-              <span class="version-status" :class="version.status">
-                {{ getStatusText(version.status) }}
-              </span>
+        <div class="series-header" @click="toggleSeries(series.id)">
+          <div class="series-info">
+            <div class="expand-icon" :class="{ expanded: isSeriesExpanded(series.id) }">
+              <span>▶</span>
             </div>
-            <div class="version-actions">
-              <button @click="editVersion(version)" class="edit-btn">
-                编辑
-              </button>
-              <button
-                @click="setAsLatest(version)"
-                v-if="!version.isLatest"
-                class="latest-btn"
+            <h4>{{ series.name }}</h4>
+            <div class="series-meta">
+              <span class="version-count"
+                >{{ series.versions.length }} 个版本</span
               >
-                设为最新
-              </button>
-              <button @click="deleteVersion(version)" class="delete-btn">
-                删除
-              </button>
+              <span class="latest-version"
+                >最新: v{{ getLatestVersion(series) }}</span
+              >
             </div>
+          </div>
+          <div class="series-actions-header">
+            <button @click.stop="editSeries(series)" class="edit-series-btn">
+              编辑系列
+            </button>
+            <button @click.stop="deleteSeries(series)" class="delete-series-btn">
+              删除系列
+            </button>
           </div>
         </div>
 
-        <div class="series-actions">
-          <button @click="addVersion(series)" class="add-version-btn">
-            添加版本
-          </button>
-          <button @click="editSeries(series)" class="edit-series-btn">
-            编辑系列
-          </button>
-          <button @click="deleteSeries(series)" class="delete-series-btn">
-            删除系列
-          </button>
-        </div>
+        <transition name="expand">
+          <div v-if="isSeriesExpanded(series.id)" class="series-content">
+            <div class="versions-list">
+              <template v-if="series.versions.length === 0">
+                <div class="empty-versions">
+                  <p>暂无版本</p>
+                  <button @click="addVersion(series)" class="add-version-btn">
+                    添加第一个版本
+                  </button>
+                </div>
+              </template>
+              <template v-else>
+                <div
+                  v-for="version in series.versions"
+                  :key="version.id"
+                  class="version-item"
+                  :class="{ latest: version.isLatest }"
+                >
+                <div class="version-info">
+                  <span class="version-number">v{{ version.version }}</span>
+                  <span class="version-date">{{
+                    formatDate(version.createdAt)
+                  }}</span>
+                  <span class="version-status" :class="version.status">
+                    {{ getStatusText(version.status) }}
+                  </span>
+                </div>
+                <div class="version-actions">
+                  <button @click="editVersion(version)" class="edit-btn">
+                    编辑
+                  </button>
+                  <button
+                    @click="setAsLatest(version)"
+                    v-if="!version.isLatest"
+                    class="latest-btn"
+                  >
+                    设为最新
+                  </button>
+                  <button @click="deleteVersion(version)" class="delete-btn">
+                    删除
+                  </button>
+                </div>
+              </div>
+                </template>
+            </div>
+
+            <div class="series-actions">
+              <button @click="addVersion(series)" class="add-version-btn">
+                添加版本
+              </button>
+            </div>
+          </div>
+        </transition>
       </div>
         </template>
     </div>
@@ -275,6 +296,7 @@ export default {
       categoryFilter: "",
       searchTimer: null,
       isLoading: false,
+      expandedSeries: new Set(), // 记录展开的系列ID
     };
   },
   async mounted() {
@@ -498,6 +520,18 @@ export default {
       this.loadSeries();
     },
 
+    toggleSeries(seriesId) {
+      if (this.expandedSeries.has(seriesId)) {
+        this.expandedSeries.delete(seriesId);
+      } else {
+        this.expandedSeries.add(seriesId);
+      }
+    },
+
+    isSeriesExpanded(seriesId) {
+      return this.expandedSeries.has(seriesId);
+    },
+
     async deleteSeries(series) {
       if (!confirm("确定要删除这个系列吗？此操作不可撤销。")) {
         return;
@@ -546,6 +580,27 @@ export default {
 <style scoped lang="scss">
 .series-manager {
   padding: 20px;
+}
+
+// 展开动画
+.expand-enter-active,
+.expand-leave-active {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.expand-enter-from,
+.expand-leave-to {
+  opacity: 0;
+  max-height: 0;
+  transform: translateY(-10px);
+}
+
+.expand-enter-to,
+.expand-leave-from {
+  opacity: 1;
+  max-height: 500px;
+  transform: translateY(0);
 }
 
 .loading-state,
@@ -670,38 +725,131 @@ export default {
 .series-item {
   background: #2a2a2a;
   border-radius: 8px;
-  padding: 20px;
+  overflow: hidden;
 
   .series-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
+    padding: 20px;
+    cursor: pointer;
+    transition: background-color 0.2s;
 
-    h4 {
-      margin: 0;
-      color: #fff;
-      font-size: 16px;
+    &:hover {
+      background: rgba(255, 215, 0, 0.1);
     }
 
-    .series-meta {
+    .series-info {
       display: flex;
+      align-items: center;
       gap: 15px;
-      font-size: 12px;
-      color: #ccc;
+      flex: 1;
 
-      .version-count {
-        color: #4a90e2;
+      .expand-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        transition: transform 0.3s ease;
+
+        span {
+          color: #ffd700;
+          font-size: 12px;
+        }
+
+        &.expanded {
+          transform: rotate(90deg);
+        }
       }
 
-      .latest-version {
-        color: #27ae60;
+      h4 {
+        margin: 0;
+        color: #fff;
+        font-size: 18px;
+      }
+
+      .series-meta {
+        display: flex;
+        gap: 15px;
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.7);
+
+        .version-count {
+          color: #4a90e2;
+        }
+
+        .latest-version {
+          color: #27ae60;
+        }
+      }
+    }
+
+    .series-actions-header {
+      display: flex;
+      gap: 10px;
+
+      button {
+        padding: 6px 12px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        transition: background-color 0.2s;
+
+        &.edit-series-btn {
+          background: #4a90e2;
+          color: #fff;
+
+          &:hover {
+            background: #357abd;
+          }
+        }
+
+        &.delete-series-btn {
+          background: #e74c3c;
+          color: #fff;
+
+          &:hover {
+            background: #c0392b;
+          }
+        }
       }
     }
   }
 
+  .series-content {
+    border-top: 1px solid rgba(255, 215, 0, 0.2);
+    background: rgba(0, 0, 0, 0.2);
+  }
+
   .versions-list {
-    margin-bottom: 15px;
+    padding: 20px;
+
+    .empty-versions {
+      text-align: center;
+      padding: 40px 20px;
+      color: rgba(255, 255, 255, 0.7);
+
+      p {
+        margin: 0 0 20px 0;
+        font-size: 16px;
+      }
+
+      .add-version-btn {
+        padding: 10px 20px;
+        background: #27ae60;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+
+        &:hover {
+          background: #229954;
+        }
+      }
+    }
 
     .version-item {
       display: flex;
@@ -798,6 +946,8 @@ export default {
   .series-actions {
     display: flex;
     gap: 10px;
+    padding: 20px;
+    border-top: 1px solid rgba(255, 215, 0, 0.1);
 
     button {
       padding: 6px 12px;
