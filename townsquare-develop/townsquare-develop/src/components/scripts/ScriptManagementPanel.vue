@@ -129,14 +129,11 @@
                 🗑️ 删除
               </button>
               
-              <!-- 状态操作按钮 -->
-              <div class="status-actions" v-if="script.status === 'pending'">
-                <button @click="approveScript(script)" class="action-btn approve-btn">
-                  ✅ 通过
-                </button>
-                <button @click="rejectScript(script)" class="action-btn reject-btn">
-                  ❌ 拒绝
-                </button>
+              <!-- 状态显示 -->
+              <div class="status-display">
+                <span class="status-badge" :class="script.status">
+                  {{ getStatusText(script.status) }}
+                </span>
               </div>
             </div>
           </div>
@@ -253,6 +250,10 @@ export default {
         // 合并状态信息
         if (statusResult.success) {
           const statusData = statusResult.data || {}
+          console.log('状态数据:', statusData)
+          console.log('状态数据类型:', typeof statusData)
+          console.log('状态数据键:', Object.keys(statusData))
+          
           this.scripts = this.scripts.map(script => {
             // 查找剧本状态
             let status = 'pending' // 默认状态
@@ -274,12 +275,16 @@ export default {
               reviewNote = statusData.standalone[script.id].reviewNote || ''
             }
             
+            console.log(`剧本 ${script.id} 状态:`, { status, reviewNote })
+            
             return {
               ...script,
               status,
               reviewNote
             }
           })
+        } else {
+          console.error('获取状态失败:', statusResult)
         }
         
         this.filterScripts()
@@ -379,40 +384,7 @@ export default {
       }
     },
     
-    async approveScript(script) {
-      try {
-        const result = await scriptAPI.updateScriptStatus(script.id, 'approved', '审核通过')
-        if (result.success) {
-          script.status = 'approved'
-          this.filterScripts()
-          alert('剧本审核通过')
-        } else {
-          alert(`审核失败: ${result.error}`)
-        }
-      } catch (error) {
-        console.error('审核失败:', error)
-        alert('审核失败')
-      }
-    },
-    
-    async rejectScript(script) {
-      const reason = prompt('请输入拒绝原因:')
-      if (!reason) return
-      
-      try {
-        const result = await scriptAPI.updateScriptStatus(script.id, 'rejected', reason)
-        if (result.success) {
-          script.status = 'rejected'
-          this.filterScripts()
-          alert('剧本已拒绝')
-        } else {
-          alert(`操作失败: ${result.error}`)
-        }
-      } catch (error) {
-        console.error('操作失败:', error)
-        alert('操作失败')
-      }
-    },
+
     
     // 模态框控制
     closeDetailModal() {
@@ -429,12 +401,8 @@ export default {
       try {
         const result = await scriptAPI.updateScript(updatedScript.id, updatedScript)
         if (result.success) {
-          // 更新本地数据
-          const index = this.scripts.findIndex(s => s.id === updatedScript.id)
-          if (index !== -1) {
-            this.scripts[index] = { ...this.scripts[index], ...updatedScript }
-            this.filterScripts()
-          }
+          // 重新加载数据以确保状态同步
+          await this.loadData()
           this.closeEditModal()
           alert('剧本更新成功')
         } else {
@@ -674,32 +642,31 @@ export default {
   border-color: rgba(244, 67, 54, 0.5);
 }
 
-.approve-btn {
-  background: rgba(76, 175, 80, 0.2);
-  border-color: rgba(76, 175, 80, 0.3);
-  color: #4caf50;
-}
-
-.approve-btn:hover {
-  background: rgba(76, 175, 80, 0.3);
-  border-color: rgba(76, 175, 80, 0.5);
-}
-
-.reject-btn {
-  background: rgba(244, 67, 54, 0.2);
-  border-color: rgba(244, 67, 54, 0.3);
-  color: #f44336;
-}
-
-.reject-btn:hover {
-  background: rgba(244, 67, 54, 0.3);
-  border-color: rgba(244, 67, 54, 0.5);
-}
-
-.status-actions {
-  display: flex;
-  gap: 5px;
-  margin-top: 8px;
+.status-display {
+  margin-top: 10px;
+  
+  .status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: bold;
+    
+    &.pending {
+      background: rgba(243, 156, 18, 0.2);
+      color: #f39c12;
+    }
+    
+    &.approved {
+      background: rgba(39, 174, 96, 0.2);
+      color: #27ae60;
+    }
+    
+    &.rejected {
+      background: rgba(231, 76, 60, 0.2);
+      color: #e74c3c;
+    }
+  }
 }
 
 .loading-state, .empty-state {

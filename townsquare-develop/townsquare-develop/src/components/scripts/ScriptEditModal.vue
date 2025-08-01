@@ -84,6 +84,7 @@
 
 <script>
 import systemAPI from '@/utils/systemAPI'
+import scriptAPI from '@/utils/scriptAPI'
 
 export default {
   name: 'ScriptEditModal',
@@ -165,6 +166,27 @@ export default {
       
       try {
         this.isSaving = true
+        
+        // 如果状态发生变化，先更新状态
+        if (this.formData.status !== this.script.status) {
+          console.log('状态发生变化:', {
+            scriptId: this.script.id,
+            oldStatus: this.script.status,
+            newStatus: this.formData.status,
+            reviewNote: this.formData.reviewNote
+          })
+          
+          const reviewNote = this.formData.status === 'rejected' ? this.formData.reviewNote : ''
+          const reviewedBy = 'admin@mm.com' // 管理员审核
+          const statusResult = await scriptAPI.updateScriptStatus(this.script.id, this.formData.status, reviewedBy, reviewNote)
+          
+          console.log('状态更新结果:', statusResult)
+          
+          if (!statusResult.success) {
+            alert(`状态更新失败: ${statusResult.error}`)
+            return
+          }
+        }
         
         // 构建更新数据
         const updateData = {

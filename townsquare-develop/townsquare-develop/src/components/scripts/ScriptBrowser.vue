@@ -141,6 +141,11 @@
                     >
                       {{ getStatusText(script.status) }}
                     </span>
+                    <!-- 拒绝原因显示 -->
+                    <div v-if="currentTab === 'my' && script.status === 'rejected' && script.reviewNote" class="reject-reason">
+                      <span class="reason-label">拒绝原因:</span>
+                      <span class="reason-text">{{ script.reviewNote }}</span>
+                    </div>
                   </div>
                 </div>
 
@@ -1191,6 +1196,27 @@ export default {
             &.status-rejected {
               background: #f44336;
               color: #fff;
+            }
+          }
+          
+          .reject-reason {
+            margin-top: 8px;
+            padding: 8px;
+            background: rgba(231, 76, 60, 0.1);
+            border: 1px solid rgba(231, 76, 60, 0.3);
+            border-radius: 4px;
+            
+            .reason-label {
+              font-size: 11px;
+              color: #e74c3c;
+              font-weight: bold;
+              margin-right: 5px;
+            }
+            
+            .reason-text {
+              font-size: 12px;
+              color: rgba(255, 255, 255, 0.8);
+              line-height: 1.3;
             }
           }
         }

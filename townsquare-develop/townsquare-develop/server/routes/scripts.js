@@ -230,8 +230,24 @@ async function readStatusFile() {
 
 // 保存状态文件
 async function saveStatusFile(statusData) {
-  await ensureDirectories();
-  await fs.writeFile(STATUS_FILE, JSON.stringify(statusData, null, 2), 'utf8');
+  try {
+    console.log('=== 开始保存状态文件 ===');
+    console.log('保存的状态数据:', statusData);
+    console.log('状态文件路径:', STATUS_FILE);
+    
+    await ensureDirectories();
+    await fs.writeFile(STATUS_FILE, JSON.stringify(statusData, null, 2), 'utf8');
+    
+    console.log('状态文件保存成功:', STATUS_FILE);
+    
+    // 验证文件是否真的被写入
+    const savedContent = await fs.readFile(STATUS_FILE, 'utf8');
+    console.log('保存后的文件内容:', savedContent);
+    console.log('=== 状态文件保存完成 ===');
+  } catch (error) {
+    console.error('保存状态文件失败:', error);
+    throw error;
+  }
 }
 
 // 获取剧本状态
@@ -257,7 +273,10 @@ async function getScriptStatus(scriptId) {
 
 // 更新剧本状态
 async function updateScriptStatus(scriptId, status, reviewedBy, reviewNote = '') {
+  console.log('更新剧本状态:', { scriptId, status, reviewedBy, reviewNote });
+  
   const statusData = await readStatusFile();
+  console.log('当前状态数据:', statusData);
   
   // 检查是否是系列剧本
   for (const seriesId in statusData.series) {
@@ -270,6 +289,7 @@ async function updateScriptStatus(scriptId, status, reviewedBy, reviewNote = '')
         reviewNote
       };
       await saveStatusFile(statusData);
+      console.log('系列剧本状态更新成功:', series.versions[scriptId]);
       return series.versions[scriptId];
     }
   }
@@ -284,6 +304,7 @@ async function updateScriptStatus(scriptId, status, reviewedBy, reviewNote = '')
   };
   
   await saveStatusFile(statusData);
+  console.log('独立剧本状态更新成功:', statusData.standalone[scriptId]);
   return statusData.standalone[scriptId];
 }
 
@@ -517,6 +538,22 @@ router.get('/pending', async (req, res) => {
   }
 });
 
+// 获取所有状态
+router.get('/status/all', async (req, res) => {
+  try {
+    const statusData = await readStatusFile();
+    console.log('API返回状态数据:', statusData);
+    
+    res.json({
+      success: true,
+      data: statusData
+    });
+  } catch (error) {
+    console.error('获取所有状态失败:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // 获取剧本状态
 router.get('/status/:scriptId', async (req, res) => {
   try {
@@ -537,20 +574,30 @@ router.get('/status/:scriptId', async (req, res) => {
 router.put('/status/:scriptId', async (req, res) => {
   try {
     const { scriptId } = req.params;
-    const { status, reviewNote } = req.body;
+    const { status, reviewedBy, reviewNote } = req.body;
+    
+    console.log('=== 状态更新请求开始 ===');
+    console.log('请求参数:', { scriptId, status, reviewedBy, reviewNote });
+    console.log('请求体:', req.body);
+    console.log('请求头:', req.headers);
     
     // 获取当前用户信息（需要从认证中间件获取）
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('认证失败: 未提供Token');
       return res.status(401).json({ success: false, error: '未提供认证Token' });
     }
     
     const token = authHeader.substring(7);
     // 这里需要验证token并获取用户信息
     // 暂时使用默认用户，实际应该从token解析
-    const reviewedBy = 'admin@mm.com';
+    const reviewer = reviewedBy || 'admin@mm.com';
     
-    const updatedStatus = await updateScriptStatus(scriptId, status, reviewedBy, reviewNote);
+    console.log('开始调用updateScriptStatus...');
+    const updatedStatus = await updateScriptStatus(scriptId, status, reviewer, reviewNote);
+    
+    console.log('状态更新成功:', updatedStatus);
+    console.log('=== 状态更新请求结束 ===');
     
     res.json({
       success: true,
@@ -558,21 +605,6 @@ router.put('/status/:scriptId', async (req, res) => {
     });
   } catch (error) {
     console.error('更新剧本状态失败:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// 获取所有状态
-router.get('/status/all', async (req, res) => {
-  try {
-    const statusData = await readStatusFile();
-    
-    res.json({
-      success: true,
-      data: statusData
-    });
-  } catch (error) {
-    console.error('获取所有状态失败:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -1069,49 +1101,7 @@ router.post('/:id/use', async (req, res) => {
   }
 });
 
-// 更新剧本状态（审核功能）
-router.put('/:id/status', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { status } = req.body;
-    
-    if (!['pending', 'approved', 'rejected'].includes(status)) {
-      return res.status(400).json({
-        success: false,
-        error: '无效的状态值'
-      });
-    }
-    
-    // 读取剧本文件
-    const scriptFile = path.join(CUSTOM_DIR, `${id}.json`);
-    let scriptData;
-    
-    try {
-      const content = await fs.readFile(scriptFile, 'utf8');
-      scriptData = JSON.parse(content);
-    } catch (error) {
-      return res.status(404).json({
-        success: false,
-        error: '剧本不存在'
-      });
-    }
-    
-    // 更新状态
-    scriptData.status = status;
-    scriptData.reviewedAt = new Date().toISOString();
-    
-    // 保存更新后的剧本
-    await fs.writeFile(scriptFile, JSON.stringify(scriptData, null, 2), 'utf8');
-    
-    res.json({
-      success: true,
-      script: scriptData
-    });
-  } catch (error) {
-    console.error('更新剧本状态失败:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
+// 注意：状态更新应该使用 /status/:scriptId 路由，而不是修改原始剧本文件
 
 // 获取剧本使用统计
 router.get('/:id/usage', async (req, res) => {

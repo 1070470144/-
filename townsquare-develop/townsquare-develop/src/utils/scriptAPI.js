@@ -213,18 +213,21 @@ class ScriptAPI {
   /**
    * 更新剧本状态
    */
-  async updateScriptStatus(scriptId, status, reviewNote = '') {
+  async updateScriptStatus(scriptId, status, reviewedBy, reviewNote = '') {
     try {
-      const response = await fetch(`${API_BASE}/scripts/${scriptId}/status`, {
+      console.log('前端状态更新请求:', { scriptId, status, reviewedBy, reviewNote });
+      
+      const response = await fetch(`${API_BASE}/scripts/status/${scriptId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           ...this.getAuthHeaders()
         },
-        body: JSON.stringify({ status, reviewNote })
+        body: JSON.stringify({ status, reviewedBy, reviewNote })
       });
 
       const result = await response.json();
+      console.log('前端状态更新响应:', result);
       return result;
     } catch (error) {
       console.error('更新剧本状态失败:', error);
@@ -255,12 +258,16 @@ class ScriptAPI {
    */
   async getAllStatus() {
     try {
-      const response = await fetch(`${API_BASE}/scripts/status`, {
+      const response = await fetch(`${API_BASE}/scripts/status/all`, {
         method: 'GET',
         headers: this.getAuthHeaders()
       });
 
       const result = await response.json();
+      console.log('getAllStatus API响应:', result);
+      console.log('getAllStatus data内容:', result.data);
+      console.log('getAllStatus data类型:', typeof result.data);
+      console.log('getAllStatus data键:', Object.keys(result.data || {}));
       return result;
     } catch (error) {
       console.error('获取所有状态失败:', error);
